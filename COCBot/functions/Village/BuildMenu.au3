@@ -1,0 +1,884 @@
+; #FUNCTION# ====================================================================================================================
+; Name ..........: BuildMenu
+; Description ...: Build button menu (bottom right of main screen).
+;                  Home village 4 tabs: 1 = Buildings & Heroes, 2 = Army Upgrades (Laboratory), 3 = Hero Equipment, 4 = Hero Pets
+;                  Builder Base 2 tabs: 1 = Buildings & Heroes, 2 = Army Upgrades (Star Laboratory)
+;                  Each tab shows a list (name, upgrade time, cost + resource icon) and builder/slot counters at the bottom.
+; Remarks .......: This file is part of MyBot, previously known as ClashGameBot. Copyright 2015-2019
+;                  MyBot is distributed under the terms of the GNU GPL
+; ===============================================================================================================================
+#include-once
+
+Global Const $g_aiBuildMenuTabX[5] = [0, 545, 630, 720, 815] ; home village
+Global Const $g_aiBuildMenuTabXBB[3] = [0, 590, 770] ; builder base
+Global Const $g_iBuildMenuTabY = 630
+Global Const $g_aiBuildMenuCounterX[5] = [0, 527, 618, 0, 799] ; "free/total" text below tab 1, 2 and 4
+Global Const $g_aiBuildMenuCounterXBB[3] = [0, 572, 754]
+Global $g_aiBuildMenuCounter[5][2] = [[-1, -1], [-1, -1], [-1, -1], [-1, -1], [-1, -1]] ; [tab][free, total], -1 = unknown
+Global $g_iBuildMenuPage = 1 ; how many pages the list of current tab is scrolled down (1 = top)
+Global $g_bBuildMenuBB = False ; menu opened on Builder Base
+
+; Builder Base names as written in game (OCR)
+Global Const $g_asBBBuildingNames[34] = ["Cannon", "Double Cannon", "Archer Tower", "Hidden Tesla", "Firecrackers", "Crusher", "Guard Post", _
+		"Air Bombs", "Multi Mortar", "Roaster", "Giant Cannon", "Mega Tesla", "Lava Launcher", "X-Bow", "Zappy", "Wall", _
+		"Push Trap", "Spring Trap", "Mine", "Mega Mine", "Builder Hall", "Gold Mine", "Elixir Collector", "Gold Storage", "Elixir Storage", _
+		"Gem Mine", "B.O.B Control", "Builder Barracks", "Army Camp", "Star Laboratory", "Battle Machine Altar", "Reinforcement Camp", _
+		"Healing Hut", "Battle Copter Altar"]
+; same index as $g_avStarLabTroops
+Global Const $g_asStarLabGameNames[13] = ["", "Raged Barbarian", "Sneaky Archer", "Boxer Giant", "Beta Minion", "Bomber", "Baby Dragon", _
+		"Cannon Cart", "Night Witch", "Drop Ship", "Power P.E.K.K.A", "Hog Glider", "Electrofire Wizard"]
+
+Func IsBuildMenuOpen()
+	Return _ColorCheck(_GetPixelColor(835, 35, True), Hex(0xD0151A, 6), 20)
+EndFunc   ;==>IsBuildMenuOpen
+
+Func BuildMenuIsBBType($sType)
+	Return $sType = "bb" Or $sType = "slab"
+EndFunc   ;==>BuildMenuIsBBType
+
+; selected tab of the open Build menu, 0 if unknown. Selected tab button is lighter (one capture, pixel checks only)
+Func BuildMenuTab($bBB = $g_bBuildMenuBB)
+	_CaptureRegion()
+	Local $iLast = $bBB ? 2 : 4
+	; a small area instead of one pixel: the captured window can be a few px off (read 3-4 px lower/right on 20 Oct 2026)
+	; borders of not selected tabs also match a few pixels: the tab with clearly the most matches is the selected one
+	Local $iBest = 0, $iBestHits = 0, $iSecondHits = 0
+	For $iTab = 1 To $iLast
+		Local $iX = $bBB ? $g_aiBuildMenuTabXBB[$iTab] : $g_aiBuildMenuTabX[$iTab], $iHits = 0
+		For $x = $iX - 4 To $iX + 4 Step 4
+			For $y = 658 To 668 Step 2
+				If _ColorCheck(_GetPixelColor($x, $y, False), Hex(0x9E897C, 6), 20) Then $iHits += 1
+			Next
+		Next
+		If $iHits > $iBestHits Then
+			$iSecondHits = $iBestHits
+			$iBestHits = $iHits
+			$iBest = $iTab
+		ElseIf $iHits > $iSecondHits Then
+			$iSecondHits = $iHits
+		EndIf
+	Next
+	If $iBestHits >= 5 And $iBestHits >= $iSecondHits + 3 Then Return $iBest
+	Return 0
+EndFunc   ;==>BuildMenuTab
+
+Func OpenBuildMenu($iTab = 1, $bBB = False)
+	If Not $g_bRunState Then Return False
+	If IsBuildMenuOpen() And $g_bBuildMenuBB <> $bBB Then CloseBuildMenu() ; menu of the other village left open
+	If Not IsBuildMenuOpen() Then
+		If Not BuildMenuOnVillage($bBB) Then
+			SetLog("Build menu: not on " & ($bBB ? "Builder Base" : "Home Village") & ", skip", $COLOR_WARNING)
+			Return False
+		EndIf
+		Click(800, 600, 1, 0, "Build button")
+		If Not WaitforPixel(835, 35, 836, 36, "D0151A", 20, 3, "OpenBuildMenu") Then
+			SetLog("Build menu not opened", $COLOR_ERROR)
+			Return False
+		EndIf
+		$g_iBuildMenuPage = 1
+		If _Sleep(500) Then Return False
+	EndIf
+	$g_bBuildMenuBB = $bBB
+	For $iTry = 1 To 3
+		If BuildMenuTab($bBB) = $iTab Then
+			If $iTry > 1 Or $g_iBuildMenuPage = 1 Then ReadBuildMenuCounters($bBB)
+			Return True
+		EndIf
+		Click($bBB ? $g_aiBuildMenuTabXBB[$iTab] : $g_aiBuildMenuTabX[$iTab], $g_iBuildMenuTabY, 1, 0, "Build menu tab " & $iTab)
+		$g_iBuildMenuPage = 1
+		If _Sleep(800) Then Return False
+	Next
+	SetLog("Cannot open Build menu tab " & $iTab, $COLOR_ERROR)
+	; without Background Mode the bot reads the screen where the emulator window is: a window over it gives wrong pixels
+	If Not $g_bChkBackgroundMode Then SetLog("Background Mode is disabled: keep the emulator window fully visible (not covered) or enable Background Mode", $COLOR_WARNING)
+	SaveDebugImage("BuildMenuTab")
+	CloseBuildMenu() ; do not leave the menu open for the next routine
+	Return False
+EndFunc   ;==>OpenBuildMenu
+
+; make sure we are on the wanted village before clicking Build (Home and BB menus have other tabs)
+Func BuildMenuOnVillage($bBB)
+	If ($bBB ? isOnBuilderBase() : isOnMainVillage()) Then Return True
+	checkMainScreen(False, $bBB, "OpenBuildMenu")
+	If ($bBB ? isOnBuilderBase() : isOnMainVillage()) Then Return True
+	; switch only when the other village is really seen (a main screen not recognized is not builder base)
+	If Not ($bBB ? isOnMainVillage() : isOnBuilderBase()) Then
+		SetLog("Build menu: " & ($bBB ? "Builder Base" : "Home Village") & " not recognized, skip", $COLOR_WARNING)
+		Return False
+	EndIf
+	SetLog("Build menu: on " & ($bBB ? "Home Village" : "Builder Base") & ", switching", $COLOR_INFO)
+	SwitchBetweenBases($bBB ? "BB" : "Main")
+	If _Sleep(500) Then Return False
+	Return ($bBB ? isOnBuilderBase() : isOnMainVillage())
+EndFunc   ;==>BuildMenuOnVillage
+
+Func CloseBuildMenu()
+	If IsBuildMenuOpen() Then
+		Click(836, 24, 1, 0, "Close Build menu")
+		If _Sleep(500) Then Return
+	EndIf
+EndFunc   ;==>CloseBuildMenu
+
+; read "free/total" counters below the tabs (visible on every tab)
+; home: builders (tab 1), laboratory (tab 2), pet house (tab 4). BB: builders (tab 1), star laboratory (tab 2)
+Func ReadBuildMenuCounters($bBB = $g_bBuildMenuBB)
+	Local $aTabs = $bBB ? StringSplit("1|2", "|", $STR_NOCOUNT) : StringSplit("1|2|4", "|", $STR_NOCOUNT)
+	Local $sRead, $aSplit, $iTab
+	For $sTab In $aTabs
+		$iTab = Number($sTab)
+		; template font reads these small digits best: totalreq on home village, armycap on builder base (tested on screenshots)
+		If $bBB Then
+			$sRead = getOcrAndCapture("coc-armycap", $g_aiBuildMenuCounterXBB[$iTab] - 2, 636, 40, 16, True)
+		Else
+			$sRead = getOcrAndCapture("coc-totalreq", $g_aiBuildMenuCounterX[$iTab], 636, 36, 16, True)
+		EndIf
+		If StringRegExp($sRead, "^\d+#\d+$") Then
+			$aSplit = StringSplit($sRead, "#", $STR_NOCOUNT)
+			$g_aiBuildMenuCounter[$iTab][0] = Number($aSplit[0])
+			$g_aiBuildMenuCounter[$iTab][1] = Number($aSplit[1])
+		Else
+			$g_aiBuildMenuCounter[$iTab][0] = -1
+			$g_aiBuildMenuCounter[$iTab][1] = -1
+		EndIf
+	Next
+	$g_hBuildMenuCounterTime = __TimerInit()
+	$g_bBuildMenuCounterBB = $bBB
+	$g_iBuildMenuCounterAcc = CurAccountIndex()
+	If $bBB Then
+		If $g_aiBuildMenuCounter[1][1] > 0 Then
+			$g_iFreeBuilderCountBB = $g_aiBuildMenuCounter[1][0]
+			$g_iTotalBuilderCountBB = $g_aiBuildMenuCounter[1][1]
+		EndIf
+		SetDebugLog("BB Build menu counters, Builder:" & $g_aiBuildMenuCounter[1][0] & "/" & $g_aiBuildMenuCounter[1][1] & ", Star Lab:" & $g_aiBuildMenuCounter[2][0] & "/" & $g_aiBuildMenuCounter[2][1])
+		Return
+	EndIf
+	; free builder is the event Goblin Builder (same check as dev AutoUpgradeCheckResource): do not count it
+	If $g_aiBuildMenuCounter[1][0] = 1 And Not _ColorCheck(_GetPixelColor(548, 606, True), Hex(0xD79146, 6), 20, Default, "BuildMenu Goblin Builder") Then
+		SetDebugLog("Build menu: free builder is Goblin Builder, not counted")
+		$g_aiBuildMenuCounter[1][0] = 0
+	EndIf
+	If $g_aiBuildMenuCounter[1][1] > 0 Then
+		$g_iFreeBuilderCount = $g_aiBuildMenuCounter[1][0]
+		$g_iTotalBuilderCount = $g_aiBuildMenuCounter[1][1]
+	EndIf
+	SetDebugLog("Build menu counters, Builder:" & $g_aiBuildMenuCounter[1][0] & "/" & $g_aiBuildMenuCounter[1][1] & _
+			", Lab:" & $g_aiBuildMenuCounter[2][0] & "/" & $g_aiBuildMenuCounter[2][1] & ", Pet:" & $g_aiBuildMenuCounter[4][0] & "/" & $g_aiBuildMenuCounter[4][1])
+EndFunc   ;==>ReadBuildMenuCounters
+
+; log the rows read from the Build menu (name, cost, resource) so every choice can be traced; "?" = name not recognized
+Func BuildMenuLogList($sTitle, ByRef $aList)
+	SetLog($sTitle & ":", $COLOR_INFO)
+	If UBound($aList) = 0 Then SetLog(" - (no affordable row)", $COLOR_DEBUG)
+	For $i = 0 To UBound($aList) - 1
+		SetLog(" - " & ($aList[$i][7] ? $aList[$i][3] : "? '" & $aList[$i][3] & "'") & " : " & _NumberFormat($aList[$i][5]) & " " & $aList[$i][0], $COLOR_DEBUG)
+	Next
+EndFunc   ;==>BuildMenuLogList
+
+; True when the counters ($g_aiBuildMenuCounter) were read less than $iSec ago on this village and account
+; (counters are shown on every tab: a routine can use them without opening the menu again)
+Func BuildMenuCountersFresh($bBB, $iSec = 120)
+	If $g_hBuildMenuCounterTime = 0 Or $g_bBuildMenuCounterBB <> $bBB Or $g_iBuildMenuCounterAcc <> CurAccountIndex() Then Return False
+	Return __TimerDiff($g_hBuildMenuCounterTime) < $iSec * 1000
+EndFunc   ;==>BuildMenuCountersFresh
+
+; resources while Build menu is open (shown top center), no need to close the menu (same as dev AutoUpgradeCheckResource)
+Func BuildMenuReadLoot($bSetLog = True, $bBB = $g_bBuildMenuBB)
+	If $bBB Then
+		$g_aiCurrentLootBB[$eLootGoldBB] = getResourcesMainScreen(350, 22)
+		$g_aiCurrentLootBB[$eLootElixirBB] = getResourcesMainScreen(350, 59)
+		If $bSetLog Then SetLog("[BB Builder]:" & $g_iFreeBuilderCountBB & "/" & $g_iTotalBuilderCountBB & " [G]:" & _NumberFormat($g_aiCurrentLootBB[$eLootGoldBB]) & _
+				" [E]:" & _NumberFormat($g_aiCurrentLootBB[$eLootElixirBB]), $COLOR_SUCCESS)
+		Return
+	EndIf
+	$g_aiCurrentLoot[$eLootGold] = getResourcesMainScreen(350, 22)
+	$g_aiCurrentLoot[$eLootElixir] = getResourcesMainScreen(350, 59)
+	$g_aiCurrentLoot[$eLootDarkElixir] = getResourcesMainScreen(350, 96)
+	If $bSetLog Then SetLog("[Builder]:" & $g_iFreeBuilderCount & "/" & $g_iTotalBuilderCount & " [G]:" & _NumberFormat($g_aiCurrentLoot[$eLootGold]) & _
+			" [E]:" & _NumberFormat($g_aiCurrentLoot[$eLootElixir]) & " [D]:" & _NumberFormat($g_aiCurrentLoot[$eLootDarkElixir]), $COLOR_SUCCESS)
+EndFunc   ;==>BuildMenuReadLoot
+
+; upgrade time text read by OCR ("2d 3h", often only partly readable) -> minutes, as LOWER bound (never later than real finish)
+Func BuildMenuTimeToMin($sTime)
+	$sTime = StringLower($sTime)
+	Local $iMin = 0, $a
+	$a = StringRegExp($sTime, "(\d+)\s*d", $STR_REGEXPARRAYMATCH)
+	If IsArray($a) Then $iMin += Number($a[0]) * 1440
+	$a = StringRegExp($sTime, "(\d+)\s*h", $STR_REGEXPARRAYMATCH)
+	If IsArray($a) And Number($a[0]) < 24 Then $iMin += Number($a[0]) * 60
+	$a = StringRegExp($sTime, "(\d+)\s*m", $STR_REGEXPARRAYMATCH)
+	If IsArray($a) And Number($a[0]) < 60 And $iMin < 1440 Then $iMin += Number($a[0])
+	Return $iMin
+EndFunc   ;==>BuildMenuTimeToMin
+
+; time of the upgrade in progress (first row, green bar) of current tab, in minutes (lower bound), 0 if unknown
+Func BuildMenuBusyTime()
+	Return BuildMenuTimeToMin(getOcrAndCapture("coc-buildtime", 755, 66, 76, 14, False))
+EndFunc   ;==>BuildMenuBusyTime
+
+Func BuildMenuMatchName($sOcr, $sType)
+	Switch $sType
+		Case "lab"
+			Local $sMatch = OcrMatchTroopName($sOcr)
+			Return SetExtended(@extended, $sMatch)
+		Case "pet"
+			Local $sMatch = OcrMatchName($sOcr, $g_asPetGameNames)
+			Return SetExtended(@extended, $sMatch)
+		Case "hero"
+			Local $sMatch = OcrMatchName($sOcr, $g_asHeroHallNames)
+			Return SetExtended(@extended, $sMatch)
+		Case "bb"
+			Local $sMatch = OcrMatchName($sOcr, $g_asBBBuildingNames)
+			Return SetExtended(@extended, $sMatch)
+		Case "slab"
+			Local $sMatch = OcrMatchName($sOcr, $g_asStarLabGameNames)
+			Return SetExtended(@extended, $sMatch)
+		Case Else
+			Local $sMatch = OcrMatchBuildingName($sOcr)
+			Return SetExtended(@extended, $sMatch)
+	EndSwitch
+EndFunc   ;==>BuildMenuMatchName
+
+; cost of a row: $iX, $iY = resource icon point (like QuickMIS, ~7 px above icon center)
+; Return cost, 0 = unreadable, -1 = red cost (not enough resource)
+; red cost text = not enough resource (row is skipped, see BuildMenuStopScroll for the list order)
+; uses the last full screen frame (_CaptureRegion), absolute coordinates, $iX/$iY = resource icon point
+Func BuildMenuIsRedCost($iX, $iY)
+	Local $iRed = 0, $iPix
+	For $x = $iX - 105 To $iX - 13 Step 3
+		For $y = $iY - 1 To $iY + 15 Step 2
+			$iPix = Dec(_GetPixelColor($x, $y, False))
+			If BitAND(BitShift($iPix, 16), 0xFF) > 200 And BitAND(BitShift($iPix, 8), 0xFF) < 130 And BitAND($iPix, 0xFF) < 130 Then $iRed += 1
+		Next
+	Next
+	Return $iRed > 20
+EndFunc   ;==>BuildMenuIsRedCost
+
+Func BuildMenuReadCost($iX, $iY)
+	If BuildMenuIsRedCost($iX, $iY) Then Return -1 ; red digits are also often misread: skip the row
+	Local $iMinDigits = BuildMenuCostMinDigits($iX, $iY)
+	; template font, keep spaces to check the digit groups ("5 400 000"); a lost digit gives "00 000" or "5 00 000"
+	Local $sCost = getOcrAndCapture("coc-buildermenu-cost", $iX - 120, $iY - 2, 120, 18, False)
+	Local $sDigits = StringReplace($sCost, " ", "")
+	; wide first group split by a space: "10 000 000" read as "1 0 000 000"
+	If (StringRegExp($sCost, "^[1-9]\d{0,2}( \d{3})*$") Or StringRegExp($sCost, "^[1-9] \d( \d{3})+$")) And StringLen($sDigits) >= $iMinDigits Then Return Number($sDigits)
+	; fallback: Tesseract digits (also when the template read lost a digit: "175 000" read as "15 000")
+	Local $sTess = StringStripWS(getOcrAndCapture("coc-buildcost", $iX - 105, $iY - 2, 92, 18, False), $STR_STRIPALL)
+	If StringRegExp($sTess, "^[1-9]\d{2,8}$") And StringLen($sTess) >= $iMinDigits Then Return Number($sTess)
+	SetDebugLog("BuildMenu cost not readable: '" & $sCost & "' / '" & $sTess & "' (text needs " & $iMinDigits & "+ digits)")
+	Return 0
+EndFunc   ;==>BuildMenuReadCost
+
+; minimum digit count of the white cost text from its pixel width (last _CaptureRegion frame), to catch a lost digit.
+; Text edges are searched (icon point differs a few px between home and builder base). Measured on Lab screenshots (Oct 2026):
+; 7 digits 76..84 px, 6 digits 57..66 px, 5 digits 46..53 px, 4 digits 44..45 px ("1" is narrow, so 4/5 can not be told apart)
+Func BuildMenuCostMinDigits($iX, $iY)
+	Local $iRight = 0, $iLeft = 0
+	For $x = $iX - 5 To $iX - 30 Step -1 ; right end of the text, left of the icon
+		If BuildMenuCostWhiteColumn($x, $iY) Then
+			$iRight = $x
+			ExitLoop
+		EndIf
+	Next
+	If $iRight = 0 Then Return 1
+	For $x = $iX - 110 To $iRight
+		If BuildMenuCostWhiteColumn($x, $iY) Then
+			$iLeft = $x
+			ExitLoop
+		EndIf
+	Next
+	Local $iWidth = $iRight - $iLeft
+	If $iWidth >= 71 Then Return 7
+	If $iWidth >= 55 Then Return 6
+	If $iWidth >= 40 Then Return 4
+	Return 1
+EndFunc   ;==>BuildMenuCostMinDigits
+
+Func BuildMenuCostWhiteColumn($x, $iY)
+	Local $iPix
+	For $y = $iY + 2 To $iY + 10 Step 2
+		$iPix = Dec(_GetPixelColor($x, $y, False))
+		If BitAND(BitShift($iPix, 16), 0xFF) > 225 And BitAND(BitShift($iPix, 8), 0xFF) > 225 And BitAND($iPix, 0xFF) > 225 Then Return True
+	Next
+	Return False
+EndFunc   ;==>BuildMenuCostWhiteColumn
+
+; Builder Base rows: resource icons found by color in icon column (x 838..852), gold = yellow, elixir = purple
+; (tested on BB screenshots; clock icons are only 1-2 rows of yellow and are ignored)
+; Return [n][3] = ["Gold"/"Elix", x, y] with y like QuickMIS point (icon center - 7)
+Func BuildMenuRowsByColor($iTop = 50, $iBottom = 600)
+	Local $aRet[0][3]
+	_CaptureRegion2(838, $iTop, 853, $iBottom)
+	Local $hBmp = _GDIPlus_BitmapCreateFromHBITMAP($g_hHBitmap2)
+	If @error Or $hBmp = 0 Then Return $aRet
+	Local $iW = 15, $iH = $iBottom - $iTop
+	Local $tData = _GDIPlus_BitmapLockBits($hBmp, 0, 0, $iW, $iH, $GDIP_ILMREAD, $GDIP_PXF32ARGB)
+	Local $iStridePx = DllStructGetData($tData, "Stride") / 4
+	Local $tPix = DllStructCreate("uint[" & $iStridePx * $iH & "]", DllStructGetData($tData, "Scan0"))
+	Local $sCur = "", $iStart = 0, $iPix, $r, $g, $b, $iGold, $iElix, $sRow
+	For $y = 0 To $iH
+		$sRow = ""
+		If $y < $iH Then
+			$iGold = 0
+			$iElix = 0
+			For $x = 0 To $iW - 1
+				$iPix = DllStructGetData($tPix, 1, $y * $iStridePx + $x + 1)
+				$r = BitAND(BitShift($iPix, 16), 0xFF)
+				$g = BitAND(BitShift($iPix, 8), 0xFF)
+				$b = BitAND($iPix, 0xFF)
+				If $r > 200 And $g > 150 And $b < 90 Then $iGold += 1
+				If $r > 130 And $b > 170 And $g < 120 Then $iElix += 1
+			Next
+			If $iGold >= 4 Then $sRow = "Gold"
+			If $iElix >= 4 Then $sRow = "Elix"
+		EndIf
+		If $sRow <> $sCur Then
+			If $sCur <> "" And $y - $iStart >= 6 Then
+				Local $aAdd[1][3] = [[$sCur, 845, $iTop + Int(($iStart + $y - 1) / 2) - 7]]
+				_ArrayAdd($aRet, $aAdd)
+			EndIf
+			$sCur = $sRow
+			$iStart = $y
+		EndIf
+	Next
+	_GDIPlus_BitmapUnlockBits($hBmp, $tData)
+	_GDIPlus_BitmapDispose($hBmp)
+	Return $aRet
+EndFunc   ;==>BuildMenuRowsByColor
+
+; read the visible rows of current tab. A row is found by its resource icon at the right side.
+; Return [n][8] = [resource ("Gold"/"Elix"/"DE"), icon x, icon y, name, count, cost, 0 (time, see BuildMenuRowTime), matched (True/False)]
+Func BuildMenuReadPage($sIconDir, $iNameX, $iNameDy, $sType)
+	Local $aRet[0][8], $aIcon
+	If BuildMenuIsBBType($sType) Then
+		$aIcon = BuildMenuRowsByColor()
+	Else
+		$aIcon = QuickMIS("CNX", $sIconDir, 828, 60, 852, 595)
+		If Not IsArray($aIcon) Or UBound($aIcon) = 0 Then Return $aRet
+		RemoveDupCNX($aIcon, 2, 5)
+	EndIf
+	If UBound($aIcon) = 0 Then Return $aRet
+	_ArraySort($aIcon, 0, 0, 0, 2)
+	_CaptureRegion() ; one frame for the red cost checks of all rows
+	Local $iFlags = 0
+	For $i = 0 To UBound($aIcon) - 1
+		If Not $g_bRunState Then Return SetExtended($iFlags, $aRet)
+		Local $iX = Number($aIcon[$i][1]), $iY = Number($aIcon[$i][2])
+		Local $iCost = BuildMenuReadCost($iX, $iY) ; fast template OCR first
+		If $iCost = -1 Then ; red row (not enough resource): skip it, no name OCR
+			$iFlags = BitOR($iFlags, BitAND($iFlags, 2) ? 5 : 4)
+			ContinueLoop
+		EndIf
+		If $iCost <= 0 Then ContinueLoop ; in progress / max level / unreadable: skip name OCR
+		$iFlags = BitOR($iFlags, 2)
+		Local $iW = $iX - 80 - $iNameX ; like dev: keep upgrade time text out of the name
+		If $iW > 210 Then $iW = 210
+		; name text is a little lower in tab 1 than in tab 2/4 (dev uses y-20 tab 1, y-18 lab), area covers both
+		Local $iNameH = ($sType = "hero" Or $sType = "building") ? 22 : 20
+		Local $aName = getBuildingName($iNameX, $iY + $iNameDy, $iW, $iNameH)
+		Local $sName = BuildMenuMatchName($aName[0], $sType)
+		Local $bMatched = (@extended = 1)
+		; list can still move a little after a scroll (empty / garbled names on page 2): read again a few px up and down
+		If Not $bMatched Then
+			Local $aRetryDy[2] = [-3, 3]
+			For $iDy In $aRetryDy
+				Local $aName2 = getBuildingName($iNameX, $iY + $iNameDy + $iDy, $iW, $iNameH)
+				Local $sName2 = BuildMenuMatchName($aName2[0], $sType)
+				If @extended = 1 Then
+					SetDebugLog("BuildMenu name '" & $aName[0] & "' read again (" & $iDy & " px): " & $sName2)
+					$aName = $aName2
+					$sName = $sName2
+					$bMatched = True
+					ExitLoop
+				EndIf
+			Next
+		EndIf
+		Local $aAdd[1][8] = [[$aIcon[$i][0], $iX, $iY, $sName, $aName[1], $iCost, 0, $bMatched]]
+		_ArrayAdd($aRet, $aAdd)
+	Next
+	Return SetExtended($iFlags, $aRet) ; @extended = page flags, see BuildMenuStopScroll
+EndFunc   ;==>BuildMenuReadPage
+
+; scroll rule for Build menu lists. Affordable rows come first (most expensive first), red rows (not enough
+; resource) below them; a few red rows can be above them too (Suggested upgrades, top of Other upgrades).
+; $iFlags = page flags: 1 = red row below an affordable row, 2 = affordable row, 4 = red row
+; red rows after affordable rows (or a page with only red rows): check one more page, stop if it has no affordable row
+; Return True = stop scrolling
+Func BuildMenuStopScroll($iFlags, ByRef $bAffordSeen, ByRef $bCheckNext)
+	Local $bAfford = (BitAND($iFlags, 2) = 2)
+	If $bCheckNext And Not $bAfford Then Return True
+	$bCheckNext = (BitAND($iFlags, 4) = 4) And ($bAffordSeen Or BitAND($iFlags, 1) = 1 Or Not $bAfford)
+	If $bAfford Then $bAffordSeen = True
+	Return False
+EndFunc   ;==>BuildMenuStopScroll
+
+; upgrade time of the row with resource icon at $iY, in minutes (lower bound, 0 = unknown). Only read for the chosen row.
+Func BuildMenuRowTime($iY)
+	Return BuildMenuTimeToMin(getOcrAndCapture("coc-buildtime", 755, $iY - 26, 76, 14, False))
+EndFunc   ;==>BuildMenuRowTime
+
+; drags inside the list (slow enough to not fling, start point between texts so no row is clicked), about 7 rows
+Func BuildMenuScrollDown()
+	ClickDrag(680, 545, 680, 125, 300)
+	$g_iBuildMenuPage += 1
+	If _Sleep(700) Then Return
+EndFunc   ;==>BuildMenuScrollDown
+
+Func BuildMenuScrollUp()
+	ClickDrag(680, 125, 680, 545, 300)
+	If $g_iBuildMenuPage > 1 Then $g_iBuildMenuPage -= 1
+	If _Sleep(700) Then Return
+EndFunc   ;==>BuildMenuScrollUp
+
+; read rows of current tab, scrolling down until the list does not move anymore,
+; or (when $aStopNames is an array) as soon as all names of $aStopNames were seen.
+; Return [n][9] = BuildMenuReadPage columns + [8] = page number
+Func BuildMenuCollect($sIconDir, $iNameX, $iNameDy, $sType, $aStopNames = Default, $iMaxPage = 8)
+	Local $aAll[0][9], $sLastSig = "", $sSig, $iFlags, $bAffordSeen = False, $bCheckNext = False
+	For $iPage = 1 To $iMaxPage
+		If Not $g_bRunState Then ExitLoop
+		If $iPage > 1 Then BuildMenuScrollDown()
+		Local $aPage = BuildMenuReadPage($sIconDir, $iNameX, $iNameDy, $sType)
+		$iFlags = @extended
+		$sSig = ""
+		For $i = 0 To UBound($aPage) - 1
+			$sSig &= $aPage[$i][3] & $aPage[$i][5] & "|"
+		Next
+		If $iPage > 1 And $sSig = $sLastSig Then ; list did not move: end reached
+			$g_iBuildMenuPage -= 1
+			ExitLoop
+		EndIf
+		$sLastSig = $sSig
+		For $i = 0 To UBound($aPage) - 1
+			Local $bDup = False
+			For $j = 0 To UBound($aAll) - 1
+				If $aAll[$j][3] = $aPage[$i][3] And $aAll[$j][5] = $aPage[$i][5] Then $bDup = True
+			Next
+			If $bDup Then ContinueLoop
+			Local $aAdd[1][9] = [[$aPage[$i][0], $aPage[$i][1], $aPage[$i][2], $aPage[$i][3], $aPage[$i][4], $aPage[$i][5], 0, $aPage[$i][7], $g_iBuildMenuPage]]
+			_ArrayAdd($aAll, $aAdd)
+			SetDebugLog("[BuildMenu p" & $g_iBuildMenuPage & "] " & $aPage[$i][3] & " x" & $aPage[$i][4] & ", cost " & $aPage[$i][5] & " " & $aPage[$i][0])
+		Next
+		If BuildMenuStopScroll($iFlags, $bAffordSeen, $bCheckNext) Then
+			SetDebugLog("[BuildMenu p" & $g_iBuildMenuPage & "] no affordable row after red rows, stop scrolling")
+			ExitLoop
+		EndIf
+		If IsArray($aStopNames) Then
+			Local $bAllSeen = True
+			For $sStop In $aStopNames
+				If _ArraySearch($aAll, $sStop, 0, 0, 0, 0, 1, 3) < 0 Then $bAllSeen = False
+			Next
+			If $bAllSeen Then ExitLoop ; no need to read the rest of the list
+		EndIf
+	Next
+	Return $aAll
+EndFunc   ;==>BuildMenuCollect
+
+; go to the row $sName on $iPage (scroll from current page, no close/reopen) and
+; return [icon x, icon y, upgrade time min], or 0 if the row is not found
+Func BuildMenuGoToItem($iTab, $sName, $iPage, $sIconDir, $iNameX, $iNameDy, $sType)
+	If Not OpenBuildMenu($iTab, BuildMenuIsBBType($sType)) Then Return 0 ; already open on this tab: nothing done, page kept
+	While $g_iBuildMenuPage > $iPage
+		BuildMenuScrollUp()
+	WEnd
+	While $g_iBuildMenuPage < $iPage
+		BuildMenuScrollDown()
+	WEnd
+	; row may move a little after scrolling: look on this page, then one page down, then up
+	Local $aMove[3] = [0, 1, -2]
+	For $iMove In $aMove
+		If $iMove = 1 Then BuildMenuScrollDown()
+		If $iMove = -2 Then
+			BuildMenuScrollUp()
+			BuildMenuScrollUp()
+		EndIf
+		Local $aPage = BuildMenuReadPage($sIconDir, $iNameX, $iNameDy, $sType)
+		For $i = 0 To UBound($aPage) - 1
+			If $aPage[$i][3] = $sName Then
+				Local $aRet[3] = [$aPage[$i][1], $aPage[$i][2], BuildMenuRowTime($aPage[$i][2])]
+				Return $aRet
+			EndIf
+		Next
+	Next
+	SetLog("BuildMenu: " & $sName & " not found again on page " & $iPage, $COLOR_WARNING)
+	Return 0
+EndFunc   ;==>BuildMenuGoToItem
+
+; ============================================== Builder Base ==============================================
+
+; Builder Base: a click on a Build menu row opens the "Upgrade to level X?" window directly.
+; Building window: green button with cost at (433,540). Star Laboratory window: green button at (718,577)
+; (left of it is the blue book/potion button, never click there). Red cost on the button = not enough resource.
+; Return True when upgrade started (or window found in test mode)
+Func BBConfirmUpgradeWindow($sName, $bTest = False)
+	Local $iBtnX = 0, $iBtnY = 0
+	For $i = 1 To 6 ; wait for the window
+		_CaptureRegion()
+		If BBIsGreen(_GetPixelColor(433, 565, False)) Then
+			$iBtnX = 433
+			$iBtnY = 540
+			ExitLoop
+		ElseIf BBIsGreen(_GetPixelColor(718, 600, False)) Then
+			$iBtnX = 718
+			$iBtnY = 577
+			ExitLoop
+		EndIf
+		If _Sleep(500) Then Return False
+	Next
+	If $iBtnX = 0 Then
+		SetLog($sName & ": upgrade window not found", $COLOR_ERROR)
+		If $g_bDebugImageSave Then SaveDebugImage("BBUpgradeWindow")
+		Return False
+	EndIf
+	; red cost text on the button = not enough resource
+	Local $iRed = 0, $iPix
+	For $x = $iBtnX - 80 To $iBtnX + 40 Step 4
+		For $y = $iBtnY - 8 To $iBtnY + 8 Step 4
+			$iPix = Dec(_GetPixelColor($x, $y, False))
+			If BitAND(BitShift($iPix, 16), 0xFF) > 230 And BitAND(BitShift($iPix, 8), 0xFF) < 160 And BitAND($iPix, 0xFF) < 160 Then $iRed += 1
+		Next
+	Next
+	If $iRed > 8 Then
+		SetLog($sName & ": not enough resource (red cost on button)", $COLOR_INFO)
+		ClickAway("Left")
+		Return False
+	EndIf
+	If $bTest Then
+		SetLog("[test] " & $sName & " upgrade window OK, button at " & $iBtnX & "," & $iBtnY & ", not confirmed", $COLOR_DEBUG)
+		ClickAway("Left")
+		Return True
+	EndIf
+	Click($iBtnX, $iBtnY, 1, 0, "Upgrade " & $sName)
+	If _Sleep(1000) Then Return False
+	If isGemOpen(True) Then
+		SetLog($sName & ": upgrade failed, gem window popped up", $COLOR_ERROR)
+		ClickAway("Left")
+		Return False
+	EndIf
+	SetLog($sName & " upgrade started", $COLOR_SUCCESS)
+	AutoUpgradeLog(False, "BB " & $sName, "", 0)
+	Return True
+EndFunc   ;==>BBConfirmUpgradeWindow
+
+Func BBIsGreen($sColor)
+	Local $iPix = Dec($sColor)
+	Local $r = BitAND(BitShift($iPix, 16), 0xFF), $g = BitAND(BitShift($iPix, 8), 0xFF), $b = BitAND($iPix, 0xFF)
+	Return $g > 170 And $r < 190 And $b < 80
+EndFunc   ;==>BBIsGreen
+
+; Builder Base building upgrade from Build menu tab 1.
+; Takes the first row from the top that can be upgraded (resource enough, not ignored in GUI): no full list read.
+Func BBUpgradeBuildMenu($bTest = False)
+	If Not $g_bAutoUpgradeBBEnabled Or Not $g_bRunState Then Return False
+	Local $iUpgraded = 0, $aSkip[0]
+	For $iTry = 1 To 6 ; never loop forever
+		If Not $g_bRunState Then ExitLoop
+		CloseBuildMenu() ; list back on top for every try
+		If Not OpenBuildMenu(1, True) Then ExitLoop
+		BuildMenuReadLoot($iTry = 1, True)
+		If $g_iFreeBuilderCountBB < 1 And Not $bTest Then
+			If $iUpgraded = 0 Then SetLog("No free Master Builder", $COLOR_INFO)
+			ExitLoop
+		EndIf
+		Local $aRow = BBFindFirstUpgrade($aSkip)
+		If Not IsArray($aRow) Then
+			If $iUpgraded = 0 Then SetLog("No BB upgrade available (ignored / not enough resource)", $COLOR_INFO)
+			ExitLoop
+		EndIf
+		_ArrayAdd($aSkip, $aRow[0]) ; same name is not tried again in this run (e.g. all "Wall" rows)
+		SetLog("BB upgrade: " & $aRow[0] & ", cost " & _NumberFormat($aRow[2]) & " " & $aRow[1], $COLOR_ACTION)
+		Click($aRow[3], $aRow[4])
+		If _Sleep(1000) Then Return False
+		Local $bOk = False
+		If $aRow[0] = "Wall" Then
+			$bOk = BBUpgradeWallSelected($aRow[1], $bTest, $aRow[2]) ; wall row selects a wall on the village
+		Else
+			$bOk = BBConfirmUpgradeWindow($aRow[0], $bTest) ; other rows open the upgrade window
+		EndIf
+		If $bOk Then $iUpgraded += 1
+		If $bTest Then ExitLoop
+	Next
+	ClickAway("Left")
+	CloseBuildMenu()
+	Return $iUpgraded > 0
+EndFunc   ;==>BBUpgradeBuildMenu
+
+; scan the BB list from the top, return [name, resource, cost, x, y] of the first row to upgrade, or 0.
+; Only page 1 (affordable rows are on top, most expensive first, red rows skipped);
+; page 2 only when page 1 has no affordable row.
+; Wall (not ignored) is only taken when 1 Master Builder is left or nothing else can be upgraded
+; (wall upgrade is instant: the builder stays free for a building on the next try)
+Func BBFindFirstUpgrade(ByRef $aSkip)
+	Local $aWall = 0, $aOther = 0
+	For $iPage = 1 To 2
+		If Not $g_bRunState Then Return 0
+		If $iPage > 1 Then BuildMenuScrollDown()
+		Local $aPage = BuildMenuReadPage("", 562, -18, "bb")
+		Local $bAfford = (BitAND(@extended, 2) = 2)
+		BuildMenuLogList("BB Upgrade List (page " & $iPage & ")", $aPage)
+		For $i = 0 To UBound($aPage) - 1
+			If Not $aPage[$i][7] Then ContinueLoop
+			If _ArraySearch($aSkip, $aPage[$i][3]) >= 0 Then ContinueLoop
+			If $aPage[$i][3] = "Builder Hall" And $g_bChkAutoUpgradeBBIgnoreHall Then ContinueLoop
+			If $aPage[$i][3] = "Wall" And $g_bChkAutoUpgradeBBIgnoreWall Then ContinueLoop
+			Local $iLoot = $aPage[$i][0] = "Elix" ? $g_aiCurrentLootBB[$eLootElixirBB] : $g_aiCurrentLootBB[$eLootGoldBB]
+			If Number($iLoot) < $aPage[$i][5] Then ContinueLoop
+			Local $aRet[5] = [$aPage[$i][3], $aPage[$i][0], $aPage[$i][5], $aPage[$i][1], $aPage[$i][2]]
+			If $aPage[$i][3] = "Wall" Then
+				If Not IsArray($aWall) Then $aWall = $aRet
+			ElseIf Not IsArray($aOther) Then
+				$aOther = $aRet
+			EndIf
+		Next
+		If IsArray($aWall) And $g_iFreeBuilderCountBB <= 1 Then
+			SetDebugLog("BB list: 1 Master Builder left, Wall first")
+			Return $aWall
+		EndIf
+		If IsArray($aOther) Then Return $aOther
+		If $bAfford Then ExitLoop ; affordable rows on this page are all ignored / skipped (or Wall): no scroll
+		SetDebugLog("BB list: no affordable row on page " & $iPage)
+	Next
+	If IsArray($aWall) Then SetDebugLog("BB list: nothing else to upgrade, Wall")
+	Return $aWall
+EndFunc   ;==>BBFindFirstUpgrade
+
+; a Wall row of BB Build menu selects one wall on the village and shows buttons at the bottom:
+; Upgrade with Gold (cost + gold icon ~185,570) and Upgrade with Elixir (cost + elixir icon ~278,570)
+Func BBUpgradeWallSelected($sResource, $bTest = False, $iWallCost = 0)
+	Local $iIconX = 0
+	For $i = 1 To 6
+		_CaptureRegion()
+		$iIconX = BBWallButtonIconX($sResource)
+		If $iIconX > 0 Then ExitLoop
+		If _Sleep(500) Then Return False
+	Next
+	If $iIconX = 0 Then
+		SetLog("Wall: upgrade button with " & $sResource & " not found", $COLOR_ERROR)
+		If $g_bDebugImageSave Then SaveDebugImage("BBWallButtons")
+		Return False
+	EndIf
+	Local $iBtnX = $iIconX - 30 ; icon is at the right end of the cost text, button center is ~30 px left of it
+	If BBWallCostRed($iBtnX) Then ; red cost on the button = not enough resource
+		SetLog("Wall: not enough " & $sResource & " (red cost)", $COLOR_INFO)
+		Return False
+	EndIf
+	If $bTest Then
+		SetLog("[test] Wall upgrade button with " & $sResource & " found, not clicked", $COLOR_DEBUG)
+		Return True
+	EndIf
+	; more walls of the same level with Upgrade More (+10 / +1), count from the resource (exact cost, max 50 walls)
+	Local $iLoot = Number($sResource = "Elix" ? $g_aiCurrentLootBB[$eLootElixirBB] : $g_aiCurrentLootBB[$eLootGoldBB])
+	Local $iCount = $iWallCost > 0 ? Floor($iLoot / $iWallCost) : 1
+	If $iCount > 50 Then $iCount = 50
+	If $iCount >= 2 Then
+		Local $iMore = BBWallUpgradeMore($sResource, $iCount)
+		If $iMore = 1 Then Return True
+		If $iMore = -1 Then Return False ; Upgrade More was used but upgrade failed: wall unselected, nothing spent
+		; 0 = no Upgrade More button: upgrade the selected wall only
+	EndIf
+	Click($iBtnX, 605, 1, 0, "Wall upgrade " & $sResource)
+	If _Sleep(1000) Then Return False
+	; possible confirm window (same green button as other BB upgrade windows)
+	_CaptureRegion()
+	If BBIsGreen(_GetPixelColor(433, 565, False)) Or BBIsGreen(_GetPixelColor(718, 600, False)) Then Return BBConfirmUpgradeWindow("Wall", False)
+	If isGemOpen(True) Then
+		SetLog("Wall upgrade failed, gem window popped up", $COLOR_ERROR)
+		ClickAway("Left")
+		Return False
+	EndIf
+	SetLog("Wall upgrade started (" & $sResource & ")", $COLOR_SUCCESS)
+	Return True
+EndFunc   ;==>BBUpgradeWallSelected
+
+; red cost text on a wall upgrade button (bottom row, button center $iBtnX), uses the last _CaptureRegion frame
+Func BBWallCostRed($iBtnX)
+	Local $iRed = 0, $iPix
+	For $x = $iBtnX - 30 To $iBtnX + 22 Step 3
+		For $y = 566 To 576 Step 2
+			$iPix = Dec(_GetPixelColor($x, $y, False))
+			If BitAND(BitShift($iPix, 16), 0xFF) > 230 And BitAND(BitShift($iPix, 8), 0xFF) < 160 And BitAND($iPix, 0xFF) < 160 Then $iRed += 1
+		Next
+	Next
+	Return $iRed > 5
+EndFunc   ;==>BBWallCostRed
+
+; pixels of a top row wall button (column center $iX: 155 / 248 / 340, y 478..545), uses the last _CaptureRegion frame
+; $sKind "green" = green text/arrows ("+10", "+1", Select Row arrows), "beige" = button background
+Func BBWallTopButtonPixels($iX, $sKind)
+	Local $iHits = 0, $iPix, $r, $g, $b
+	For $x = $iX - 30 To $iX + 30 Step 2
+		For $y = 478 To 545 Step 2
+			$iPix = Dec(_GetPixelColor($x, $y, False))
+			$r = BitAND(BitShift($iPix, 16), 0xFF)
+			$g = BitAND(BitShift($iPix, 8), 0xFF)
+			$b = BitAND($iPix, 0xFF)
+			If $sKind = "green" Then
+				If $g > 170 And $r < 170 And $b < 110 Then $iHits += 1
+			Else
+				If $r > 200 And $g > 180 And $b > 130 And $b < 200 Then $iHits += 1
+			EndIf
+		Next
+	Next
+	Return $iHits
+EndFunc   ;==>BBWallTopButtonPixels
+
+; Upgrade More on a selected BB wall (same layout as home village, tested on BB screenshots lv5 / lv6):
+; top row before: Info | Select Row | Upgrade More (no green), after Upgrade More: Remove Wall | +10 (green) | +1 (green)
+; bottom row keeps the Gold / Elixir upgrade buttons, their cost becomes the total cost.
+; Return 1 = upgraded, 0 = no Upgrade More button (nothing clicked), -1 = failed after Upgrade More (wall unselected)
+Func BBWallUpgradeMore($sResource, $iCount)
+	Static $bDisabled = False ; +1 or resource button not found after Upgrade More once: single wall upgrade until bot restart
+	If $bDisabled Then Return 0
+	_CaptureRegion()
+	If BBWallTopButtonPixels(340, "beige") < 300 Or BBWallTopButtonPixels(340, "green") > 5 Then
+		SetDebugLog("Wall: no Upgrade More button")
+		Return 0
+	EndIf
+	Click(340, 510, 1, 50, "Wall Upgrade More")
+	If _Sleep(700) Then Return -1
+	_CaptureRegion()
+	If BBWallTopButtonPixels(340, "green") < 15 Then
+		SetLog("Wall: +1 button not found after Upgrade More, Upgrade More disabled until restart", $COLOR_WARNING)
+		If $g_bDebugImageSave Then SaveDebugImage("BBWallUpgradeMore")
+		$bDisabled = True
+		ClickAway("Left")
+		Return -1
+	EndIf
+	Local $iWalls = 1
+	If $iCount >= 11 And BBWallTopButtonPixels(248, "green") >= 40 Then
+		While $iWalls + 10 <= $iCount
+			Click(248, 510, 1, 50, "Wall +10")
+			If _Sleep(400) Then Return -1
+			$iWalls += 10
+		WEnd
+	EndIf
+	While $iWalls < $iCount
+		Click(340, 510, 1, 50, "Wall +1")
+		If _Sleep(300) Then Return -1
+		$iWalls += 1
+	WEnd
+	If _Sleep(300) Then Return -1
+	; total cost text is longer now: resource icon is searched again on the cost line
+	_CaptureRegion()
+	Local $iIconX = BBWallButtonIconX($sResource)
+	If $iIconX = 0 Then
+		SetLog("Wall: " & $sResource & " button not found after Upgrade More, Upgrade More disabled until restart", $COLOR_WARNING)
+		If $g_bDebugImageSave Then SaveDebugImage("BBWallUpgradeMore")
+		$bDisabled = True
+		ClickAway("Left")
+		Return -1
+	EndIf
+	; total cost red (cost OCR off): Remove Wall (-1) until the cost is not red
+	While BBWallCostRed($iIconX - 30) And $iWalls > 1
+		Click(155, 510, 1, 50, "Wall -1")
+		If _Sleep(300) Then Return -1
+		$iWalls -= 1
+		_CaptureRegion()
+		$iIconX = BBWallButtonIconX($sResource)
+		If $iIconX = 0 Then ExitLoop
+	WEnd
+	If $iIconX = 0 Or BBWallCostRed($iIconX - 30) Then
+		SetLog("Wall: not enough " & $sResource & " (red cost), skip", $COLOR_INFO)
+		ClickAway("Left")
+		Return -1
+	EndIf
+	Click($iIconX - 30, 605, 1, 0, "Wall upgrade x" & $iWalls & " " & $sResource)
+	If _Sleep(1000) Then Return -1
+	_CaptureRegion()
+	If BBIsGreen(_GetPixelColor(433, 565, False)) Or BBIsGreen(_GetPixelColor(718, 600, False)) Then
+		If Not BBConfirmUpgradeWindow("Wall x" & $iWalls, False) Then Return -1
+	ElseIf IsOKCancelPage() Then
+		ClickP($aConfirmSurrender) ; confirm upgrade OK button
+		If _Sleep(500) Then Return -1
+	EndIf
+	If isGemOpen(True) Then
+		SetLog("Wall upgrade failed, gem window popped up", $COLOR_ERROR)
+		ClickAway("Left")
+		Return -1
+	EndIf
+	SetLog("Wall upgrade started (" & $sResource & " x" & $iWalls & ")", $COLOR_SUCCESS)
+	Return 1
+EndFunc   ;==>BBWallUpgradeMore
+
+; resource icon on the cost line of the wall upgrade buttons (bottom left), uses the last _CaptureRegion frame.
+; The icon moves with the cost text length and the button layout, so the whole line is scanned (x 110..305, y 566..574)
+; Return icon x, 0 = not found
+Func BBWallButtonIconX($sResource)
+	Local $iPix, $r, $g, $b, $iHits
+	For $x = 110 To 305 Step 2
+		$iHits = 0
+		For $y = 566 To 574 Step 2
+			$iPix = Dec(_GetPixelColor($x, $y, False))
+			$r = BitAND(BitShift($iPix, 16), 0xFF)
+			$g = BitAND(BitShift($iPix, 8), 0xFF)
+			$b = BitAND($iPix, 0xFF)
+			If $sResource = "Elix" Then
+				If $r > 130 And $b > 170 And $g < 120 Then $iHits += 1
+			Else
+				If $r > 200 And $g > 150 And $b < 90 Then $iHits += 1
+			EndIf
+		Next
+		If $iHits >= 3 Then Return $x
+	Next
+	Return 0
+EndFunc   ;==>BBWallButtonIconX
+
+; Star Laboratory upgrade from Build menu tab 2
+Func StarLabUpgradeBuildMenu($bTest = False)
+	If Not $g_bAutoStarLabUpgradeEnable Or Not $g_bRunState Then Return False
+	; counters already read by the BB building upgrade a moment ago: busy Star Laboratory needs no menu
+	If Not $bTest And BuildMenuCountersFresh(True) And $g_aiBuildMenuCounter[2][0] = 0 Then
+		SetLog("Star Laboratory is busy", $COLOR_INFO)
+		CloseBuildMenu()
+		Return False
+	EndIf
+	If Not OpenBuildMenu(2, True) Then Return False
+	BuildMenuReadLoot(True, True)
+	If $g_aiBuildMenuCounter[2][0] = 0 And Not $bTest Then
+		SetLog("Star Laboratory is busy", $COLOR_INFO)
+		CloseBuildMenu()
+		Return False
+	EndIf
+	Local $aList = BuildMenuCollect("", 562, -18, "slab")
+	BuildMenuLogList("Star Laboratory Upgrade List", $aList)
+	Local $iElix = Number($g_aiCurrentLootBB[$eLootElixirBB]), $iPick = -1
+	Local $aWanted[0]
+	If $g_bSLabUpgradeOrderEnable Then
+		For $z = 0 To UBound($g_aCmbSLabUpgradeOrder) - 1
+			If $g_aCmbSLabUpgradeOrder[$z] >= 0 Then _ArrayAdd($aWanted, $g_asStarLabGameNames[$g_aCmbSLabUpgradeOrder[$z] + 1])
+		Next
+	ElseIf $g_iCmbStarLaboratory > 0 Then
+		_ArrayAdd($aWanted, $g_asStarLabGameNames[$g_iCmbStarLaboratory])
+	EndIf
+	For $sWant In $aWanted
+		For $i = 0 To UBound($aList) - 1
+			If $aList[$i][7] And $aList[$i][3] = $sWant And $iElix >= $aList[$i][5] Then
+				$iPick = $i
+				ExitLoop 2
+			EndIf
+		Next
+	Next
+	If $iPick < 0 Then ; selected troop not available: any affordable (rows with red cost are already skipped)
+		For $i = 0 To UBound($aList) - 1
+			If $aList[$i][7] And $iElix >= $aList[$i][5] Then
+				$iPick = $i
+				ExitLoop
+			EndIf
+		Next
+	EndIf
+	If $iPick < 0 Then
+		SetLog("No Star Laboratory upgrade available", $COLOR_INFO)
+		CloseBuildMenu()
+		Return False
+	EndIf
+	Local $aCoord = BuildMenuGoToItem(2, $aList[$iPick][3], $aList[$iPick][8], "", 562, -18, "slab")
+	If Not IsArray($aCoord) Then
+		CloseBuildMenu()
+		Return False
+	EndIf
+	SetLog("Star Lab upgrade: " & $aList[$iPick][3] & ", cost " & _NumberFormat($aList[$iPick][5]), $COLOR_ACTION)
+	ClickP($aCoord) ; opens the upgrade window
+	If _Sleep(1000) Then Return False
+	Local $bRet = BBConfirmUpgradeWindow($aList[$iPick][3], $bTest)
+	CloseBuildMenu()
+	Return $bRet
+EndFunc   ;==>StarLabUpgradeBuildMenu

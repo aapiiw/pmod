@@ -1,0 +1,643 @@
+; #FUNCTION# ====================================================================================================================
+; Name ..........: UpgradeWall
+; Description ...: This file checks if enough resources to upgrade walls, and upgrades them
+; Syntax ........: UpgradeWall()
+; Parameters ....:
+; Return values .: None
+; Author ........: ProMac (2015), HungLe (2015)
+; Modified ......: Sardo (08-2015), KnowJack (08-2015), MonkeyHunter(06-2016) , trlopes (07-2016)
+; Remarks .......: This file is part of MyBot, previously known as ClashGameBot. Copyright 2015-2021
+;                  MyBot is distributed under the terms of the GNU GPL
+; Related .......: checkwall.au3
+; Link ..........: https://github.com/MyBotRun/MyBot/wiki
+; Example .......: No
+; ===============================================================================================================================
+
+Func UpgradeWall($bTest = False)
+
+	If Not $g_bAutoUpgradeWallsEnable Then Return
+	If Not $g_bRunState Then Return
+	If _Sleep(50) Then Return
+	Local $GoUpgrade = False, $bWallUpgraded = True
+	
+	SetLog("Checking Upgrade Walls", $COLOR_INFO)
+	checkMainScreen(False, $g_bStayOnBuilderBase, "UpgradeWall")
+	VillageReport(True, True) ;update village resource capacity
+	If Not WallUpgradeCheckBuilder() And Not $bTest Then
+		SetLog("No builder available, Upgrade Walls skipped", $COLOR_DEBUG2)
+		Return
+	EndIf
+	If _Sleep(50) Then Return
+	If Not $g_bRunState Then Return
+	
+	If $g_iFreeBuilderCount > 0 Then $GoUpgrade = True
+	If $g_bChkOnly1Builder And $g_iFreeBuilderCount > 1 And Not $bTest Then
+		SetLog("Have more than 1 builder, Upgrade Walls skipped", $COLOR_DEBUG2)
+		Return
+	EndIf
+	If _Sleep(50) Then Return
+	If Not $g_bRunState Then Return
+
+	If $GoUpgrade Then 
+		Local $iLoop = 1
+		If $g_iUpgradeWallLootType = 2 Then $iLoop = 2
+		For $i = 1 To $iLoop
+			SetDebugLog("$iLoop = " & $i & "/" & $iLoop)
+			$bWallUpgraded = -1
+			If $g_bChkWallBuildMenu Then $bWallUpgraded = UpgradeWallBuildMenu()
+			If $bWallUpgraded = -1 Then $bWallUpgraded = DoUpgradeWall() ; old way: search wall image on village
+			If Not $bWallUpgraded Then ExitLoop
+			If _Sleep(1000) Then Return
+		Next
+	EndIf
+	
+	VillageReport(True, True)
+	CheckMainScreen(False, $g_bStayOnBuilderBase, "UpgradeWall")
+	Return $bWallUpgraded
+EndFunc   ;==>UpgradeWall
+
+; select a wall from Build menu tab 1 ("Wall x N", any level) then upgrade it (with Upgrade More)
+; Return True/False = upgrade result, -1 = no wall row found (use old way)
+Func UpgradeWallBuildMenu()
+	If Not OpenBuildMenu(1) Then Return -1
+	Local $aStop[1] = ["Wall"] ; stop scrolling when the wall row is seen
+	Local $aList = BuildMenuCollect($g_sImgResourceIcon, $g_iXFindUpgrade, -22, "building", $aStop)
+	BuildMenuLogList("Build menu list (wall search)", $aList)
+	Local $iRow = -1
+	For $i = 0 To UBound($aList) - 1
+		If $aList[$i][7] And ($aList[$i][3] = "Wall" Or $aList[$i][3] = "Walls") Then
+			$iRow = $i
+			ExitLoop
+		EndIf
+	Next
+	If $iRow < 0 Then
+		SetLog("No wall upgrade in Build menu, search wall on village", $COLOR_DEBUG1)
+		CloseBuildMenu()
+		Return -1
+	EndIf
+	SetLog("Wall from Build menu: x" & $aList[$iRow][4] & ", cost " & _NumberFormat($aList[$iRow][5]) & " " & $aList[$iRow][0], $COLOR_INFO)
+	; resource check before the wall is selected (camera move + wall window cost ~10 s): same rule as DoUpgradeWall,
+	; loot minus wall Min Save, resource type of the GUI (0 Gold, 1 Elixir, 2 Elixir then Gold).
+	; Auto Adjust changes the Min Save values inside DoUpgradeWall, so the check is left to it then.
+	If Not $g_bAutoAdjustSaveWall Then
+		Local $iCost = Number($aList[$iRow][5])
+		Local $iCanGold = Number($g_aiCurrentLoot[$eLootGold]) - $g_iUpgradeWallMinGold
+		Local $iCanElix = Number($g_aiCurrentLoot[$eLootElixir]) - $g_iUpgradeWallMinElixir
+		Local $bGoldOk = ($g_iUpgradeWallLootType <> 1 And $iCanGold >= $iCost)
+		Local $bElixOk = ($g_iUpgradeWallLootType <> 0 And $iCanElix >= $iCost)
+		If $iCost > 0 And Not $bGoldOk And Not $bElixOk Then
+			SetLog("Wall cost " & _NumberFormat($iCost) & ", can use Gold " & _NumberFormat($iCanGold) & " / Elixir " & _NumberFormat($iCanElix) & _
+					" (after Min Save): not enough, skip", $COLOR_INFO)
+			CloseBuildMenu()
+			Return False
+		EndIf
+	EndIf
+	Local $aCoord = BuildMenuGoToItem(1, $aList[$iRow][3], $aList[$iRow][8], $g_sImgResourceIcon, $g_iXFindUpgrade, -22, "building")
+	If Not IsArray($aCoord) Then
+		CloseBuildMenu()
+		Return -1
+	EndIf
+	ClickP($aCoord) ; camera moves to one wall and selects it
+	If _Sleep(1500) Then Return False
+	Return DoUpgradeWall($aList[$iRow][5])
+EndFunc   ;==>UpgradeWallBuildMenu
+
+Func WallUpgradeCheckBuilder($bTest = False)
+	Local $bRet = False
+	getBuilderCount(True)
+	If $bTest Then
+		$bRet = True
+	Else
+		If $g_iFreeBuilderCount < 1 Then
+			$bRet = False
+		Else
+			If _ColorCheck(_GetPixelColor(785, 540, True), Hex(0xFFBC70, 6), 20, Default, "AutoUpgradeCheckBuilder") Then
+				SetLog("WallUpgradeCheckBuilder, Free Builder = 1, Goblin Builder!, Return False", $COLOR_DEBUG1)
+				$bRet = False
+			Else
+				$bRet = True
+			EndIf
+		EndIf
+	EndIf
+	Return $bRet
+EndFunc
+
+
+; $iSelectedWallCost > 0: a wall is already selected (from Build menu), skip wall search and use this cost per wall
+Func DoUpgradeWall($iSelectedWallCost = 0)
+	If Not $g_bRunState Then Return
+	Local $bCanUseElix = False, $bCanUseGold = False
+	Local $aBtnCoord[4] = [150, 500, 750, 600]
+	Local $bRet = True
+	Local $iGoldAdjust = 0, $iElixAdjust = 0
+
+	If $g_bAutoAdjustSaveWall Then
+		SetLog("Auto Adjust Save resource for Wall Enabled", $COLOR_DEBUG1)
+		If Not IsTHLevelAchieved() And $g_iTownHallLevel < 7 Then ;save 1 storage capacity
+			$iGoldAdjust = ($g_aiMaxStorage[$g_iTownHallLevel] * 4) - $g_aiMaxStorage[$g_iTownHallLevel]
+			SetLog("Your TH Level : " & $g_iTownHallLevel, $COLOR_INFO)
+			SetLog("Adjusting MinGoldSave to : " & _NumberFormat($iGoldAdjust), $COLOR_SUCCESS)
+			SetLog("Adjusting MinElixSave to : " & _NumberFormat($iGoldAdjust), $COLOR_SUCCESS)
+			$g_iUpgradeWallMinGold = $iGoldAdjust
+			$g_iUpgradeWallMinElixir = $iGoldAdjust
+		ElseIf Not IsTHLevelAchieved() And $g_iTownHallLevel >= 7 Then ;save 1 storage cap for gold, save at cost of hero hall + 1 storage cap for elix
+			$iGoldAdjust = ($g_aiMaxStorage[$g_iTownHallLevel] * 4) - $g_aiMaxStorage[$g_iTownHallLevel]
+			$iElixAdjust = $g_aiHeroHallCost[$g_iTownHallLevel - 7] + $g_aiMaxStorage[$g_iTownHallLevel]
+			SetLog("Your TH Level : " & $g_iTownHallLevel, $COLOR_INFO)
+			SetLog("Adjusting MinGoldSave to : " & _NumberFormat($iGoldAdjust), $COLOR_SUCCESS)
+			SetLog("Adjusting MinElixirSave to : " & _NumberFormat($iElixAdjust), $COLOR_SUCCESS)
+			$g_iUpgradeWallMinGold = $iGoldAdjust
+			$g_iUpgradeWallMinElixir = $iElixAdjust
+		ElseIf IsTHLevelAchieved() And $g_iTownHallLevel > 8 Then ;save 1 storage cap - 0.2 of 1 storage
+			$iGoldAdjust = ($g_aiMaxStorage[$g_iTownHallLevel] * 4) - ($g_aiMaxStorage[$g_iTownHallLevel] * 0.2)
+			$iElixAdjust = ($g_aiMaxStorage[$g_iTownHallLevel] * 4) - ($g_aiMaxStorage[$g_iTownHallLevel] * 0.2)
+			SetLog("TH Level Achieved", $COLOR_INFO)
+			SetLog("Your TH Level : " & $g_iTownHallLevel, $COLOR_INFO)
+			SetLog("Adjusting MinGoldSave to : " & _NumberFormat($iGoldAdjust), $COLOR_SUCCESS)
+			SetLog("Adjusting MinElixirSave to : " & _NumberFormat($iElixAdjust), $COLOR_SUCCESS)
+			$g_iUpgradeWallMinGold = $iGoldAdjust
+			$g_iUpgradeWallMinElixir = $iElixAdjust
+		EndIf
+		ApplyConfig()
+		SaveConfig()
+	EndIf
+	
+	VillageReport(True, True)
+	Local $iCanUseGold = $g_aiCurrentLoot[$eLootGold] - $g_iUpgradeWallMinGold
+	Local $iCanUseElix = $g_aiCurrentLoot[$eLootElixir] - $g_iUpgradeWallMinElixir
+
+	If $iCanUseGold < 1 Then
+		SetLog("Skip using Gold, not enough resource", $COLOR_INFO)
+	Else
+		SetDebugLog("Can use Gold upto : " & _NumberFormat($iCanUseGold), $COLOR_INFO)
+		$bCanUseGold = True
+	EndIf
+
+	If $iCanUseElix < 1 Then
+		SetLog("Skip using Elix, not enough resource", $COLOR_INFO)
+	Else
+		SetDebugLog("Can use Elix upto : " & _NumberFormat($iCanUseElix), $COLOR_INFO)
+		$bCanUseElix = True
+	EndIf
+
+	If Not $bCanUseGold And Not $bCanUseElix Then
+		SetLog("Both Gold and Elix are low, or not enough to save after upgrade", $COLOR_INFO)
+		Return False
+	EndIf
+
+	Local $aDel[1] = [0], $x, $y, $bWallFound = False, $aWallLevel, $aButton
+	Local $iClickTimesGold = 0, $iClickTimesElix = 0, $iPlus10Gold = 0, $iPlus10Elix = 0, $iPlus1Gold = 0, $iPlus1Elix = 0
+	Local $aGoldButton[2], $aElixButton[2], $aPlusButton[2]
+
+	If $iSelectedWallCost > 0 Then
+		Local $aSelectedWall[3] = [0, 0, "?"]
+		$aWallLevel = $aSelectedWall
+		$bWallFound = True
+	Else
+		$bWallFound = SearchWall($aWallLevel)
+	EndIf
+	If Not $bWallFound Then Return
+	If _Sleep(50) Then Return
+
+	If $bWallFound Then
+		Local $bPlusSignFound = False
+		$aButton = QuickMIS("CNX", $g_sImgCheckWallDirUpgradeButton, $aBtnCoord[0], $aBtnCoord[1], $aBtnCoord[2], $aBtnCoord[3])
+		If IsArray($aButton) And UBound($aButton) > 0 Then
+			For $i = 0 To UBound($aButton) - 1
+				Select
+					Case $aButton[$i][0] = "PlusSign"
+						$aPlusButton[0] = $aButton[$i][1]
+						$aPlusButton[1] = $aButton[$i][2]
+						$bPlusSignFound = True
+						SetDebugLog("Found Plus Button on " & _ArrayToString($aPlusButton), $COLOR_DEBUG)
+					Case $aButton[$i][0] = "Gold"
+						$aGoldButton[0] = $aButton[$i][1] - 25
+						$aGoldButton[1] = $aButton[$i][2] + 25
+						SetDebugLog("Found Gold Button on " & _ArrayToString($aGoldButton), $COLOR_DEBUG)
+					Case $aButton[$i][0] = "Elix"
+						$aElixButton[0] = $aButton[$i][1] - 25
+						$aElixButton[1] = $aButton[$i][2] + 25
+						SetDebugLog("Found Elix Button on " & _ArrayToString($aElixButton), $COLOR_DEBUG)
+				EndSelect
+			Next
+			$bCanUseElix = False
+			For $i = 0 To UBound($aButton) - 1
+				If $aButton[$i][0] = "Elix" Then $bCanUseElix = True
+			Next
+		EndIf
+
+		If _Sleep(50) Then Return
+		Local $iWallCost = $iSelectedWallCost > 0 ? $iSelectedWallCost : $g_aiWallCost[$aWallLevel[2]]
+		Local $iWallCanUpgradeGold = ($bCanUseGold ? Floor($iCanUseGold / $iWallCost) : 0)
+		Local $iWallCanUpgradeElix = ($bCanUseElix ? Floor($iCanUseElix/ $iWallCost) : 0)
+		SetDebugLog("iWallCanUpgradeGold: " & $iWallCanUpgradeGold & ", iWallCanUpgradeElix : " & $iWallCanUpgradeElix)
+		If $iWallCanUpgradeGold < 1 Then $bCanUseGold = False
+		If $iWallCanUpgradeElix < 1 Then $bCanUseElix = False
+		SetLog("CanUseGold = " & String($bCanUseGold), $COLOR_DEBUG)
+		SetLog("CanUseElix = " & String($bCanUseElix), $COLOR_DEBUG)
+		If $bCanUseGold Then SetLog("Can upgrade = " & $iWallCanUpgradeGold & " wall Level " & $aWallLevel[2] & " with Gold", $COLOR_INFO)
+		If $bCanUseElix Then SetLog("Can upgrade = " & $iWallCanUpgradeElix & " wall Level " & $aWallLevel[2] & " with Elix", $COLOR_INFO)
+		
+		If Not $bCanUseGold And $g_iUpgradeWallLootType = 0 Then 
+			SetLog("Cannot use Gold for upgrade wall", $COLOR_DEBUG2)
+			ClickAway()
+			Return False
+		ElseIf Not $bCanUseElix And $g_iUpgradeWallLootType = 1 Then 
+			SetLog("Cannot use Elix for upgrade wall", $COLOR_DEBUG2)
+			ClickAway()
+			Return False
+		ElseIf $iWallCanUpgradeGold < 1 And $iWallCanUpgradeElix < 1 Then
+			SetLog("Cannot upgrade wall, not enough resource", $COLOR_DEBUG2)
+			ClickAway()
+			Return False
+		EndIf
+		
+		If $bCanUseGold Or $bCanUseElix Then
+			If ($iWallCanUpgradeGold > 1 Or $iWallCanUpgradeElix > 1) And $bPlusSignFound Then
+				SetLog("Trying Upgrade More Wall", $COLOR_ACTION)
+				ClickP($aPlusButton)
+				If _Sleep(1000) Then Return
+
+				If $bCanUseGold Then
+					$iClickTimesGold = $iWallCanUpgradeGold / 10 ; can we upgrade 10+ for gold
+					$iPlus10Gold = Floor($iClickTimesGold)
+					$iPlus1Gold = $iWallCanUpgradeGold
+				EndIf
+				If $bCanUseElix Then
+					$iClickTimesElix = $iWallCanUpgradeElix / 10 ; can we upgrade 10+ for elix
+					$iPlus10Elix = Floor($iClickTimesElix)
+					$iPlus1Elix = $iWallCanUpgradeElix
+				EndIf
+
+				SetDebugLog("Plus10Gold : " & $iPlus10Gold & ", Plus10Elix : " & $iPlus10Elix, $COLOR_DEBUG)
+				SetDebugLog("Plus1Gold : " & $iPlus1Gold & ", Plus1Elix : " & $iPlus1Elix, $COLOR_DEBUG)
+
+				$aButton = QuickMIS("CNX", $g_sImgCheckWallDirUpgradeButton, $aBtnCoord[0], $aBtnCoord[1], $aBtnCoord[2], $aBtnCoord[3])
+				If IsArray($aButton) And UBound($aButton) > 0 Then
+					For $i = 0 To UBound($aButton) - 1
+						Select
+							Case $aButton[$i][0] = "Gold"
+								$aGoldButton[0] = $aButton[$i][1] - 25
+								$aGoldButton[1] = $aButton[$i][2] + 25
+								SetDebugLog("Found Gold Button on " & _ArrayToString($aGoldButton), $COLOR_DEBUG)
+							Case $aButton[$i][0] = "Elix"
+								$aElixButton[0] = $aButton[$i][1] - 25
+								$aElixButton[1] = $aButton[$i][2] + 25
+								SetDebugLog("Found Elix Button on " & _ArrayToString($aElixButton), $COLOR_DEBUG)
+						EndSelect
+					Next
+				EndIf
+				If _Sleep(50) Then Return
+
+				Local $iCount = 1, $bPlusButtonFound = False, $iCostUpgrade = 0
+				If $iPlus10Gold > 0 Or $iPlus10Elix > 0 Then
+					;UpWallElixir($iWallCost = $g_aiWallCost[$g_iTownHallLevel - 1], $iCountPlus = 1, $UpType = "+10", $aElixButton)
+					
+					SetLog("Looking for +10 Button", $COLOR_DEBUG)
+					Switch $g_iUpgradeWallLootType
+						Case 0 ;Gold
+							If $iWallCanUpgradeGold > 10 Then Return UpWallGold($iWallCost, $iPlus10Gold, "+10", $aGoldButton)
+							
+						Case 1 ;Elixir
+							Return UpWallElixir($iWallCost, $iPlus10Elix, "+10", $aElixButton)
+							
+						Case 2 ;Elixir Then Gold
+							If $bCanUseElix = True And $iPlus10Elix > 0 Then
+								Return UpWallElixir($iWallCost, $iPlus10Elix, "+10", $aElixButton)
+							EndIf
+							If $bCanUseGold = True And $iPlus10Gold > 0 Then
+								Return UpWallGold($iWallCost, $iPlus10Gold, "+10", $aGoldButton)
+							EndIf
+					EndSwitch
+				EndIf
+
+				If _Sleep(50) Then Return
+				If $iPlus1Gold > 1 Or $iPlus1Elix > 1 Then
+					SetLog("Looking for +1 Button", $COLOR_DEBUG)
+					Switch $g_iUpgradeWallLootType
+						Case 0 ;Gold
+							Return UpWallGold($iWallCost, $iPlus1Gold - 1, "+1", $aGoldButton)
+						Case 1 ;Elix
+							Return UpWallElixir($iWallCost, $iPlus1Elix - 1, "+1", $aElixButton)
+						Case 2 ;Elix Then Gold
+							If $bCanUseElix = True And $iPlus1Elix > 1 Then
+								Return UpWallElixir($iWallCost, $iPlus1Elix - 1, "+1", $aElixButton)
+							EndIf
+							If $bCanUseGold = True And $iPlus1Gold > 1 Then
+								Return UpWallGold($iWallCost, $iPlus1Gold - 1, "+1", $aGoldButton)
+							EndIf
+					EndSwitch
+				EndIf
+			Else
+				If Not $g_bRunState Then Return
+				SetLog("Going to Upgrade 1 Wall", $COLOR_DEBUG)
+				Switch $g_iUpgradeWallLootType
+					Case 0 ;Gold
+						SetLog("Upgrading 1 Wall for Gold upgrade", $COLOR_ACTION)
+						ClickP($aGoldButton)
+						PushMsg("UpgradeWithGold")
+						$g_iNbrOfWallsUppedGold += 1
+						$g_iNbrOfWallsUpped += 1
+						$g_iCostGoldWall += $iWallCost
+						SetLog("Cost : " & _NumberFormat($iWallCost), $COLOR_SUCCESS)
+					Case 1
+						SetLog("Upgrading 1 Wall for Elix upgrade", $COLOR_ACTION)
+						ClickP($aElixButton)
+						PushMsg("UpgradeWithElixir")
+						$g_iNbrOfWallsUppedElixir += 1
+						$g_iNbrOfWallsUpped += 1
+						$g_iCostElixirWall += $iWallCost
+						SetLog("Cost : " & _NumberFormat($iWallCost), $COLOR_SUCCESS)
+					Case 2
+						Select
+							Case $bCanUseElix = True And $iWallCanUpgradeElix > 0
+								SetLog("Upgrading 1 Wall for Elix upgrade", $COLOR_ACTION)
+								ClickP($aElixButton)
+								PushMsg("UpgradeWithElixir")
+								$g_iNbrOfWallsUppedElixir += 1
+								$g_iNbrOfWallsUpped += 1
+								$g_iCostElixirWall += $iWallCost
+								SetLog("Cost : " & _NumberFormat($iWallCost), $COLOR_SUCCESS)
+								$bCanUseGold = False
+							Case $bCanUseGold = True And $iWallCanUpgradeGold > 0
+								SetLog("Upgrading 1 Wall for Gold upgrade", $COLOR_ACTION)
+								ClickP($aGoldButton)
+								PushMsg("UpgradeWithGold")
+								$g_iNbrOfWallsUppedGold += 1
+								$g_iNbrOfWallsUpped += 1
+								$g_iCostGoldWall += $iWallCost
+								SetLog("Cost : " & _NumberFormat($iWallCost), $COLOR_SUCCESS)
+						EndSelect
+				EndSwitch
+				If _Sleep(1000) Then Return
+				If IsUpgradeWindowOpen() Then 
+					Click(625, 545, 1, 50, "UpgradeWall")
+					If _Sleep(500) Then Return
+					ClickAway()
+					Return True
+				EndIf
+			EndIf
+		EndIf
+	Else
+		SetLog("Not a wall, looking Next wall", $COLOR_DEBUG)
+		Return False
+		ClickAway()
+	EndIf
+EndFunc
+
+Func UpWallElixir($iWallCost, $iCountPlus, $UpType, $aButton)
+	Local $sDir = "", $bPlusButtonFound = False, $iCount = 1, $iCostUpgrade = 0
+	Local $aBtnCoord = [150, 500, 750, 600], $iPlusWall = 1
+	
+	Switch $UpType 
+		Case "+10"
+			$sDir = $g_sImgCheckWallDirUpgradeButton & "\Plus10"
+			$iPlusWall = 10
+		Case "+1"
+			$sDir = $g_sImgCheckWallDirUpgradeButton & "\Plus1"
+			$aBtnCoord[0] = $aButton[0] - 230
+	EndSwitch
+	
+	SetLog("Try " & $UpType & " for Elix upgrade", $COLOR_ACTION)
+	For $i = 1 To $iCountPlus
+		If QuickMIS("BC1", $sDir, $aBtnCoord[0], $aBtnCoord[1], $aBtnCoord[2], $aBtnCoord[3]) Then
+			Click($g_iQuickMISX, $g_iQuickMISY, 1, 50, "Click " & $UpType)
+			If _Sleep(500) Then Return
+			$iCount += $iPlusWall
+			$bPlusButtonFound = True
+			SetDebugLog("iCount : " & $iCount)
+		Else
+			If $UpType = "+10" Then ;not found +10 button, fallback to +1
+				$sDir = $g_sImgCheckWallDirUpgradeButton & "\Plus1"
+				$aBtnCoord[0] = $aButton[0] - 230
+				$iPlusWall = 1
+				$iCountPlus = 10
+				SetLog("Searching +1 Button instead", $COLOR_DEBUG1)
+				ContinueLoop
+			EndIf
+			SetLog("No " & $UpType & " Button Found", $COLOR_DEBUG)
+			ExitLoop
+		EndIf
+	Next
+	;click Upgrade button
+	If $bPlusButtonFound Then
+		ClickP($aButton)
+		PushMsg("UpgradeWithElixir")
+		$iCostUpgrade = $iCount * $iWallCost
+		$g_iNbrOfWallsUppedElixir += $iCount
+		$g_iNbrOfWallsUpped += $iCount
+		$g_iCostElixirWall += $iCostUpgrade
+		SetLog("Upgraded wall with Elix: " & $iCount, $COLOR_SUCCESS)
+		SetLog("Cost : " & _NumberFormat($iCostUpgrade), $COLOR_SUCCESS)
+		UpdateStats()
+		
+		If _Sleep(1000) Then Return
+		If IsOKCancelPage() Then ClickP($aConfirmSurrender) ;click confirm upgrade OK button
+		Return True
+	EndIf
+EndFunc
+
+Func UpWallGold($iWallCost, $iCountPlus, $UpType, $aButton)
+	Local $sDir = "", $bPlusButtonFound = False, $iCount = 1, $iCostUpgrade = 0
+	Local $aBtnCoord = [150, 500, 750, 600], $iPlusWall = 1
+	
+	Switch $UpType 
+		Case "+10"
+			$sDir = $g_sImgCheckWallDirUpgradeButton & "\Plus10"
+			$iPlusWall = 10
+		Case "+1"
+			$sDir = $g_sImgCheckWallDirUpgradeButton & "\Plus1"
+			$aBtnCoord[0] = $aButton[0] - 140
+	EndSwitch
+	
+	If $UpType = "+10" Then
+		If Not QuickMIS("BC1", $sDir, $aBtnCoord[0], $aBtnCoord[1], $aBtnCoord[2], $aBtnCoord[3]) Then
+			SetLog("No " & $UpType & " Button Found", $COLOR_DEBUG)
+			SetLog("Change to search +1 instead", $COLOR_DEBUG1)
+			$iPlusWall = 1
+			$sDir = $g_sImgCheckWallDirUpgradeButton & "\Plus1"
+			$UpType = "+1"
+			$iCountPlus = 9
+		EndIf
+	EndIf
+	
+	SetLog("Try " & $UpType & " for Gold upgrade", $COLOR_ACTION)
+	For $i = 1 To $iCountPlus
+		If QuickMIS("BC1", $sDir, $aBtnCoord[0], $aBtnCoord[1], $aBtnCoord[2], $aBtnCoord[3]) Then
+			Click($g_iQuickMISX, $g_iQuickMISY, 1, 50, "Click " & $UpType)
+			If _Sleep(500) Then Return
+			$iCount += $iPlusWall
+			$bPlusButtonFound = True
+			SetDebugLog("iCount : " & $iCount)
+		Else
+			SetLog("No " & $UpType & " Button Found", $COLOR_DEBUG)
+			If $UpType = "+10" Then 
+				SetLog("Try +1 instead", $COLOR_DEBUG1)
+				$UpType = "+1"
+				$sDir = $g_sImgCheckWallDirUpgradeButton & "\Plus1"
+				$iPlusWall = 1
+			Else
+				ExitLoop
+			EndIf
+		EndIf
+	Next
+	;click Upgrade button
+	If $bPlusButtonFound Then
+		ClickP($aButton)
+		PushMsg("UpgradeWithGold")
+		$iCostUpgrade = $iCount * $iWallCost
+		$g_iNbrOfWallsUppedGold += $iCount
+		$g_iNbrOfWallsUpped += $iCount
+		$g_iCostGoldWall += $iCostUpgrade
+		SetLog("Upgraded wall with Gold: " & $iCount, $COLOR_SUCCESS)
+		SetLog("Cost : " & _NumberFormat($iCostUpgrade), $COLOR_SUCCESS)
+		UpdateStats()
+		If _Sleep(1000) Then Return
+		If IsOKCancelPage() Then ClickP($aConfirmSurrender) ;click confirm upgrade OK button
+		Return True
+	EndIf
+EndFunc
+
+Func SearchWall(ByRef $aWallLevelFound, $bTest = False)
+	Local $bWallFound = False, $aWallLevel, $iWallLevel
+	Local $aWall, $aDel[1] = [0], $x, $y
+	Local $iWallLevelToDelete = $g_iTownHallLevel
+	Local $iMaxWallFound = 5, $iLevelFound = 0
+	SetLog("Search Wall on Village", $COLOR_DEBUG)
+	SetLog("Sort WallLevel: " & String($g_iSearchWallSort), $COLOR_DEBUG)
+	If Not $bTest Then ZoomOut()
+	
+	$aWall = QuickMIS("CNX", $g_sImgCheckWallDir, $g_InnerDiamondLeft, $g_InnerDiamondTop, $g_InnerDiamondRight, $g_InnerDiamondBottom)
+
+	If IsArray($aWall) And UBound($aWall) > 0 Then
+		For $i = 0 To UBound($aWall) - 1
+			If StringInStr($aWall[$i][3], "A") Then $aWall[$i][3] = Number(StringReplace($aWall[$i][3], "A", ""))
+			If StringInStr($aWall[$i][3], "B") Then $aWall[$i][3] = Number(StringReplace($aWall[$i][3], "B", ""))
+			If StringInStr($aWall[$i][3], "C") Then $aWall[$i][3] = Number(StringReplace($aWall[$i][3], "C", ""))
+			If StringInStr($aWall[$i][3], "D") Then $aWall[$i][3] = Number(StringReplace($aWall[$i][3], "D", ""))
+			If StringInStr($aWall[$i][3], "E") Then $aWall[$i][3] = Number(StringReplace($aWall[$i][3], "E", ""))
+		Next
+		
+		If $g_iTownHallLevel >= 9 Then $iWallLevelToDelete = $g_iTownHallLevel + 1
+		For $i = 0 To UBound($aWall) - 1
+			If $aWall[$i][3] >= $iWallLevelToDelete Then 
+				_ArrayAdd($aDel, $i) ;wall level >= TH level, should except this
+				SetDebugLog("Level " & $aWall[$i][3] & " wall skipped, delete level : " & $iWallLevelToDelete, $COLOR_DEBUG)
+			EndIf
+			If $g_bUpgradeSpesificWall And $aWall[$i][3] <> $g_iTargetWallLevel Then 
+				_ArrayAdd($aDel, $i)
+				SetDebugLog("Level " & $aWall[$i][3] & " wall skipped, target level : " & $g_iTargetWallLevel, $COLOR_DEBUG)
+			EndIf
+		Next
+		
+		;If $bTest Then _ArrayDisplay($aWall, "$aWall")
+		
+		$aDel[0] = UBound($aDel) - 1
+		;If $bTest Then _ArrayDisplay($aDel, "$sDel")
+		If UBound($aWall) > $aDel[0] Then 
+			_ArrayDelete($aWall, $aDel) ;delete wall level which same or higher than TH level
+		Else
+			SetLog("ERR: THLevel: " & $g_iTownHallLevel, $COLOR_DEBUG2)
+			SetLog("ERR: Target Wall Level: " & $g_iTargetWallLevel, $COLOR_DEBUG2)
+			SetLog("Total Wall Found on map: " & UBound($aWall), $COLOR_DEBUG2)
+			SetLog("Total Wall should skip: " & $aDel[0], $COLOR_DEBUG2)
+			SetLog("Please Set Right Wall Level", $COLOR_DEBUG2)
+			SetLog("or select Any Level on upgrade wall setting", $COLOR_DEBUG2)
+			Return False
+		EndIf
+		
+		_ArraySort($aWall, $g_iSearchWallSort, 0, 0, 3) ;short wall level by setting
+
+		SetDebugLog("Your TownHall Level: " & $g_iTownHallLevel & ", Exluding Wall Level >= " & $iWallLevelToDelete, $COLOR_INFO)
+		SetDebugLog("Found " & UBound($aWall) - 1 & " Wall on Village", $COLOR_DEBUG)
+
+		If $bTest Then _ArrayDisplay($aWall, "Final Wall")
+		
+		Local $tmpLevel = 0
+		For $i = 0 To UBound($aWall) - 1
+			If _Sleep(50) Then Return
+			$x = $aWall[$i][1]
+			$y = $aWall[$i][2]
+			$iWallLevel = $aWall[$i][3]
+			
+			If $tmpLevel <> $iWallLevel Then $tmpLevel = $iWallLevel
+			If $iLevelFound > $iMaxWallFound And $tmpLevel = $iWallLevel Then
+				SetDebugLog("skip, already 5 wall")
+				$iLevelFound = 0
+				ContinueLoop
+			EndIf
+			
+			$tmpLevel = $iWallLevel 
+			$iLevelFound += 1
+			If isInsideDiamondXY($x, $y) Then ;prevent click outside village
+				SetLog("Verify Wall Level " & $iWallLevel & ", click wall on " & $x & "," & $y, $COLOR_DEBUG)
+				Click($x, $y)
+				If _Sleep(1000) Then Return
+				$aWallLevel = BuildingInfo()
+				If $aWallLevel[1] = "Wall" And $aWallLevel[2] < $iWallLevelToDelete Then
+					$bWallFound = True
+					ExitLoop
+				EndIf
+				ClickAway()
+				If _Sleep(500) Then Return
+			Else
+				SetDebugLog("Wrong wall Level " & $iWallLevel & " detected, coord outside diamond:" & $x & "," & $y, $COLOR_DEBUG)
+			EndIf
+		Next
+	EndIf
+	If $bWallFound Then
+		SetLog("Your Gold : " & _NumberFormat($g_aiCurrentLoot[$eLootGold]), $COLOR_INFO)
+		SetLog("Your Elix : " & _NumberFormat($g_aiCurrentLoot[$eLootElixir]), $COLOR_INFO)
+		SetLog("Wall Level : " & $aWallLevel[2], $COLOR_SUCCESS)
+		SetLog("Wall Cost  : " & _NumberFormat($g_aiWallCost[$aWallLevel[2]]), $COLOR_SUCCESS)
+		SetLog("Min Gold Save : " & _NumberFormat($g_iUpgradeWallMinGold), $COLOR_INFO)
+		SetLog("Min Elix Save : " & _NumberFormat($g_iUpgradeWallMinElixir), $COLOR_INFO)
+		$aWallLevelFound = $aWallLevel
+	EndIf
+	
+	Return $bWallFound
+EndFunc
+
+Func imglocFindWalls($walllevel, $searcharea = "DCD", $redline = "", $maxreturn = 0)
+	; Will find maxreturn Wall in specified diamond
+
+	;name , level , coords
+	Local $FoundWalls[1] = [""] ;
+
+	Local $redLines = $redline
+	Local $minLevel = (IsNumber($walllevel) ? $walllevel : 1)
+	Local $maxLevel = (IsNumber($walllevel) ? $walllevel : 15)
+	Local $maxReturnPoints = $maxreturn
+
+	; Perform the search
+	Local $result = DllCallMyBot("SearchMultipleTilesBetweenLevels", "handle", $g_hHBitmap2, "str", $g_sImgCheckWallDir, "str", $searcharea, "Int", $maxReturnPoints, "str", $redLines, "Int", $minLevel, "Int", $maxLevel)
+	Local $error = @error ; Store error values as they reset at next function call
+	Local $extError = @extended
+
+	If $error Then
+		_logErrorDLLCall($g_sLibMyBotPath, $error)
+		SetLog(" imgloc DLL Error imgloc " & $error & " --- " & $extError, $COLOR_ERROR)
+		SetError(2, $extError, $error) ; Set external error code = 2 for DLL error
+		Return $FoundWalls
+	EndIf
+
+	If checkImglocError($result, "imglocFindWalls", $g_sImgCheckWallDir) = True Then
+		Return $FoundWalls
+	EndIf
+
+	; Process results
+	If $result[0] <> "" Then
+		; Get the keys for the dictionary item.
+		SetDebugLog(" imglocFindMyWall search returned : " & $result[0])
+		Local $aKeys = StringSplit($result[0], "|", $STR_NOCOUNT)
+		; Loop through the array
+		ReDim $FoundWalls[UBound($aKeys)]
+		For $i = 0 To UBound($aKeys) - 1
+			; Get the property values
+			; Loop through the found object names
+			Local $aCoords = RetrieveImglocProperty($aKeys[$i], "objectpoints")
+			$FoundWalls[$i] = $aCoords
+		Next
+	EndIf
+	Return $FoundWalls
+EndFunc   ;==>imglocFindWalls

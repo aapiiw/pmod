@@ -1,0 +1,1393 @@
+﻿; #FUNCTION# ====================================================================================================================
+; Name ..........: MBR Bot
+; Description ...: This file contains the initialization and main loop sequences f0r the MBR Bot
+; Author ........:  (2014)
+; Modified ......:
+; Remarks .......: This file is part of MyBot, previously known as ClashGameBot. Copyright 2015-2019
+;                  MyBot is distributed under the terms of the GNU GPL
+; Related .......:
+; Link ..........: https://github.com/MyBotRun/MyBot/wiki
+; Example .......: No
+; ===============================================================================================================================
+
+; AutoIt pragmas
+#NoTrayIcon
+#RequireAdmin
+#AutoIt3Wrapper_UseX64=7n
+;#AutoIt3Wrapper_Res_HiDpi=Y ; HiDpi will be set during run-time!
+;#AutoIt3Wrapper_Run_AU3Check=n ; enable when running in folder with umlauts!
+#AutoIt3Wrapper_Run_Au3Stripper=n
+#Au3Stripper_Parameters=/rsln /MI=3
+
+#include "MyBot.run.version.au3"
+#pragma compile(ProductName, My Bot)
+#pragma compile(Out, MyBot.run.exe) ; Required
+
+; Enforce variable declarations
+Opt("MustDeclareVars", 1)
+
+Global $g_sBotTitle = "" ;~ Don't assign any title here, use Func UpdateBotTitle()
+Global $g_hFrmBot = 0 ; The main GUI window
+
+; MBR includes
+#include "COCBot\MBR Global Variables.au3"
+#include "COCBot\functions\Config\DelayTimes.au3"
+#include "COCBot\GUI\MBR GUI Design Splash.au3"
+#include "COCBot\functions\Config\ScreenCoordinates.au3"
+#include "COCBot\functions\Config\ImageDirectories.au3"
+#include "COCBot\functions\Other\ExtMsgBox.au3"
+#include "COCBot\functions\Other\MBRFunc.au3"
+#include "COCBot\functions\Android\Android.au3"
+#include "COCBot\functions\Android\Distributors.au3"
+#include "COCBot\MBR GUI Design.au3"
+#include "COCBot\MBR GUI Control.au3"
+#include "COCBot\MBR Functions.au3"
+#include "COCBot\functions\Other\Multilanguage.au3"
+; MBR References.au3 must be last include
+#include "COCBot\MBR References.au3"
+
+;#include "C:\Test420\Test420.au3"
+
+; Autoit Options
+Opt("GUIResizeMode", $GUI_DOCKALL) ; Default resize mode for dock android support
+Opt("GUIEventOptions", 1) ; Handle minimize and restore for dock android support
+Opt("GUICloseOnESC", 0) ; Don't send the $GUI_EVENT_CLOSE message when ESC is pressed.
+Opt("WinTitleMatchMode", 3) ; Window Title exact match mode
+Opt("GUIOnEventMode", 1)
+Opt("MouseClickDelay", GetClickUpDelay()) ;Default: 10 milliseconds
+Opt("MouseClickDownDelay", GetClickDownDelay()) ;Default: 5 milliseconds
+Opt("TrayMenuMode", 3)
+Opt("TrayOnEventMode", 1)
+
+; All executable code is in a function block, to detect coding errors, such as variable declaration scope problems
+InitializeBot()
+; Get All Emulators installed on machine.
+getAllEmulators()
+
+; Hand over control to main loop
+MainLoop(CheckPrerequisites())
+
+Func UpdateBotTitle()
+	Local $sTitle = "My Bot " & $g_sXModversion
+	Local $sConsoleTitle ; Console title has also Android Emulator Name
+	If $g_sBotTitle = "" Then
+		$g_sBotTitle = $sTitle
+		$sConsoleTitle = $sTitle
+	Else
+		$g_sBotTitle = $sTitle & " (" & ($g_sAndroidInstance <> "" ? $g_sAndroidInstance : $g_sAndroidEmulator) & ")" ;Do not change this. If you do, multiple instances will not work.
+		$sConsoleTitle = $sTitle & " " & $g_sAndroidEmulator & " (" & ($g_sAndroidInstance <> "" ? $g_sAndroidInstance : $g_sAndroidEmulator) & ")"
+	EndIf
+	If $g_hFrmBot <> 0 Then
+		; Update Bot Window Title also
+		WinSetTitle($g_hFrmBot, "", $g_sBotTitle)
+		GUICtrlSetData($g_hLblBotTitle, $g_sBotTitle)
+	EndIf
+	; Update Console Window (if it exists)
+	DllCall("kernel32.dll", "bool", "SetConsoleTitle", "str", "Console " & $sConsoleTitle)
+	; Update try icon title
+	TraySetToolTip($g_sBotTitle)
+
+	SetDebugLog("Bot title updated to: " & $g_sBotTitle)
+EndFunc   ;==>UpdateBotTitle
+
+Func InitializeBot()
+	ProcessCommandLine()
+	If FileExists(@ScriptDir & "\EnableMBRDebug.txt") Then ; Set developer mode
+		$g_bDevMode = True
+		Local $aText = FileReadToArray(@ScriptDir & "\EnableMBRDebug.txt") ; check if special debug flags set inside EnableMBRDebug.txt file
+		If Not @error Then
+			For $l = 0 To UBound($aText) - 1
+				If StringInStr($aText[$l], "DISABLEWATCHDOG", $STR_NOCASESENSEBASIC) <> 0 Then
+					$g_bBotLaunchOption_NoWatchdog = True
+					SetDebugLog("Watch Dog disabled by Developer Mode File Command", $COLOR_INFO)
+				EndIf
+			Next
+		EndIf
+	EndIf
+
+	SetupProfileFolder() ; Setup profile folders
+
+	SetLogCentered(" BOT LOG ") ; Initial text for log
+
+	SetSwitchAccLog(_PadStringCenter(" SwitchAcc LOG ", 25, "="), $COLOR_BLACK, "Lucida Console", 8, False)
+
+	DetectLanguage()
+	If $g_iBotLaunchOption_Help Then
+		ShowCommandLineHelp()
+		Exit
+	EndIf
+
+	InitAndroidConfig()
+
+	; early load of config
+	Local $bConfigRead = FileExists($g_sProfileConfigPath)
+	If $bConfigRead Or FileExists($g_sProfileBuildingPath) Then
+		readConfig()
+	EndIf
+
+	Local $sAndroidInfo = ""
+
+	_ITaskBar_Init(False)
+	_Crypt_Startup()
+	__GDIPlus_Startup() ; Start GDI+ Engine (incl. a new thread)
+	TCPStartup() ; Start the TCP service.
+
+	;InitAndroidConfig()
+	CreateMainGUI() ; Just create the main window
+	CreateSplashScreen() ; Create splash window
+
+	; Ensure watchdog is launched (requires Bot Window for messaging)
+	If Not $g_bBotLaunchOption_NoWatchdog Then LaunchWatchdog()
+
+	InitializeMBR($sAndroidInfo, $bConfigRead)
+
+	; Create GUI
+	CreateMainGUIControls() ; Create all GUI Controls
+	InitializeMainGUI() ; setup GUI Controls
+	CreateSecondDesktop()
+
+	; Files/folders
+	SetupFilesAndFolders()
+
+	; Show main GUI
+	ShowMainGUI()
+
+	If $g_iBotLaunchOption_Dock Then
+		If AndroidEmbed(True) And $g_iBotLaunchOption_Dock = 2 And $g_bCustomTitleBarActive Then
+			BotShrinkExpandToggle()
+		EndIf
+	EndIf
+
+	; Some final setup steps and checks
+	FinalInitialization($sAndroidInfo)
+
+	;ProcessSetPriority(@AutoItPID, $iBotProcessPriority) ;~ Restore process priority
+
+EndFunc   ;==>InitializeBot
+
+; #FUNCTION# ====================================================================================================================
+; Name ..........: ProcessCommandLine
+; Description ...: Handle command line parameters
+; Syntax ........:
+; Parameters ....: None
+; Return values .: None
+; Author ........:
+; Modified ......: CodeSlinger69 (2017)
+; Remarks .......: This file is part of MyBot, previously known as ClashGameBot. Copyright 2015-2017
+;                  MyBot is distributed under the terms of the GNU GPL
+; Related .......:
+; Link ..........: https://github.com/MyBotRun/MyBot/wiki
+; Example .......: No
+; ===============================================================================================================================
+Func ProcessCommandLine()
+
+	; Handle Command Line Launch Options and fill $g_asCmdLine
+	If $CmdLine[0] > 0 Then
+		For $i = 1 To $CmdLine[0]
+			Local $bOptionDetected = True
+			Switch $CmdLine[$i]
+				; terminate bot if it exists (by window title!)
+				Case "/restart", "/r", "-restart", "-r"
+					$g_bBotLaunchOption_Restart = True
+				Case "/autostart", "/a", "-autostart", "-a"
+					$g_bBotLaunchOption_Autostart = True
+				Case "/nowatchdog", "/nwd", "-nowatchdog", "-nwd"
+					$g_bBotLaunchOption_NoWatchdog = True
+				Case "/dpiaware", "/da", "-dpiaware", "-da"
+					$g_bBotLaunchOption_ForceDpiAware = True
+				Case "/dock1", "/d1", "-dock1", "-d1", "/dock", "/d", "-dock", "-d"
+					$g_iBotLaunchOption_Dock = 1
+				Case "/dock2", "/d2", "-dock2", "-d2"
+					$g_iBotLaunchOption_Dock = 2
+				Case "/nobotslot", "/nbs", "-nobotslot", "-nbs"
+					$g_bBotLaunchOption_NoBotSlot = True
+				Case "/debug", "/debugmode", "/dev", "/dm", "-debug", "-debugmode", "-dev", "-dm"
+					$g_bDevMode = True
+				Case "/minigui", "/mg", "-minigui", "-mg"
+					$g_iGuiMode = 2
+				Case "/nogui", "/ng", "-nogui", "-ng"
+					$g_iGuiMode = 0
+				Case "/hideandroid", "/ha", "-hideandroid", "-ha"
+					$g_bBotLaunchOption_HideAndroid = True
+				Case "/minimizebot", "/minbot", "/mb", "-minimizebot", "-minbot", "-mb"
+					$g_bBotLaunchOption_MinimizeBot = True
+				Case "/console", "/c", "-console", "-c"
+					$g_iBotLaunchOption_Console = True
+					ConsoleWindow()
+				Case "/?", "/h", "/help", "-?", "-h", "-help"
+					; show command line help and exit
+					$g_iBotLaunchOption_Help = True
+				Case Else
+					If StringInStr($CmdLine[$i], "/guipid=") Then
+						Local $guidpid = Int(StringMid($CmdLine[$i], 9))
+						If ProcessExists($guidpid) Then
+							$g_iGuiPID = $guidpid
+						Else
+							SetDebugLog("GUI Process doesn't exist: " & $guidpid)
+						EndIf
+					ElseIf StringInStr($CmdLine[$i], "/profiles=") = 1 Then
+						Local $sProfilePath = StringMid($CmdLine[$i], 11)
+						If StringInStr(FileGetAttrib($sProfilePath), "D") Then
+							$g_sProfilePath = $sProfilePath
+						Else
+							SetLog("Profiles Path doesn't exist: " & $sProfilePath, $COLOR_ERROR) ;
+						EndIf
+					Else
+						$bOptionDetected = False
+						$g_asCmdLine[0] += 1
+						ReDim $g_asCmdLine[$g_asCmdLine[0] + 1]
+						$g_asCmdLine[$g_asCmdLine[0]] = $CmdLine[$i]
+					EndIf
+			EndSwitch
+			If $bOptionDetected Then SetDebugLog("Command Line Option detected: " & $CmdLine[$i])
+		Next
+	EndIf
+
+	; Handle Command Line Parameters
+	If $g_asCmdLine[0] > 0 Then
+		$g_sProfileCurrentName = StringRegExpReplace($g_asCmdLine[1], '[/:*?"<>|]', '_')
+	ElseIf FileExists($g_sProfilePath & "\profile.ini") Then
+		$g_sProfileCurrentName = StringRegExpReplace(IniRead($g_sProfilePath & "\profile.ini", "general", "defaultprofile", ""), '[/:*?"<>|]', '_')
+		If $g_sProfileCurrentName = "" Or Not FileExists($g_sProfilePath & "\" & $g_sProfileCurrentName) Then $g_sProfileCurrentName = "<No Profiles>"
+	Else
+		$g_sProfileCurrentName = "<No Profiles>"
+	EndIf
+EndFunc   ;==>ProcessCommandLine
+
+; #FUNCTION# ====================================================================================================================
+; Name ..........: InitializeAndroid
+; Description ...: Initialize Android
+; Syntax ........:
+; Parameters ....: $bConfigRead - if config was already read and Android Emulator info loaded
+; Return values .: None
+; Author ........:
+; Modified ......: cosote (Feb-2017)
+; Remarks .......: This file is part of MyBot, previously known as ClashGameBot. Copyright 2015-2017
+;                  MyBot is distributed under the terms of the GNU GPL
+; Related .......:
+; Link ..........: https://github.com/MyBotRun/MyBot/wiki
+; Example .......: No
+; ===============================================================================================================================
+Func InitializeAndroid($bConfigRead)
+
+	Local $s = GetTranslatedFileIni("MBR GUI Design - Loading", "StatusBar_Item_06", "Initializing Android...")
+	SplashStep($s)
+
+	If $g_bBotLaunchOption_Restart = False Then
+		; Change Android type and update variable
+		If $g_asCmdLine[0] > 1 Then
+			; initialize Android config
+			InitAndroidConfig(True)
+
+			Local $i
+			For $i = 0 To UBound($g_avAndroidAppConfig) - 1
+				If StringCompare($g_avAndroidAppConfig[$i][0], $g_asCmdLine[2]) = 0 Then
+					$g_iAndroidConfig = $i
+					SplashStep($s & "(" & $g_avAndroidAppConfig[$i][0] & ")...", False)
+					If $g_avAndroidAppConfig[$i][1] <> "" And $g_asCmdLine[0] > 2 Then
+						; Use Instance Name
+						UpdateAndroidConfig($g_asCmdLine[3])
+					Else
+						UpdateAndroidConfig()
+					EndIf
+					SplashStep($s & "(" & $g_avAndroidAppConfig[$i][0] & ")", False)
+					ExitLoop
+				EndIf
+			Next
+		EndIf
+
+		SplashStep(GetTranslatedFileIni("MBR GUI Design - Loading", "StatusBar_Item_07", "Detecting Android..."))
+		If $g_asCmdLine[0] < 2 And Not $bConfigRead Then
+			DetectRunningAndroid()
+			If Not $g_bFoundRunningAndroid Then DetectInstalledAndroid()
+		EndIf
+
+	Else
+
+		; just increase step
+		SplashStep($s)
+
+	EndIf
+
+	CleanSecureFiles()
+
+	GetCOCDistributors() ; load of distributors to prevent rare bot freeze during boot
+
+EndFunc   ;==>InitializeAndroid
+
+; #FUNCTION# ====================================================================================================================
+; Name ..........: SetupProfileFolder
+; Description ...: Populate profile-related globals
+; Syntax ........:
+; Parameters ....: None
+; Return values .: None
+; Author ........:
+; Modified ......: CodeSlinger69 (2017)
+; Remarks .......: This file is part of MyBot, previously known as ClashGameBot. Copyright 2015-2017
+;                  MyBot is distributed under the terms of the GNU GPL
+; Related .......:
+; Link ..........: https://github.com/MyBotRun/MyBot/wiki
+; Example .......: No
+; ===============================================================================================================================
+Func SetupProfileFolder()
+	SetDebugLog("SetupProfileFolder: " & $g_sProfilePath & "\" & $g_sProfileCurrentName)
+	$g_sProfileConfigPath = $g_sProfilePath & "\" & $g_sProfileCurrentName & "\config.ini"
+	$g_sProfileBuildingStatsPath = $g_sProfilePath & "\" & $g_sProfileCurrentName & "\stats_buildings.ini"
+	$g_sProfileBuildingPath = $g_sProfilePath & "\" & $g_sProfileCurrentName & "\building.ini"
+	$g_sProfileLogsPath = $g_sProfilePath & "\" & $g_sProfileCurrentName & "\Logs\"
+	$g_sProfileLootsPath = $g_sProfilePath & "\" & $g_sProfileCurrentName & "\Loots\"
+	$g_sProfileTempPath = $g_sProfilePath & "\" & $g_sProfileCurrentName & "\Temp\"
+	$g_sProfileTempDebugPath = $g_sProfilePath & "\" & $g_sProfileCurrentName & "\Temp\Debug\"
+
+EndFunc   ;==>SetupProfileFolder
+
+; #FUNCTION# ====================================================================================================================
+; Name ..........: InitializeMBR
+; Description ...: MBR setup routine
+; Syntax ........:
+; Parameters ....: $sAI - populated with AndroidInfo string in this function
+;                  $bConfigRead - if config was already read and Android Emulator info loaded
+; Return values .: None
+; Author ........:
+; Modified ......: CodeSlinger69 (2017)
+; Remarks .......: This file is part of MyBot, previously known as ClashGameBot. Copyright 2015-2017
+;                  MyBot is distributed under the terms of the GNU GPL
+; Related .......:
+; Link ..........: https://github.com/MyBotRun/MyBot/wiki
+; Example .......: No
+; ===============================================================================================================================
+Func InitializeMBR(ByRef $sAI, $bConfigRead)
+
+	; license
+	If Not FileExists(@ScriptDir & "\License.txt") Then
+		Local $hDownload = InetGet("http://www.gnu.org/licenses/gpl-3.0.txt", @ScriptDir & "\License.txt")
+
+		; Wait for the download to complete by monitoring when the 2nd index value of InetGetInfo returns True.
+		Local $i = 0
+		Do
+			Sleep($DELAYDOWNLOADLICENSE)
+			$i += 1
+		Until InetGetInfo($hDownload, $INET_DOWNLOADCOMPLETE) Or $i > 25
+
+		InetClose($hDownload)
+	EndIf
+
+	; multilanguage
+	If Not FileExists(@ScriptDir & "\Languages") Then DirCreate(@ScriptDir & "\Languages")
+	;DetectLanguage()
+	_ReadFullIni()
+	; must be called after language is detected
+	TranslateTroopNames()
+	InitializeCOCDistributors()
+
+	; check for compiled x64 version
+	Local $sMsg = GetTranslatedFileIni("MBR GUI Design - Loading", "Compile_Script", "Don't Run/Compile the Script as (x64)! Try to Run/Compile the Script as (x86) to get the bot to work.\r\n\r\n" & _
+			"If this message still appears, try to re-install AutoIt.\r\n")
+	If @AutoItX64 = 1 Then
+		DestroySplashScreen()
+		MsgBox(0, "", $sMsg)
+		__GDIPlus_Shutdown()
+		Exit
+	EndIf
+
+	Local $cmdLineHelp = GetTranslatedFileIni("MBR GUI Design - Loading", "Commandline_multiple_Bots","You can start multiple Bots by using the commandline (or a shortcut) :\r\n\r\n" & _
+			"MyBot.run.exe [ProfileName] [EmulatorName] [InstanceName]\r\n\r\n" & _
+			"If a profilename contains a {space}, Then enclose the profilename in double quotes).\r\n\r\n" & _
+			"For second instance of Bot, specify the Emulator and Instance name\r\n\r\n" & _
+			"Supported Emulators are MEmu, Nox, BlueStacks5\r\n" & _
+			"Examples of command line:\r\n" & _
+			"     MyBot.run.exe MyVillage\r\n" & _
+			"     MyBot.run.exe MyVillage1 BlueStacks5 Pie64_1\r\n" & _
+			"     MyBot.run.au3 ""My Village 2"" BlueStacks5 Pie64_2")
+
+	; Initialize Android emulator
+	InitializeAndroid($bConfigRead)
+
+	; Update Bot title
+	UpdateBotTitle()
+	UpdateSplashTitle($g_sBotTitle & GetTranslatedFileIni("MBR GUI Design - Loading", "Loading_Profile", ", Profile: %s", $g_sProfileCurrentName))
+
+	If $g_bBotLaunchOption_Restart = True Then
+		If CloseRunningBot($g_sBotTitle, True) Then
+			SplashStep(GetTranslatedFileIni("MBR GUI Design - Loading", "Closing_previous", "Closing previous bot..."), False)
+			If CloseRunningBot($g_sBotTitle) = True Then
+				; wait for Mutexes to get disposed
+				Sleep(3000)
+				; check if Android is running
+				WinGetAndroidHandle()
+				If $g_bBotLaunchOption_Restart Then
+					Assign("g_PushedSharedPrefsProfile", $g_sProfileCurrentName)
+					;SetLog("g_PushedSharedPrefsProfile = " & $g_PushedSharedPrefsProfile)
+				EndIf
+			EndIf
+		EndIf
+	EndIf
+
+	$g_hMutex_BotTitle = CreateMutex($g_sBotTitle)
+	$sAI = GetTranslatedFileIni("MBR GUI Design - Loading", "Android_instance_01", "%s", $g_sAndroidEmulator)
+	Local $sAndroidInfo2 = GetTranslatedFileIni("MBR GUI Design - Loading", "Android_instance_02", "%s (instance %s)", $g_sAndroidEmulator, $g_sAndroidInstance)
+	If $g_sAndroidInstance <> "" Then
+		$sAI = $sAndroidInfo2
+	EndIf
+
+	; Check if we are already running for this instance
+	$sMsg = GetTranslatedFileIni("MBR GUI Design - Loading", "Msg_Android_instance_01", "My Bot for %s is already running.\r\n\r\n", $sAI)
+	If $g_hMutex_BotTitle = 0 Then
+		DestroySplashScreen()
+		SetDebugLog($g_sBotTitle & " is already running, exit now")
+		MsgBox(BitOR($MB_OK, $MB_ICONINFORMATION, $MB_TOPMOST), $g_sBotTitle, $sMsg & $cmdLineHelp)
+		__GDIPlus_Shutdown()
+		Exit
+	EndIf
+
+	$sMsg = GetTranslatedFileIni("MBR GUI Design - Loading", "Msg_Android_instance_02", "My Bot with Profile %s is already in use.\r\n\r\n", $g_sProfileCurrentName)
+	; Check if we are already running for this profile
+	If aquireProfileMutex() = 0 Then
+		ReleaseMutex($g_hMutex_BotTitle)
+		releaseProfilesMutex(True)
+		DestroySplashScreen()
+		MsgBox(BitOR($MB_OK, $MB_ICONINFORMATION, $MB_TOPMOST), $g_sBotTitle, $sMsg & $cmdLineHelp)
+		__GDIPlus_Shutdown()
+		Exit
+	EndIf
+
+	; Get mutex
+	$g_hMutex_MyBot = CreateMutex("MyBot.run")
+	$g_bOnlyInstance = $g_hMutex_MyBot <> 0 ; And False
+	SetDebugLog("My Bot is " & ($g_bOnlyInstance ? "" : "not ") & "the only running instance")
+
+EndFunc   ;==>InitializeMBR
+
+; #FUNCTION# ====================================================================================================================
+; Name ..........: SetupFilesAndFolders
+; Description ...: Checks for presence of needed files and folders, cleans up and creates as required
+; Syntax ........:
+; Parameters ....: None
+; Return values .: None
+; Author ........:
+; Modified ......: CodeSlinger69 (2017)
+; Remarks .......: This file is part of MyBot, previously known as ClashGameBot. Copyright 2015-2017
+;                  MyBot is distributed under the terms of the GNU GPL
+; Related .......:
+; Link ..........: https://github.com/MyBotRun/MyBot/wiki
+; Example .......: No
+; ===============================================================================================================================
+Func SetupFilesAndFolders()
+
+	;Migrate old shared_prefs locations
+	Local $sOldProfiles = @MyDocumentsDir & "\MyBot.run-Profiles"
+	If FileExists($sOldProfiles) = 1 And FileExists($g_sPrivateProfilePath) = 0 Then
+		SetLog("Moving shared_prefs profiles folder")
+		If DirMove($sOldProfiles, $g_sPrivateProfilePath) = 0 Then
+			SetLog("Error moving folder " & $sOldProfiles, $COLOR_ERROR)
+			SetLog("to new location " & $g_sPrivateProfilePath, $COLOR_ERROR)
+			SetLog("Please resolve manually!", $COLOR_ERROR)
+		Else
+			SetLog("Moved shared_prefs profiles to " & $g_sPrivateProfilePath, $COLOR_SUCCESS)
+		EndIf
+	EndIf
+
+	;DirCreate($sTemplates)
+	DirCreate($g_sProfilePresetPath)
+	DirCreate($g_sPrivateProfilePath & "\" & $g_sProfileCurrentName)
+	DirCreate($g_sProfilePath & "\" & $g_sProfileCurrentName)
+	DirCreate($g_sProfileLogsPath)
+	DirCreate($g_sProfileLootsPath)
+	DirCreate($g_sProfileTempPath)
+	DirCreate($g_sProfileTempDebugPath)
+
+	;Migrate old bot without profile support to current one
+	FileMove(@ScriptDir & "\*.ini", $g_sProfilePath & "\" & $g_sProfileCurrentName, $FC_OVERWRITE + $FC_CREATEPATH)
+	DirCopy(@ScriptDir & "\Logs", $g_sProfilePath & "\" & $g_sProfileCurrentName & "\Logs", $FC_OVERWRITE + $FC_CREATEPATH)
+	DirCopy(@ScriptDir & "\Loots", $g_sProfilePath & "\" & $g_sProfileCurrentName & "\Loots", $FC_OVERWRITE + $FC_CREATEPATH)
+	DirCopy(@ScriptDir & "\Temp", $g_sProfilePath & "\" & $g_sProfileCurrentName & "\Temp", $FC_OVERWRITE + $FC_CREATEPATH)
+	DirRemove(@ScriptDir & "\Logs", 1)
+	DirRemove(@ScriptDir & "\Loots", 1)
+	DirRemove(@ScriptDir & "\Temp", 1)
+
+	;Setup profile if doesn't exist yet
+	If FileExists($g_sProfileConfigPath) = 0 Then
+		createProfile(True)
+		applyConfig()
+	EndIf
+
+	If $g_bDeleteLogs Then DeleteFiles($g_sProfileLogsPath, "*.*", $g_iDeleteLogsDays, 0)
+	If $g_bDeleteLoots Then DeleteFiles($g_sProfileLootsPath, "*.*", $g_iDeleteLootsDays, 0)
+	If $g_bDeleteTemp Then
+		DeleteFiles($g_sProfileTempPath, "*.*", $g_iDeleteTempDays, 0)
+		DeleteFiles($g_sProfileTempDebugPath, "*.*", $g_iDeleteTempDays, 0, $FLTAR_RECUR)
+	EndIf
+
+	SetDebugLog("$g_sProfilePath = " & $g_sProfilePath)
+	SetDebugLog("$g_sProfileCurrentName = " & $g_sProfileCurrentName)
+	SetDebugLog("$g_sProfileLogsPath = " & $g_sProfileLogsPath)
+
+EndFunc   ;==>SetupFilesAndFolders
+
+; #FUNCTION# ====================================================================================================================
+; Name ..........: FinalInitialization
+; Description ...: Finalize various setup requirements
+; Syntax ........:
+; Parameters ....: $sAI: AndroidInfo for displaying in the log
+; Return values .: None
+; Author ........:
+; Modified ......: CodeSlinger69 (2017)
+; Remarks .......: This file is part of MyBot, previously known as ClashGameBot. Copyright 2015-2017
+;                  MyBot is distributed under the terms of the GNU GPL
+; Related .......:
+; Link ..........: https://github.com/MyBotRun/MyBot/wiki
+; Example .......: No
+; ===============================================================================================================================
+Func FinalInitialization(Const $sAI)
+	; check for VC2010, .NET software and MyBot Files and Folders
+	Local $bCheckPrerequisitesOK = CheckPrerequisites(True)
+	If $bCheckPrerequisitesOK Then
+		MBRFunc(True) ; start MyBot.run.dll, after this point .net is initialized and threads popup all the time
+		setAndroidPID() ; set Android PID
+		SetBotGuiPID() ; set GUI PID
+	EndIf
+	StartOcrWorkerClient()
+	
+	; check if android should be hidden
+	If $g_bBotLaunchOption_HideAndroid Then $g_bIsHidden = True
+	If $g_bIsHidden Then
+		HideAndroidWindow(True, "btnHide-runBot")
+		updateBtnHideState()
+	EndIf
+	
+	If $g_bFoundRunningAndroid Then
+		SetLog(GetTranslatedFileIni("MBR GUI Design - Loading", "Msg_Android_instance_03", "Found running %s %s", $g_sAndroidEmulator, $g_sAndroidVersion), $COLOR_SUCCESS)
+	EndIf
+	If $g_bFoundInstalledAndroid Then
+		SetLog("Found installed " & $g_sAndroidEmulator & " " & $g_sAndroidVersion, $COLOR_SUCCESS)
+	EndIf
+	SetLog(GetTranslatedFileIni("MBR GUI Design - Loading", "Msg_Android_instance_04", "Android Emulator: %s", $sAI), $COLOR_SUCCESS)
+
+	; reset GUI to wait for remote GUI in no GUI mode
+	$g_iGuiPID = @AutoItPID
+
+	; Remember time in Milliseconds bot launched
+	$g_iBotLaunchTime = __TimerDiff($g_hBotLaunchTime)
+
+	; wait for remote GUI to show when no GUI in this process
+	If $g_iGuiMode = 0 Then
+		SplashStep(GetTranslatedFileIni("MBR GUI Design - Loading", "Waiting_for_Remote_GUI", "Waiting for remote GUI..."))
+		SetDebugLog("Wait for GUI Process...")
+
+		Local $timer = __TimerInit()
+		While $g_iGuiPID = @AutoItPID And __TimerDiff($timer) < 60000
+			; wait for GUI Process updating $g_iGuiPID
+			Sleep(50) ; must be Sleep as no run state!
+		WEnd
+		If $g_iGuiPID = @AutoItPID Then
+			SetDebugLog("GUI Process not received, close bot")
+			BotClose()
+			$bCheckPrerequisitesOK = False
+		Else
+			SetDebugLog("Linked to GUI Process " & $g_iGuiPID)
+		EndIf
+	EndIf
+
+	; destroy splash screen here (so we witness the 100% ;)
+	DestroySplashScreen(False)
+	If $bCheckPrerequisitesOK Then
+		; only when bot can run, register with forum
+		ForumAuThentication()
+	EndIf
+
+	; allow now other bots to launch
+	DestroySplashScreen()
+
+	; InitializeVariables();initialize variables used in extrawindows
+	CheckVersion() ; check latest version on mybot.run site
+	UpdateMultiStats()
+	SetDebugLog("Maximum of " & $g_iGlobalActiveBotsAllowed & " bots running at same time configured")
+	SetDebugLog("MyBot.run launch time " & Round($g_iBotLaunchTime) & " ms.")
+
+	If $g_bAndroidShieldEnabled = False Then
+		SetLog(GetTranslatedFileIni("MBR GUI Design - Loading", "Msg_Android_instance_05", "Android Shield not available for %s", @OSVersion), $COLOR_ACTION)
+	EndIf
+
+	DisableProcessWindowsGhosting()
+
+	UpdateMainGUI()
+
+EndFunc   ;==>FinalInitialization
+
+; #FUNCTION# ====================================================================================================================
+; Name ..........: MainLoop
+; Description ...: Main application loop
+; Syntax ........:
+; Parameters ....: None
+; Return values .: None
+; Author ........:
+; Modified ......: CodeSlinger69 (2017)
+; Remarks .......: This file is part of MyBot, previously known as ClashGameBot. Copyright 2015-2017
+;                  MyBot is distributed under the terms of the GNU GPL
+; Related .......:
+; Link ..........: https://github.com/MyBotRun/MyBot/wiki
+; Example .......: No
+; ===============================================================================================================================
+Func MainLoop($bCheckPrerequisitesOK = True)
+	Local $iStartDelay = 0
+
+	If $bCheckPrerequisitesOK And ($g_bAutoStart Or $g_bRestarted) Then
+		Local $iDelay = $g_iAutoStartDelay
+		If $g_bRestarted Then $iDelay = 0
+		$iStartDelay = $iDelay * 1000
+		$g_iBotAction = $eBotStart
+		; check if bot should be minimized
+		If $g_bBotLaunchOption_MinimizeBot Then BotMinimizeRequest()
+	EndIf
+
+	Local $hStarttime = _Timer_Init()
+
+	; Check the Supported Emulator versions
+	CheckEmuNewVersions()
+
+	;Reset Telegram message
+	NotifyGetLastMessageFromTelegram()
+	$g_iTGLastRemote = $g_sTGLast_UID
+
+	While 1
+		_Sleep($DELAYSLEEP, True, False)
+
+		Local $diffhStarttime = _Timer_Diff($hStarttime)
+		If Not $g_bRunState And $g_bNotifyTGEnable And $g_bNotifyRemoteEnable And $diffhStarttime > 1000 * 15 Then ; 15seconds
+			$hStarttime = _Timer_Init()
+			NotifyRemoteControlProcBtnStart()
+		EndIf
+
+		Switch $g_iBotAction
+			Case $eBotStart
+				BotStart($iStartDelay)
+				$iStartDelay = 0 ; don't autostart delay in future
+				If $g_iBotAction = $eBotStart Then $g_iBotAction = $eBotNoAction
+			Case $eBotStop
+				BotStop()
+				If $g_iBotAction = $eBotStop Then $g_iBotAction = $eBotNoAction
+				; Reset Telegram message
+				$g_iTGLastRemote = $g_sTGLast_UID
+			Case $eBotSearchMode
+				BotSearchMode()
+				If $g_iBotAction = $eBotSearchMode Then $g_iBotAction = $eBotNoAction
+			Case $eBotClose
+				BotClose()
+		EndSwitch
+
+	WEnd
+EndFunc   ;==>MainLoop
+
+Func runBot() ;Bot that runs everything in order
+	Local $iWaitTime, $MainLoopTimer
+	InitiateSwitchAcc()
+
+	If ProfileSwitchAccountEnabled() And $g_bReMatchAcc Then
+		SetLog("Rematching Account [" & $g_iNextAccount + 1 & "] with Profile [" & GUICtrlRead($g_ahCmbProfile[$g_iNextAccount]) & "]")
+		SwitchCoCAcc($g_iNextAccount)
+		ZoomOut(True) ;after switch need ZoomOut
+	EndIf
+
+	FirstCheck()
+
+	While 1
+		$g_bRestart = False
+		If Not $g_bRunState Then Return
+		If CheckAndroidReboot() Then ContinueLoop
+		NotifyPendingActions()
+		chkShieldStatus()
+		
+		If $g_bIsSearchLimit Then SetLog("Search limit hit", $COLOR_INFO)
+		If Not $g_bIsClientSyncError Then
+			If Not $g_bRunState Then Return
+			$MainLoopTimer = TimerInit()
+			SetLogCentered(" Top MainLoop ", "=", $COLOR_DEBUG)
+			checkMainScreen(False, $g_bStayOnBuilderBase, "MainLoop")
+			VillageReport()
+			
+			CheckClanGamesEvent()
+
+			If BotCommand() Then btnStop()
+			If Not $g_bRunState Then Return
+
+			If IsSearchAttackEnabled() Then ;if attack is disabled skip reporting, requesting, donating, training, and boosting
+				BoostEverything() ; 1st Check if is to use Training Potion
+
+				; ReplayShare and Boost* routines are disabled in __RunFunction, only NotifyReport is left
+				If Not $g_bRunState Then Return
+				_RunFunction('NotifyReport')
+				If $g_bRestart Then ContinueLoop
+				If CheckAndroidReboot() Then ContinueLoop
+			EndIf
+
+			If CheckAndroidReboot() Then ContinueLoop
+			If _Sleep(50) Then Return
+			
+			AddIdleTime() 
+			CommonRoutine("Idle")
+
+			If IsSearchAttackEnabled() Then
+				If $g_bRestart = True Then ContinueLoop
+				If Not $g_bMeetCondStop Then AttackMain()
+			Else
+				$iWaitTime = Random($DELAYWAITATTACK1, $DELAYWAITATTACK2)
+				SetLog("Attacking Not Planned and Skipped, Waiting random " & StringFormat("%0.1f", $iWaitTime / 1000) & " Seconds", $COLOR_DEBUG1)
+				If _SleepStatus($iWaitTime) Then Return False
+			EndIf
+
+			If Not $g_bRunState Then Return
+			SetLogCentered(" MainLoop Done (in " & Round(TimerDiff($MainLoopTimer) / 1000 / 60, 2) & " minutes) ", "=", $COLOR_INFO)
+			
+			If $g_bFirstStart Then
+				SetLog("First loop completed!", $COLOR_DEBUG1)
+				$g_bFirstStart = False ; already finished first loop since bot started.
+			EndIf
+
+		Else ;When error occurs directly goes to attack
+			Local $sRestartText = $g_bIsSearchLimit ? " due search limit" : " after Out of Sync Error: Attack Now"
+			SetLog("Restarted" & $sRestartText, $COLOR_INFO)
+			;Use "CheckDonateOften" setting to run loop on hitting SearchLimit
+			If $g_bIsSearchLimit Then
+				SetDebugLog("ARCH: Clearing booleans", $COLOR_DEBUG)
+				$g_bIsClientSyncError = False
+				$g_bRestart = False
+			EndIf
+			If _Sleep($DELAYRUNBOT3) Then Return
+			If Not $g_bIsSearchLimit Then AttackMain() ;If Search Limit hit, do main loop.
+			SetDebugLog("ARCH: Not case on SearchLimit or CheckDonateOften",$COLOR_DEBUG)
+			If Not $g_bRunState Then Return
+			$g_bSkipFirstZoomout = False
+
+			If _Sleep($DELAYRUNBOT5) Then Return
+			If $g_bRestart = True Then ContinueLoop
+		EndIf
+	WEnd
+EndFunc   ;==>runBot
+
+Func AttackMain() ;Main control for attack functions
+	If ProfileSwitchAccountEnabled() And $g_abDonateOnly[$g_iCurAccount] Then Return
+
+	If Not CheckZoomOut() Then ZoomOut(True)
+	If IsSearchAttackEnabled() Then
+		If (IsSearchModeActive($DB) And checkCollectors(True, False)) Or IsSearchModeActive($LB) Then
+			If Not $g_bRunState Then Return
+			PrepareSearch()
+			If Not $g_bRunState Then Return
+			If $g_bRestart Then Return False
+			VillageSearch()
+			If Not $g_bRunState Then Return
+			If $g_bRestart Then Return False
+			PrepareAttack($g_iMatchMode)
+			If Not $g_bRunState Then Return
+			If $g_bRestart Then Return False
+			Attack()
+			If Not $g_bRunState Then Return
+			If $g_bRestart Then Return False
+			ReturnHome($g_bTakeLootSnapShot)
+			If Not $g_bRunState Then Return
+			If $g_bRestart Then Return False
+			Return True
+		Else
+			SetLog("None of search condition match:", $COLOR_WARNING)
+			SetLog("Search, Trophy or Army Camp % are out of range in search setting", $COLOR_WARNING)
+			$g_bIsSearchLimit = False
+			$g_bIsClientSyncError = False
+			If ProfileSwitchAccountEnabled() Then checkSwitchAcc()
+			SmartWait4Train()
+		EndIf
+	Else
+		SetLog("Attacking Not Planned, Skipped..", $COLOR_WARNING)
+		SetDebugLog("AttackMain: Clearing booleans", $COLOR_DEBUG)
+		$g_bIsClientSyncError = False
+		$g_bRestart = False
+	EndIf
+	Return True
+EndFunc   ;==>AttackMain
+
+Func Attack() ;Selects which algorithm
+	$g_bAttackActive = True
+	SetLog(" ====== Start Attack ====== ", $COLOR_SUCCESS)
+	If ($g_iMatchMode = $DB And $g_aiAttackAlgorithm[$DB] = 1) Or ($g_iMatchMode = $LB And $g_aiAttackAlgorithm[$LB] = 1) Then
+		SetDebugLog("start scripted attack", $COLOR_ERROR)
+		Algorithm_AttackCSV()
+	ElseIf $g_iMatchMode = $DB And $g_aiAttackAlgorithm[$DB] = 0 Then
+		SetDebugLog("start smart farm attack", $COLOR_ERROR)
+		; Variable to return : $Return[3]  [0] = To attack InSide  [1] = Quant. Sides  [2] = Name Sides
+		Local $Nside = ChkSmartFarm()
+		If $g_bRestart Then Return
+		If Not $g_bRunState Then Return
+		AttackSmartFarm($Nside[1], $Nside[2])
+	Else
+		SetDebugLog("start standard attack", $COLOR_ERROR)
+		algorithm_AllTroops()
+	EndIf
+	$g_bAttackActive = False
+EndFunc   ;==>Attack
+
+Func _RunFunction($action)
+	FuncEnter(_RunFunction)
+	; ensure that builder base flag is false
+	$g_bStayOnBuilderBase = False
+	Local $Result = __RunFunction($action)
+	; ensure that builder base flag is false
+	$g_bStayOnBuilderBase = False
+	Return FuncReturn($Result)
+EndFunc   ;==>_RunFunction
+
+Func ResetDailyRoutineCount()
+	SetLog("Reset Daily routine count", $COLOR_DEBUG1)
+	For $i = 0 To UBound($g_aDailyAccount) - 1
+		For $j = 0 To Ubound($g_aiDailyFunction) - 1
+			$g_aDailyAccount[$i][$j] = 0
+		Next
+	Next
+EndFunc
+
+Func __RunFunction($action)
+	If Not $g_bRunState Then Return
+	; routines currently disabled (CoC UI changed), skip them before daily run counting
+	Switch $action
+		Case "DailyChallenge", "SellMagicItem", "UpgradeBuilding", "AutoUpgrade", "UpgradeLow", "UpgradeWall"
+			Broken($action)
+			Return
+	EndSwitch
+	Local $iNowDay = @YDAY ; record numeric value for today
+	If $g_bChkEnableDailyRunRoutine Then
+		If $iDailyDate <> $iNowDay Then ; if 1 day has passed since last time
+			$iDailyDate = @YDAY
+			ResetDailyRoutineCount()
+		EndIf
+
+		For $i = 0 To UBound($g_aiDailyFunction) - 1
+			If $action = $g_aiDailyFunction[$i][0] Then
+				If $g_aDailyAccount[$g_iCurAccount][$i] >= $g_aiDailyFunction[$i][1] Then
+					SetLog("[" & $action & "] Setting: " & $g_aiDailyFunction[$i][1] & ", Count=" & $g_aDailyAccount[$g_iCurAccount][$i], $COLOR_DEBUG2)
+					SetLog($action & " Already run", $COLOR_DEBUG2)
+					Return
+				Else
+					$g_aDailyAccount[$g_iCurAccount][$i] += 1
+				EndIf
+				SetLog("[" & $action & "] Update Run Count:" & $g_aDailyAccount[$g_iCurAccount][$i] & "/" & $g_aiDailyFunction[$i][1], $COLOR_DEBUG2)
+			EndIf
+		Next
+	EndIf
+
+	SetDebugLog("_RunFunction: " & $action & " BEGIN", $COLOR_DEBUG2)
+	Switch $action
+		Case "UseFreeMagic"
+			UseFreeMagicItem() ; bot will check event gift like Reinforcement Cake and other free magic items that will expired if not used	
+		Case "CheckTombs"
+			CheckTombs()
+		Case "CollectLootCart"
+			CollectLootCart()
+		Case "TreasuryCollect"
+			TreasuryCollect()
+		Case "CollectCookie"
+			CollectCookie()
+		Case "Collect"
+			Collect() ; collect mine, pump, drill
+		Case "CleanYard"
+			CleanYard()
+		Case "DonateCC"
+			DonateCC()
+		Case "RequestCC"
+			RequestCC()
+		Case "Laboratory"
+			LabUpgrade()
+		Case "BlackSmith"
+			BlackSmith()
+		Case "PetHouse"
+			PetUpgrade() ; Build menu tab 4
+		Case "ForgeClanCapitalGold"
+			ForgeClanCapitalGold()
+		Case "BoostSuperTroop"
+			BoostSuperTroop()
+		Case "BuilderBase"
+			If $g_bChkCollectBuilderBase Or $g_bChkStartClockTowerBoost Or $g_bAutoUpgradeBBEnabled Or $g_bChkEnableBBAttack Then
+				BuilderBase()
+			EndIf
+		Case "CollectFreeMagicItems"
+			CollectFreeMagicItems()
+		Case "AutoUpgradeCC"
+			AutoUpgradeCC()
+		Case "CollectCCGold"
+			CollectCCGold()
+
+		; must review below function
+		Case "UpgradeHeroes"
+			;UpgradeHeroes() ; heroes are upgraded by Auto Upgrade (Build menu tab 1), separate routine kept but not used
+		Case "ReplayShare"
+			;ReplayShare($g_bShareAttackEnableNow)
+		Case "NotifyReport"
+			NotifyReport()
+		Case "BoostBarracks"
+			;BoostBarracks()
+		Case "BoostSpellFactory"
+			;BoostSpellFactory()
+		Case "BoostWorkshop"
+			;BoostWorkshop()
+		Case "BoostKing"
+			;BoostKing()
+		Case "BoostQueen"
+			;BoostQueen()
+		Case "BoostWarden"
+			;BoostWarden()
+		Case "BoostChampion"
+			;BoostChampion()
+		Case "BoostEverything"
+			;BoostEverything()
+		Case ""
+			SetDebugLog("Function call doesn't support empty string, please review array size", $COLOR_ERROR)
+		Case Else
+			SetLog("Unknown function call: " & $action, $COLOR_ERROR)
+	EndSwitch
+
+	If _Sleep(50) Then Return
+	SetDebugLog("_RunFunction: " & $action & " END", $COLOR_DEBUG2)
+EndFunc   ;==>__RunFunction
+
+Func FirstCheck()
+	If Not $g_bRunState Then Return
+	SetLogCentered(" FIRSTCHECK ", "=", $COLOR_SUCCESS)
+	$g_bFirstStart = True
+
+	checkMainScreen(True, $g_bStayOnBuilderBase, "FirstCheck")
+	VillageReport()
+	If _Sleep(50) Then Return
+	If ProfileSwitchAccountEnabled() And $g_abDonateOnly[$g_iCurAccount] Then Return
+
+	$g_bRestart = False
+	$g_bFullArmy = False
+	$g_iCommandStop = -1
+
+	;Check Town Hall level
+	Local $iTownHallLevel = $g_iTownHallLevel
+	Local $bLocateTH = False
+	ZoomOut(True)
+	SetLog("Detecting Town Hall level", $COLOR_INFO)
+	SetLog("Town Hall level is currently saved as " &  $g_iTownHallLevel, $COLOR_INFO)
+	Collect(True) ;only collect from mine and collector
+	If _Sleep(50) Then Return
+	If $g_aiTownHallPos[0] > -1 Then
+		ClickP($g_aiTownHallPos)
+		If _Sleep(800) Then Return
+		Local $BuildingInfo = BuildingInfo()
+		If $BuildingInfo[1] = "Town Hall" Then
+			$g_iTownHallLevel =  $BuildingInfo[2]
+			ClickAway()
+		Else
+			$bLocateTH = True
+		EndIf
+	EndIf
+
+	If $g_iTownHallLevel = 0 Or $bLocateTH Then
+		SearchTH()
+	EndIf
+
+	If _Sleep(50) Then Return
+	SetLog("Detected Town Hall level is " &  $g_iTownHallLevel, $COLOR_INFO)
+	If $g_iTownHallLevel = $iTownHallLevel Then
+		SetLog("Town Hall level has not changed", $COLOR_INFO)
+	Else
+		SetLog("Town Hall level has changed!", $COLOR_INFO)
+		SetLog("New Town hall level detected as " &  $g_iTownHallLevel, $COLOR_INFO)
+		applyConfig()
+		saveConfig()
+	EndIf
+	setupProfile()
+
+	If Not $g_bRunState Then Return
+	VillageReport()
+	If BotCommand() Then btnStop()
+	;chkShieldStatus()
+	CheckTombs()
+	If _Sleep(50) Then Return
+	BoostSuperTroop()
+	If _Sleep(50) Then Return
+	RequestCC()
+
+	If isElixirFull() or isDarkElixirFull() Then
+		LabUpgrade()
+		VillageReport(True, True)
+	EndIf
+
+	If _Sleep(50) Then Return
+	If Not $g_bRunState Then Return
+
+	If $g_iFreeBuilderCount > 0 Then
+		Setlog("Your Account have FREE BUILDER", $COLOR_INFO)
+		If Not $g_bRunState Then Return
+
+		If $g_bAutoUpgradeWallsEnable Then
+			SetLog("Check Upgrade Wall", $COLOR_INFO)
+			UpgradeWall()
+		EndIf
+
+		If Not $g_bRunState Then Return
+		If $g_bAutoUpgradeEarly Then
+			SetLog("Check Auto Upgrade Early", $COLOR_INFO)
+			If $g_bUseWallReserveBuilder And WallReservedBuilder() = 1 And $g_iFreeBuilderCount = 1 Then
+				AutoUpgrade(False, True)
+			Else
+				AutoUpgrade()
+			EndIf
+		EndIf
+		VillageReport()
+		If _Sleep(50) Then Return
+		If Not $g_bRunState Then Return
+	EndIf
+
+	If T420() Then
+		SetLog("Test420 Done!", $COLOR_SUCCESS)
+	EndIf
+
+	If _Sleep(50) Then Return
+	If Not $g_bRunState Then Return
+
+	CheckMainScreen() ;check mainscreen and remove any obstacle window/popup
+	If BotCommand() Then btnStop()
+	If Not $g_bRunState Then Return
+	If ProfileSwitchAccountEnabled() And $g_bMeetCondStop Then
+		If Not $g_bSkipFirstCheckRoutine Then FirstCheckRoutine()
+		If Not $g_bSkipBB Then _RunFunction('BuilderBase')
+		If Not $g_bRunState Then Return
+		RequestCC()
+		checkSwitchAcc()
+	Else
+		FirstCheckRoutine()
+	EndIf
+EndFunc   ;==>FirstCheck
+
+Func FirstCheckRoutine()
+	Local $sText = ""
+	Local $FirstCheckRoutineTimer = TimerInit()
+	SetLog("======== FirstCheckRoutine ========", $COLOR_ACTION)
+	
+	If _Sleep(50) Then Return
+	If Not $g_bRunState Then Return
+	
+	CheckClanGamesEvent()
+	
+	If BotCommand() Then btnStop()
+	If Not $g_bMeetCondStop Then
+		; Now the bot can attack
+		UseFreeMagicItem()
+		Setlog("Before any other routine let's attack!", $COLOR_INFO)
+		
+		If _Sleep(50) Then Return
+		If Not $g_bRunState Then Return
+		If $g_sCGCurrentEventName = "" Then _ClanGames()
+		
+		If AttackWithRetry("1st", 5) Then
+			CheckMainScreen()
+			RequestCC()
+		EndIf
+		If Not $g_bRunState Then Return
+	EndIf
+
+	If _Sleep(50) Then Return
+	If Not $g_bRunState Then Return
+	
+	If $g_bEnableExtraAttack Then
+		SetLog("Do Extra Attack", $COLOR_INFO)
+		For $count = 0 to $g_iLoopExtraAttack
+			$g_bRestart = False
+			CheckMainScreen()
+			RequestCC()
+			If BotCommand() Then btnStop()
+			If $g_bMeetCondStop Then 
+				SetLog("Meet Stop condition, skip next extra attack", $COLOR_INFO)
+				ExitLoop
+			EndIf
+			If Not $g_bRunState Then Return
+			Setlog("[" & $count + 1 & "] Extra Attack", $COLOR_INFO)
+			If AttackMain() Then
+				Setlog("[" & $count + 1 & "] Extra Attack Success", $COLOR_SUCCESS)
+			Else
+				Setlog("[" & $count + 1 & "] Extra Attack Failed", $COLOR_DEBUG2)
+			EndIf
+		Next
+	EndIf
+
+	CommonRoutine("FirstCheck") ;after first attack, checking some routine
+
+	If Not $g_bRunState Then Return
+	$sText = Round(TimerDiff($FirstCheckRoutineTimer) / 1000 / 60, 2)
+	SetLog(" ")
+	SetLogCentered(" FirstCheckRoutine done (" & $sText & " minutes) ", "~", $COLOR_SUCCESS)
+	SetLog(" ")
+
+	;If not switch:
+	If Not ProfileSwitchAccountEnabled() Then
+		SetLog("Switch account not enabled, going to mainloop", $COLOR_DEBUG)
+		Return
+	EndIf
+	
+	;Skip switch if Free Builder > 0 Or Storage Fill is Low, when clangames
+	Local $bSwitch = True
+	VillageReport(False, True)
+	If $g_iFreeBuilderCount - WallReservedBuilder() > 0 Then $bSwitch = False
+	If $g_abLowStorage[$eLootElixir] Or $g_abLowStorage[$eLootGold] Then $bSwitch = False
+
+	If Not $g_bRunState Then Return
+	If ProfileSwitchAccountEnabled() And $g_bForceSwitchifNoCGEvent And $bSwitch Then
+		SetLog("No Event on ClanGames, Forced switch account!", $COLOR_DEBUG)
+		CommonRoutine("NoClanGamesEvent")
+		checkSwitchAcc() ;switch to next account
+	EndIf
+
+	If _Sleep(50) Then Return
+	If Not $g_bRunState Then Return
+
+	If ProfileSwitchAccountEnabled() Then
+		If $g_sCGCurrentEventName = "" Then _ClanGames()
+		CommonRoutine("Switch")
+		VillageReport()
+		
+		CheckClanGamesEvent()
+		
+		If Not $g_bRunState Then Return
+		If BotCommand() Then btnStop()
+		SetLog("Check Second Attack", $COLOR_ACTION)
+		If Not $g_bMeetCondStop And Not $g_bChkAttackOnce Then
+			Setlog("Let's attack Again!", $COLOR_INFO)
+			$g_bRestart = False ;reset
+			If $g_sCGCurrentEventName = "" Then _ClanGames()
+			
+			If AttackWithRetry("2nd", 3) Then CheckMainScreen()
+			If Not $g_bRunState Then Return
+		EndIf
+		
+		RequestCC()
+		checkSwitchAcc() ;switch to next account
+	EndIf
+
+EndFunc
+
+Func CommonRoutine($RoutineType = Default)
+	If Not $g_bRunState Then Return
+	If $RoutineType = Default Then $RoutineType = "FirstCheck"
+	SetLogCentered(" CommonRoutine - " & $RoutineType & " ", "=", $COLOR_INFO)
+	Local $CommonRoutineTimer = TimerInit()
+	Local $sText = ""
+	
+	Switch $RoutineType
+		Case "FirstCheck"
+			Local $aRndFuncList[12] = ['Collect', 'CollectLootCart', 'TreasuryCollect', 'CleanYard', 'CollectCookie', 'UseFreeMagic', 'ForgeClanCapitalGold', 'CollectCCGold', 'AutoUpgradeCC', 'BlackSmith', 'SellMagicItem', 'UpgradeWall']
+		Case "Switch"
+			Local $aRndFuncList[10] = ['RequestCC', 'DailyChallenge', 'CollectFreeMagicItems', 'BuilderBase', 'Laboratory', 'UpgradeHeroes', 'UpgradeBuilding', 'AutoUpgrade', 'PetHouse', 'UpgradeLow']
+		Case "Idle"
+			Local $aRndFuncList[16] = ['Collect', 'CollectLootCart', 'TreasuryCollect', 'CleanYard', 'CollectCookie', 'UseFreeMagic', 'RequestCC', 'DailyChallenge', 'CollectFreeMagicItems', 'Laboratory', 'UpgradeHeroes', 'UpgradeBuilding', 'AutoUpgrade', 'UpgradeWall', 'UpgradeLow', 'BuilderBase']
+		Case "NoClanGamesEvent"
+			Local $aRndFuncList[11] = ['RequestCC', 'DailyChallenge', 'CollectFreeMagicItems', 'PetHouse', 'Laboratory', 'CollectCCGold', 'UpgradeHeroes', 'UpgradeBuilding', 'AutoUpgrade', 'UpgradeWall', 'UpgradeLow']
+	EndSwitch
+	
+	SetLog($RoutineType & " Func List:", $COLOR_SUCCESS)
+	For $i In $aRndFuncList
+		SetLog(" --> " & $i, $COLOR_NAVY)
+	Next
+
+	For $Index In $aRndFuncList
+		If Not $g_bRunState Then Return
+		_RunFunction($Index)
+		If $g_bRestart Then Return
+	Next
+	
+	$sText = Round(TimerDiff($CommonRoutineTimer) / 1000 / 60, 2)
+	SetLogCentered(" CommonRoutine " & $RoutineType & " done (" & $sText & " minutes) ", "~", $COLOR_SUCCESS)
+	SetLog(" ")
+EndFunc
+
+Func BuilderBase()
+	Local $StarLabOn = False
+	If Not $g_bRunState Then Return
+	If Number($g_iTotalBuilderCount) >= 6 Then
+		$g_bIs6thBuilderUnlocked = True
+		SetLog("Is6thBuilderUnlocked = " & String($g_bIs6thBuilderUnlocked), $COLOR_DEBUG1)
+		If $g_bIs6thBuilderUnlocked And $g_bChkSkipBBRoutineOn6thBuilder Then $g_bskipBBroutine = True
+	EndIf
+
+	If _Sleep(50) Then Return
+	If Not $g_bRunState Then Return
+
+	If $g_bskipBBroutine Then
+		SetLog("isSkipBBroutine = " & String($g_bskipBBroutine), $COLOR_DEBUG1)
+		SetLog("BB Routine Skip!", $COLOR_INFO)
+		Return
+	EndIf
+
+	If _Sleep(50) Then Return
+	If Not $g_bRunState Then Return
+
+	; switch to builderbase and check it is builderbase
+	If SwitchBetweenBases("BB") Then
+		$g_bStayOnBuilderBase = True
+		$g_bBBAttacked = True	; Reset Variable
+
+		checkMainScreen()
+		CollectBuilderBase()
+		BuilderBaseReport()
+
+		If _Sleep(50) Then Return
+		If Not $g_bRunState Then Return
+
+		CleanBBYard()
+
+		If _Sleep(50) Then Return
+		; upgrades from Build button menu (tab 1 buildings, tab 2 Star Laboratory)
+		If BBUpgradeBuildMenu() Then $g_bBBAttacked = False
+		If _Sleep(50) Then Return
+		If StarLabUpgradeBuildMenu() Then $StarLabOn = True
+		checkMainScreen()
+
+		If _Sleep(50) Then Return
+		If Not $g_bRunState Then Return
+		
+		;If isElixirFullBB() Then
+		;	$StarLabOn = StarLabUpgrade()
+		;	checkMainScreen()
+		;	$g_bBBAttacked = False
+		;EndIf
+
+		If _Sleep(50) Then Return
+		If Not $g_bRunState Then Return
+
+		BBDropTrophy()
+
+		If _Sleep(50) Then Return
+		If Not $g_bRunState Then Return
+
+		If $g_bChkStopAttackBB6thBuilder And $g_bIs6thBuilderUnlocked Then
+			SetLog("6th Builder Unlocked, attackBB disabled", $COLOR_DEBUG)
+		Else
+			SetLog("StopAttackBB6thBuilder: " & String($g_bChkStopAttackBB6thBuilder) & ", Is6thBuilderUnlocked: " & String($g_bIs6thBuilderUnlocked), $COLOR_DEBUG1)
+			DoAttackBB()
+			If _Sleep(50) Then Return
+		EndIf
+
+		If _Sleep(50) Then Return
+		If Not $g_bRunState Then Return
+
+		;If $g_bBBAttacked Then
+		;	If AutoUpgradeBB() Then ZoomOut(True) ;directly zoom
+		;	checkMainScreen()
+		;EndIf
+		;
+		;If _Sleep(50) Then Return
+		;If Not $g_bRunState Then Return
+		;
+		;If Not $StarLabOn Then StarLabUpgrade()
+		;Local $bUseCTPot = $StarLabOn And $g_iFreeBuilderCountBB = 0 And Not ($g_bGoldStorageFullBB Or $g_bElixirStorageFullBB)
+
+		If _Sleep(50) Then Return
+		If Not $g_bRunState Then Return
+		checkMainScreen()
+		;StartClockTowerBoost(False, False, $bUseCTPot)
+		StartClockTowerBoost(False, False, True)
+
+		If _Sleep(50) Then Return
+		If Not $g_bRunState Then Return
+		BuilderBaseReport(False, True)
+		SwitchBetweenBases("Main")
+	EndIf
+
+	If Not $g_bStayOnBuilderBase And IsOnBuilderBase() Then SwitchBetweenBases("Main")
+EndFunc
+
+Func GotoBBTodoCG()
+	If SwitchBetweenBases("BB") And isOnBuilderBase() Then
+		$g_bStayOnBuilderBase = True
+		BuilderBaseReport(True, False)
+		CollectBuilderBase()
+		DoAttackBB(0)
+		CollectBBCart()
+		; switch back to normal village
+		SwitchBetweenBases("Main")
+		$g_bStayOnBuilderBase = False
+	EndIf
+EndFunc
+
+Func DoClanGameChallenge($sEvent = $g_sCGCurrentEventName)
+	Local $bRet = False
+	SetDebugLog("Do Easy Event: " & $sEvent)
+
+	Local $iLoop = 3
+	For $i = 1 To $iLoop
+		SetLog("[" & $i & "] DoClanGameChallenge: " & $sEvent, $COLOR_INFO)
+		ZoomOut(True)
+		CheckMainScreen()
+		PrepareSearch(False, True)
+		If Not $g_bRunState Then Return
+		VillageSearch(False, True)
+		If Not IsAttackPage() Then ContinueLoop
+		If IsProblemAffect() Then ContinueLoop
+		If Not $g_bRunState Then Return
+		PrepareAttack($g_iMatchMode)
+		If Not $g_bRunState Then Return
+		Attack()
+		If Not $g_bRunState Then Return
+		ReturnHome()
+		If Not $g_bRunState Then Return		
+		VillageReport()
+		If Not $g_bRunState Then Return
+		SetLog("DoClanGameChallenge " & $sEvent & " Loop [" & $i & "/" & $iLoop & "]", $COLOR_DEBUG)
+		If CheckCGCompleted() Then 
+			$g_sCGCurrentEventName = ""
+			$bRet = True
+			ExitLoop
+		EndIf
+	Next
+	Return $bRet
+EndFunc
+
+; check Clan Games and do the current challenge when it is an easy (main village) event or a builder base event
+Func CheckClanGamesEvent()
+	If Not _ClanGames() Then Return False
+	If $g_bIsBBevent Then
+		GotoBBTodoCG()
+		Return True
+	EndIf
+	For $Event In $g_aEasyEvent
+		If StringInStr($g_sCGCurrentEventName, $Event) Then
+			DoClanGameChallenge()
+			Return True
+		EndIf
+	Next
+	Return False
+EndFunc   ;==>CheckClanGamesEvent
+
+; try AttackMain() up to $iMaxTry times, recover to main village between tries (no blind retry)
+Func AttackWithRetry($sLabel, $iMaxTry)
+	For $iTry = 1 To $iMaxTry
+		$g_bRestart = False
+		If Not $g_bRunState Then Return False
+		If AttackMain() Then
+			SetLog("[" & $iTry & "] " & $sLabel & " Attack Loop Success", $COLOR_SUCCESS)
+			Return True
+		EndIf
+		If $g_bForceSwitch Then Return False
+		SetLog("[" & $iTry & "/" & $iMaxTry & "] " & $sLabel & " Attack Loop, Failed", $COLOR_INFO)
+		If $iTry < $iMaxTry Then
+			ClickAway()
+			If _Sleep(1000) Then Return False
+			checkMainScreen(False, False, "AttackRetry")
+			If Not CheckZoomOut() Then ZoomOut(True)
+		EndIf
+	Next
+	SetLog($sLabel & " Attack Loop, Already Try " & $iMaxTry & " times... Exit", $COLOR_ERROR)
+	Return False
+EndFunc   ;==>AttackWithRetry
+
+Func T420()
+	If IsDeclared("g_VariableTest123") = 1 Then
+		SetLog("Execute Test420()", $COLOR_INFO)
+		If Execute("Test420()") = 1 Then
+			SetLog("Executing Test420() again", $COLOR_INFO)
+			Return Execute("Test420()")
+		EndIf
+	EndIf
+EndFunc
+
+Func Broken($sFunc = "")
+	SetDebugLog("Sorry " & $sFunc & " Currently Broken", $COLOR_DEBUG2)
+EndFunc

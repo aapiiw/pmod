@@ -1,0 +1,736 @@
+; #FUNCTION# ====================================================================================================================
+; Name ..........:
+; Description ...: This file contens the attack algorithm SCRIPTED
+; Syntax ........:
+; Parameters ....: None
+; Return values .: None
+; Author ........: Sardo (2016)
+; Modified ......: CodeSlinger69 (01-2017)
+; Remarks .......: This file is part of MyBot, previously known as ClashGameBot. Copyright 2015-2019
+;                  MyBot is distributed under the terms of the GNU GPL
+; Related .......:
+; Link ..........: https://github.com/MyBotRun/MyBot/wiki
+; Example .......: No
+; ===============================================================================================================================
+
+Global $MAINSIDE = "BOTTOM-RIGHT"
+Global $FRONT_LEFT = "BOTTOM-RIGHT-DOWN"
+Global $FRONT_RIGHT = "BOTTOM-RIGHT-UP"
+Global $RIGHT_FRONT = "TOP-RIGHT-DOWN"
+Global $RIGHT_BACK = "TOP-RIGHT-UP"
+Global $LEFT_FRONT = "BOTTOM-LEFT-DOWN"
+Global $LEFT_BACK = "BOTTOM-LEFT-UP"
+Global $BACK_LEFT = "TOP-LEFT-DOWN"
+Global $BACK_RIGHT = "TOP-LEFT-UP"
+
+
+Global $g_aiPixelTopLeftDropLine
+Global $g_aiPixelTopRightDropLine
+Global $g_aiPixelBottomLeftDropLine
+Global $g_aiPixelBottomRightDropLine
+Global $g_aiPixelTopLeftUPDropLine
+Global $g_aiPixelTopLeftDOWNDropLine
+Global $g_aiPixelTopRightUPDropLine
+Global $g_aiPixelTopRightDOWNDropLine
+Global $g_aiPixelBottomLeftUPDropLine
+Global $g_aiPixelBottomLeftDOWNDropLine
+Global $g_aiPixelBottomRightUPDropLine
+Global $g_aiPixelBottomRightDOWNDropLine
+
+Global $DeployableLRTB = [0, $g_iGAME_WIDTH - 1, 0, 556]
+
+Func ConvertInternalExternArea()
+	$g_DiamondMiddleX = Round(($g_InnerDiamondLeft + $g_InnerDiamondRight) / 2)
+	$g_DiamondMiddleY = Round(($g_InnerDiamondTop + $g_InnerDiamondBottom) / 2)
+	
+	$g_OuterDiamondLeft = $g_InnerDiamondLeft - Round((Floor($g_InnerDiamondDiffX * $g_iZoomFactor)))
+	$g_OuterDiamondRight = $g_InnerDiamondRight + Round((Floor($g_InnerDiamondDiffX * $g_iZoomFactor)))
+	$g_OuterDiamondTop = $g_InnerDiamondTop - Round((Floor($g_InnerDiamondDiffY * $g_iZoomFactor)))
+	$g_OuterDiamondBottom = $g_InnerDiamondBottom + Round((Floor($g_InnerDiamondDiffY * $g_iZoomFactor)))
+
+	Local $ExternalAreaRef[8][3] = [ _
+			[$g_OuterDiamondLeft, $g_DiamondMiddleY, "LEFT"], _
+			[$g_OuterDiamondRight, $g_DiamondMiddleY, "RIGHT"], _
+			[$g_DiamondMiddleX, $g_OuterDiamondTop, "TOP"], _
+			[$g_DiamondMiddleX, $g_OuterDiamondBottom, "BOTTOM"], _
+			[$g_OuterDiamondLeft + ($g_DiamondMiddleX - $g_OuterDiamondLeft) / 2, $g_OuterDiamondTop + ($g_DiamondMiddleY - $g_OuterDiamondTop) / 2, "TOP-LEFT"], _
+			[$g_DiamondMiddleX + ($g_OuterDiamondRight - $g_DiamondMiddleX) / 2, $g_OuterDiamondTop + ($g_DiamondMiddleY - $g_OuterDiamondTop) / 2, "TOP-RIGHT"], _
+			[$g_OuterDiamondLeft + ($g_DiamondMiddleX - $g_OuterDiamondLeft) / 2, $g_DiamondMiddleY + ($g_OuterDiamondBottom - $g_DiamondMiddleY) / 2, "BOTTOM-LEFT"], _
+			[$g_DiamondMiddleX + ($g_OuterDiamondRight - $g_DiamondMiddleX) / 2, $g_DiamondMiddleY + ($g_OuterDiamondBottom - $g_DiamondMiddleY) / 2, "BOTTOM-RIGHT"] _
+			]
+
+	Local $InternalAreaRef[8][3] = [ _
+			[$g_InnerDiamondLeft, $g_DiamondMiddleY, "LEFT"], _
+			[$g_InnerDiamondRight, $g_DiamondMiddleY, "RIGHT"], _
+			[$g_DiamondMiddleX, $g_InnerDiamondTop, "TOP"], _
+			[$g_DiamondMiddleX, $g_InnerDiamondBottom, "BOTTOM"], _
+			[$g_InnerDiamondLeft + ($g_DiamondMiddleX - $g_InnerDiamondLeft) / 2, $g_InnerDiamondTop + ($g_DiamondMiddleY - $g_InnerDiamondTop) / 2, "TOP-LEFT"], _
+			[$g_DiamondMiddleX + ($g_InnerDiamondRight - $g_DiamondMiddleX) / 2, $g_InnerDiamondTop + ($g_DiamondMiddleY - $g_InnerDiamondTop) / 2, "TOP-RIGHT"], _
+			[$g_InnerDiamondLeft + ($g_DiamondMiddleX - $g_InnerDiamondLeft) / 2, $g_DiamondMiddleY + ($g_InnerDiamondBottom - $g_DiamondMiddleY) / 2, "BOTTOM-LEFT"], _
+			[$g_DiamondMiddleX + ($g_InnerDiamondRight - $g_DiamondMiddleX) / 2, $g_DiamondMiddleY + ($g_InnerDiamondBottom - $g_DiamondMiddleY) / 2, "BOTTOM-RIGHT"] _
+			]
+	
+	Local $x, $y
+	
+	; Update External coord.
+	For $i = 0 To 7
+		$x = $ExternalAreaRef[$i][0]
+		$y = $ExternalAreaRef[$i][1]
+		ConvertToVillagePos($x, $y)
+		$ExternalArea[$i][0] = $x
+		$ExternalArea[$i][1] = $y
+		$ExternalArea[$i][2] = $ExternalAreaRef[$i][2]
+		;debugAttackCSV("External Area Point " & $ExternalArea[$i][2] & ": " & $x & ", " & $y)
+	Next
+	
+	$CocDiamondECD = $ExternalArea[2][0] & "," & $ExternalArea[2][1] & "|" & _
+			$ExternalArea[1][0] & "," & $ExternalArea[1][1] & "|" & _
+			$ExternalArea[3][0] & "," & $ExternalArea[3][1] & "|" & _
+			$ExternalArea[0][0] & "," & $ExternalArea[0][1]
+	
+	; Update Internal coord.
+	For $i = 0 To 7
+		$x = $InternalAreaRef[$i][0]
+		$y = $InternalAreaRef[$i][1]
+		ConvertToVillagePos($x, $y)
+		$InternalArea[$i][0] = $x
+		$InternalArea[$i][1] = $y
+		$InternalArea[$i][2] = $InternalAreaRef[$i][2]
+		;debugAttackCSV("Internal Area Point " & $InternalArea[$i][2] & ": " & $x & ", " & $y)
+	Next
+	$CocDiamondDCD = $InternalArea[2][0] & "," & $InternalArea[2][1] & "|" & _
+			$InternalArea[1][0] & "," & $InternalArea[1][1] & "|" & _
+			$InternalArea[3][0] & "," & $InternalArea[3][1] & "|" & _
+			$InternalArea[0][0] & "," & $InternalArea[0][1]
+			
+	$g_InnerDiamondLeft = $InternalArea[0][0]
+	$g_InnerDiamondRight = $InternalArea[1][0]
+	$g_InnerDiamondTop = $InternalArea[2][1]
+	$g_InnerDiamondBottom = $InternalArea[3][1]
+	
+	$g_OuterDiamondLeft = $ExternalArea[0][0]
+	$g_OuterDiamondRight = $ExternalArea[1][0]
+	$g_OuterDiamondTop = $ExternalArea[2][1]
+	$g_OuterDiamondBottom = $ExternalArea[3][1]
+			
+	SetDebugLog("Internal(DCD) : " & $CocDiamondDCD)
+	SetDebugLog("External(ECD) : " & $CocDiamondECD)
+	
+	SetDebugLog("Internal LRTB: " & $g_InnerDiamondLeft & "," & $g_InnerDiamondRight & "," & $g_InnerDiamondTop & "," & $g_InnerDiamondBottom)
+	SetDebugLog("External LRTB: " & $g_OuterDiamondLeft & "," & $g_OuterDiamondRight & "," & $g_OuterDiamondTop & "," & $g_OuterDiamondBottom)
+EndFunc   ;==>ConvertInternalExternArea
+
+Func CheckAttackLocation(ByRef $iX, ByRef $iY)
+	If $iY > $DeployableLRTB[3] Then
+		$iY = $DeployableLRTB[3]
+		Return False
+	EndIf
+	Return True
+EndFunc   ;==>CheckAttackLocation
+
+; #FUNCTION# ====================================================================================================================
+; Name ..........: Algorithm_AttackCSV
+; Description ...:
+; Syntax ........: Algorithm_AttackCSV([$testattack = False])
+; Parameters ....: $testattack          - [optional]
+; Return values .: None
+; Author ........: Sardo (2016)
+; Modified ......: CodeSlinger69 (2017)
+; Remarks .......: This file is part of MyBot, previously known as ClashGameBot. Copyright 2018
+;                  MyBot is distributed under the terms of the GNU GPL
+; Related .......:
+; Link ..........: https://github.com/MyBotRun/MyBot/wiki
+; Example .......: No
+; ===============================================================================================================================
+Func Algorithm_AttackCSV($testattack = False, $captureredarea = True)
+
+	Local $aResult
+
+	;00 read attack file SIDE row and valorize variables
+	ParseAttackCSV_Read_SIDE_variables()
+	$g_iCSVLastTroopPositionDropTroopFromINI = -1
+	If _Sleep($DELAYRESPOND) Then Return
+
+	;01 - TROOPS ------------------------------------------------------------------------------------------------------------------------------------------
+	SetDebugLog("Troops to be used (purged from troops) ")
+	For $i = 0 To UBound($g_avAttackTroops) - 1 ; identify the position of this kind of troop
+		SetDebugLog("SLOT n.: " & $i & " - Troop: " & GetTroopName($g_avAttackTroops[$i][0]) & " (" & $g_avAttackTroops[$i][0] & ") - Quantity: " & $g_avAttackTroops[$i][1])
+	Next
+
+	Local $hTimerTOTAL = __timerinit()
+	;02.01 - REDAREA -----------------------------------------------------------------------------------------------------------------------------------------
+	Local $hTimer = __timerinit()
+
+	SetDebugLog("Redline mode: " & $g_aiAttackScrRedlineRoutine[$g_iMatchMode])
+
+	_CaptureRegion2() ; ensure full screen is captured (not ideal for debugging as clean image was already saved, but...)
+
+	If $g_aiAttackScrRedlineRoutine[$g_iMatchMode] = $REDLINE_REAL Then 
+		_GetRedArea()
+	Else
+		$g_aiPixelTopLeft = _GetVectorOutZone($eVectorLeftTop)
+		$g_aiPixelBottomLeft = _GetVectorOutZone($eVectorLeftBottom)
+		$g_aiPixelBottomRight = _GetVectorOutZone($eVectorRightBottom)
+		$g_aiPixelTopRight = _GetVectorOutZone($eVectorRightTop)
+	EndIf
+	
+	Local $htimerREDAREA = Round(__timerdiff($hTimer) / 1000, 2)
+	SetDebugLog("Calculated  (in " & $htimerREDAREA & " seconds) :")
+	SetDebugLog("	[" & UBound($g_aiPixelTopLeft) & "] pixels TopLeft")
+	SetDebugLog("	[" & UBound($g_aiPixelTopRight) & "] pixels TopRight")
+	SetDebugLog("	[" & UBound($g_aiPixelBottomLeft) & "] pixels BottomLeft")
+	SetDebugLog("	[" & UBound($g_aiPixelBottomRight) & "] pixels BottomRight")
+	
+	SetDebugLog("TL : " & _ArrayToString($g_aiPixelTopLeft[0]))
+	SetDebugLog("TR : " & _ArrayToString($g_aiPixelTopRight[0]))
+	SetDebugLog("BL : " & _ArrayToString($g_aiPixelBottomLeft[0]))
+	SetDebugLog("BR : " & _ArrayToString($g_aiPixelBottomRight[0]))
+
+	; Build drop lines based on redline mode
+	If $g_aiAttackScrRedlineRoutine[$g_iMatchMode] = $REDLINE_EDGE Then
+		; Edge mode: drop points = ExternalArea edges directly
+		$g_aiPixelTopLeftDropLine = $g_aiPixelTopLeft
+		$g_aiPixelTopRightDropLine = $g_aiPixelTopRight
+		$g_aiPixelBottomLeftDropLine = $g_aiPixelBottomLeft
+		$g_aiPixelBottomRightDropLine = $g_aiPixelBottomRight
+	Else
+		; Real mode: build smooth drop lines from detected red pixels
+		Local $coordLeft = [$ExternalArea[0][0], $ExternalArea[0][1]]
+		Local $coordTop = [$ExternalArea[2][0], $ExternalArea[2][1]]
+		Local $coordRight = [$ExternalArea[1][0], $ExternalArea[1][1]]
+		Local $coordBottom = [$ExternalArea[3][0], $ExternalArea[3][1]]
+
+		Local $StartEndTopLeft[2] = [$coordLeft, $coordTop]
+		If UBound($g_aiPixelTopLeft) > 2 Then Local $StartEndTopLeft = [$g_aiPixelTopLeft[0], $g_aiPixelTopLeft[UBound($g_aiPixelTopLeft) - 1]]
+		Local $StartEndTopRight[2] = [$coordTop, $coordRight]
+		If UBound($g_aiPixelTopRight) > 2 Then Local $StartEndTopRight = [$g_aiPixelTopRight[0], $g_aiPixelTopRight[UBound($g_aiPixelTopRight) - 1]]
+		Local $StartEndBottomLeft[2] = [$coordLeft, $coordBottom]
+		If UBound($g_aiPixelBottomLeft) > 2 Then Local $StartEndBottomLeft = [$g_aiPixelBottomLeft[0], $g_aiPixelBottomLeft[UBound($g_aiPixelBottomLeft) - 1]]
+		Local $StartEndBottomRight[2] = [$coordBottom, $coordRight]
+		If UBound($g_aiPixelBottomRight) > 2 Then Local $StartEndBottomRight = [$g_aiPixelBottomRight[0], $g_aiPixelBottomRight[UBound($g_aiPixelBottomRight) - 1]]
+
+		SetDebugLog("MakeDropLines, StartEndTopLeft     = " & PixelArrayToString($StartEndTopLeft, ","))
+		SetDebugLog("MakeDropLines, StartEndTopRight    = " & PixelArrayToString($StartEndTopRight, ","))
+		SetDebugLog("MakeDropLines, StartEndBottomLeft  = " & PixelArrayToString($StartEndBottomLeft, ","))
+		SetDebugLog("MakeDropLines, StartEndBottomRight = " & PixelArrayToString($StartEndBottomRight, ","))
+
+		$g_aiPixelTopLeftDropLine = MakeDropLineOriginal($g_aiPixelTopLeft, $StartEndTopLeft[0], $StartEndTopLeft[1])
+		$g_aiPixelTopRightDropLine = MakeDropLineOriginal($g_aiPixelTopRight, $StartEndTopRight[0], $StartEndTopRight[1])
+		$g_aiPixelBottomLeftDropLine = MakeDropLineOriginal($g_aiPixelBottomLeft, $StartEndBottomLeft[0], $StartEndBottomLeft[1])
+		$g_aiPixelBottomRightDropLine = MakeDropLineOriginal($g_aiPixelBottomRight, $StartEndBottomRight[0], $StartEndBottomRight[1])
+	EndIf
+
+	;02.04 - MAKE DROP LINE SLICE ----------------------------------------------------------------------------------------------------------------------------
+	;-- TOP LEFT
+	Local $tempvectstr1 = ""
+	Local $tempvectstr2 = ""
+	For $i = 0 To UBound($g_aiPixelTopLeftDropLine) - 1
+		Local $pixel = $g_aiPixelTopLeftDropLine[$i]
+		Local $slice = Slice8($pixel)
+		Switch StringLeft($slice, 1)
+			Case "6"
+				$tempvectstr1 &= $pixel[0] & "," & $pixel[1] & "|"
+			Case "5"
+				$tempvectstr2 &= $pixel[0] & "," & $pixel[1] & "|"
+			Case Else
+				SetDebugLog("TOP LEFT: Skip slice " & $slice & " at " & $pixel[0] & ", " & $pixel[1])
+		EndSwitch
+	Next
+	If StringLen($tempvectstr1) > 0 Then $tempvectstr1 = StringLeft($tempvectstr1, StringLen($tempvectstr1) - 1)
+	If StringLen($tempvectstr2) > 0 Then $tempvectstr2 = StringLeft($tempvectstr2, StringLen($tempvectstr2) - 1)
+	$g_aiPixelTopLeftDOWNDropLine = GetListPixel($tempvectstr1, ",", "TL-DOWN")
+	$g_aiPixelTopLeftUPDropLine = GetListPixel($tempvectstr2, ",", "TL-UP")
+
+	;-- TOP RIGHT
+	Local $tempvectstr1 = ""
+	Local $tempvectstr2 = ""
+	For $i = 0 To UBound($g_aiPixelTopRightDropLine) - 1
+		Local $pixel = $g_aiPixelTopRightDropLine[$i]
+		Local $slice = Slice8($pixel)
+		Switch StringLeft($slice, 1)
+			Case "3"
+				$tempvectstr1 &= $pixel[0] & "," & $pixel[1] & "|"
+			Case "4"
+				$tempvectstr2 &= $pixel[0] & "," & $pixel[1] & "|"
+			Case Else
+				SetDebugLog("TOP RIGHT: Skip slice " & $slice & " at " & $pixel[0] & ", " & $pixel[1])
+		EndSwitch
+	Next
+	If StringLen($tempvectstr1) > 0 Then $tempvectstr1 = StringLeft($tempvectstr1, StringLen($tempvectstr1) - 1)
+	If StringLen($tempvectstr2) > 0 Then $tempvectstr2 = StringLeft($tempvectstr2, StringLen($tempvectstr2) - 1)
+	$g_aiPixelTopRightDOWNDropLine = GetListPixel($tempvectstr1, ",", "TR-DOWN")
+	$g_aiPixelTopRightUPDropLine = GetListPixel($tempvectstr2, ",", "TR-UP")
+
+	;-- BOTTOM LEFT
+	Local $tempvectstr1 = ""
+	Local $tempvectstr2 = ""
+	For $i = 0 To UBound($g_aiPixelBottomLeftDropLine) - 1
+		Local $pixel = $g_aiPixelBottomLeftDropLine[$i]
+		Local $slice = Slice8($pixel)
+		Switch StringLeft($slice, 1)
+			Case "8"
+				$tempvectstr1 &= $pixel[0] & "," & $pixel[1] & "|"
+			Case "7"
+				$tempvectstr2 &= $pixel[0] & "," & $pixel[1] & "|"
+			Case Else
+				SetDebugLog("BOTTOM LEFT: Skip slice " & $slice & " at " & $pixel[0] & ", " & $pixel[1])
+		EndSwitch
+	Next
+	If StringLen($tempvectstr1) > 0 Then $tempvectstr1 = StringLeft($tempvectstr1, StringLen($tempvectstr1) - 1)
+	If StringLen($tempvectstr2) > 0 Then $tempvectstr2 = StringLeft($tempvectstr2, StringLen($tempvectstr2) - 1)
+	$g_aiPixelBottomLeftDOWNDropLine = GetListPixel($tempvectstr1, ",", "BL-DOWN")
+	$g_aiPixelBottomLeftUPDropLine = GetListPixel($tempvectstr2, ",", "BL-UP")
+
+	;-- BOTTOM RIGHT
+	Local $tempvectstr1 = ""
+	Local $tempvectstr2 = ""
+	For $i = 0 To UBound($g_aiPixelBottomRightDropLine) - 1
+		Local $pixel = $g_aiPixelBottomRightDropLine[$i]
+		Local $slice = Slice8($pixel)
+		Switch StringLeft($slice, 1)
+			Case "1"
+				$tempvectstr1 &= $pixel[0] & "," & $pixel[1] & "|"
+			Case "2"
+				$tempvectstr2 &= $pixel[0] & "," & $pixel[1] & "|"
+			Case Else
+				SetDebugLog("BOTTOM RIGHT: Skip slice " & $slice & " at " & $pixel[0] & ", " & $pixel[1])
+		EndSwitch
+	Next
+	If StringLen($tempvectstr1) > 0 Then $tempvectstr1 = StringLeft($tempvectstr1, StringLen($tempvectstr1) - 1)
+	If StringLen($tempvectstr2) > 0 Then $tempvectstr2 = StringLeft($tempvectstr2, StringLen($tempvectstr2) - 1)
+	$g_aiPixelBottomRightDOWNDropLine = GetListPixel($tempvectstr1, ",", "BR-DOWN")
+	$g_aiPixelBottomRightUPDropLine = GetListPixel($tempvectstr2, ",", "BR-UP")
+	SetLog("> Drop Lines located in  " & Round(__timerdiff($hTimer) / 1000, 2) & " seconds", $COLOR_INFO)
+	If _Sleep($DELAYRESPOND) Then Return
+
+	; 03 - TOWNHALL ------------------------------------------------------------------------
+
+	If $g_bCSVLocateStorageTownHall = True Then
+		If $g_iSearchTH = "-" Or $g_oBldgAttackInfo.Exists($eBldgTownHall & "_LOCATION") = False Then ; If TH is unknown, try again to find as it is needed by script
+			FindTownHall()
+		Else
+			SetLog("> Townhall Lvl:" & $g_iSearchTH & " has already been located", $COLOR_INFO)
+		EndIf
+	Else
+		SetLog("> Townhall search not needed, skip")
+	EndIf
+	If _Sleep($DELAYRESPOND) Then Return
+	; 05 - Gold, Elixir and Dark Elixir STORAGES ------------------------------------------------------------------------
+
+	If $g_bCSVLocateStorageGold Then
+		$aResult = GetLocationBuilding($eBldgGoldS, $g_iSearchTH, False)
+		If $aResult <> -1 Then ; check if Monkey ate bad banana
+			If $aResult = 1 Then
+				SetLog("> " & $g_sBldgNames[$eBldgGoldS] & " Not found", $COLOR_WARNING)
+			Else
+				$aResult = _ObjGetValue($g_oBldgAttackInfo, $eBldgGoldS & "_LOCATION")
+				If @error Then
+					_ObjErrMsg("_ObjGetValue " & $g_sBldgNames[$eBldgGoldS] & " _LOCATION", @error) ; Log errors
+					SetLog("> " & $g_sBldgNames[$eBldgGoldS] & " location not in dictionary", $COLOR_WARNING)
+				Else
+					If IsArray($aResult) Then $g_aiCSVGoldStoragePos = $aResult
+				EndIf
+			EndIf
+		Else
+			SetLog("Monkey ate bad banana: " & "GetLocationBuilding " & $g_sBldgNames[$eBldgGoldS], $COLOR_ERROR)
+		EndIf
+	EndIf
+
+	If $g_bCSVLocateStorageElixir Then
+		$aResult = GetLocationBuilding($eBldgElixirS, $g_iSearchTH, False)
+		If @error And $g_bDebugSetlog Then _logErrorGetBuilding(@error)
+		If $aResult <> -1 Then ; check if Monkey ate bad banana
+			If $aResult = 1 Then
+				SetLog("> " & $g_sBldgNames[$eBldgElixirS] & " Not found", $COLOR_WARNING)
+			Else
+				$aResult = _ObjGetValue($g_oBldgAttackInfo, $eBldgElixirS & "_LOCATION")
+				If @error Then
+					_ObjErrMsg("_ObjGetValue " & $g_sBldgNames[$eBldgElixirS] & " _LOCATION", @error) ; Log errors
+					SetLog("> " & $g_sBldgNames[$eBldgElixirS] & " location not in dictionary", $COLOR_WARNING)
+				Else
+					If IsArray($aResult) Then $g_aiCSVElixirStoragePos = $aResult
+				EndIf
+			EndIf
+		Else
+			SetLog("Monkey ate bad banana: " & "GetLocationBuilding " & $g_sBldgNames[$eBldgElixirS], $COLOR_ERROR)
+		EndIf
+	EndIf
+
+	;If $g_bCSVLocateStorageDarkElixir = True Then
+	;	$hTimer = __timerinit()
+	;	SuspendAndroid()
+	;	; USES OLD OPENCV DETECTION
+	;	Local $g_aiPixelDarkElixirStorage = GetLocationDarkElixirStorageWithLevel()
+	;	ResumeAndroid()
+	;	If _Sleep($DELAYRESPOND) Then Return
+	;	CleanRedArea($g_aiPixelDarkElixirStorage)
+	;	Local $pixel = StringSplit($g_aiPixelDarkElixirStorage, "#", 2)
+	;	If UBound($pixel) >= 2 Then
+	;		Local $pixellevel = $pixel[0]
+	;		Local $pixelpos = StringSplit($pixel[1], "-", 2)
+	;		If UBound($pixelpos) >= 2 Then
+	;			Local $temp = [Int($pixelpos[0]), Int($pixelpos[1])]
+	;			$g_aiCSVDarkElixirStoragePos = $temp
+	;		EndIf
+	;	EndIf
+	;	SetLog("> Dark Elixir Storage located in " & Round(__timerdiff($hTimer) / 1000, 2) & " seconds", $COLOR_INFO)
+	;Else
+	;	SetLog("> Dark Elixir Storage detection not needed, skip", $COLOR_INFO)
+	;EndIf
+
+	; 06 - EAGLE ARTILLERY ------------------------------------------------------------------------
+
+	$g_aiCSVEagleArtilleryPos = "" ; reset pixel position to null
+
+	If $g_bCSVLocateEagle = True Then ; eagle find required?
+		If $g_iSearchTH = "-" Or $g_iSearchTH > 10 Then ; TH level where eagle exists?
+			If _ObjSearch($g_oBldgAttackInfo, $eBldgEagle & "_LOCATION") = False Then ; get data if not already exist?
+				$aResult = GetLocationBuilding($eBldgEagle, $g_iSearchTH, False)
+				If $aResult = -1 Then SetLog("Monkey ate bad banana: " & "GetLocationBuilding " & $g_sBldgNames[$eBldgEagle], $COLOR_ERROR)
+			EndIf
+			$aResult = _ObjGetValue($g_oBldgAttackInfo, $eBldgEagle & "_LOCATION")
+			If @error Then
+				_ObjErrMsg("_ObjGetValue " & $g_sBldgNames[$eBldgEagle] & " _LOCATION", @error) ; Log errors
+				SetLog("> " & $g_sBldgNames[$eBldgEagle] & " location not in dictionary", $COLOR_WARNING)
+			Else
+				If IsArray($aResult[0]) Then $g_aiCSVEagleArtilleryPos = $aResult[0]
+			EndIf
+		Else
+			SetLog("> TH Level to low for Eagle, skip detection", $COLOR_INFO)
+		EndIf
+	Else
+		SetDebugLog("> Eagle Artillery detection not needed, skipping", $COLOR_DEBUG)
+	EndIf
+
+	; 07 - Scatter Shot ------------------------------------------------------------------------
+
+	$g_aiCSVScatterPos = "" ; reset pixel position to null
+
+	If $g_bCSVLocateScatter Then
+		If $g_iSearchTH = "-" Or $g_iSearchTH > 10 Then
+			If Not _ObjSearch($g_oBldgAttackInfo, $eBldgScatter & "_LOCATION") Then ; get data if not already exist?
+				$aResult = GetLocationBuilding($eBldgScatter, $g_iSearchTH, False)
+				If $aResult = -1 Then SetLog("Monkey ate bad banana: " & "GetLocationBuilding " & $g_sBldgNames[$eBldgScatter], $COLOR_ERROR)
+			EndIf
+			$aResult = _ObjGetValue($g_oBldgAttackInfo, $eBldgScatter & "_LOCATION")
+			If @error Then
+				_ObjErrMsg("_ObjGetValue " & $g_sBldgNames[$eBldgScatter] & " _LOCATION", @error) ; Log errors
+				SetLog("> " & $g_sBldgNames[$eBldgScatter] & " location not in dictionary", $COLOR_WARNING)
+			Else
+				If IsArray($aResult[0]) Then $g_aiCSVEagleArtilleryPos = $aResult[0]
+			EndIf
+		Else
+			SetLog("> TH Level to low for Scatter Shot, skip detection", $COLOR_INFO)
+		EndIf
+	Else
+		SetDebugLog("> Scatter Shot detection not needed, skipping", $COLOR_DEBUG)
+	EndIf
+
+	; 08 - Inferno ------------------------------------------------------------------------
+
+	$g_aiCSVInfernoPos = "" ; reset location array?
+
+	If $g_bCSVLocateInferno Then
+		If $g_iSearchTH = "-" Or $g_iSearchTH > 9 Then
+			If Not _ObjSearch($g_oBldgAttackInfo, $eBldgInferno & "_LOCATION") Then
+				$aResult = GetLocationBuilding($eBldgInferno, $g_iSearchTH, False)
+				If $aResult = -1 Then SetLog("Monkey ate bad banana: " & "GetLocationBuilding " & $g_sBldgNames[$eBldgInferno], $COLOR_ERROR)
+			EndIf
+			$aResult = _ObjGetValue($g_oBldgAttackInfo, $eBldgInferno & "_LOCATION")
+			If @error Then
+				_ObjErrMsg("_ObjGetValue " & $g_sBldgNames[$eBldgInferno] & " _LOCATION", @error) ; Log errors
+				SetLog("> " & $g_sBldgNames[$eBldgInferno] & " location not in dictionary", $COLOR_WARNING)
+			Else
+				If IsArray($aResult) Then $g_aiCSVInfernoPos = $aResult
+			EndIf
+		Else
+			SetLog("> TH Level to low for Inferno, ignore location", $COLOR_INFO)
+		EndIf
+	Else
+		SetDebugLog("> Inferno detection not needed, skipping", $COLOR_DEBUG)
+	EndIf
+
+	; 09 - X-Bow ------------------------------------------------------------------------
+
+	$g_aiCSVXBowPos = "" ; reset location array?
+
+	If $g_bCSVLocateXBow Then
+		If $g_iSearchTH = "-" Or $g_iSearchTH > 8 Then
+			If Not _ObjSearch($g_oBldgAttackInfo, $eBldgXBow & "_LOCATION") Then
+				$aResult = GetLocationBuilding($eBldgXBow, $g_iSearchTH, False)
+				If $aResult = -1 Then SetLog("Monkey ate bad banana: " & "GetLocationBuilding " & $g_sBldgNames[$eBldgXBow], $COLOR_ERROR)
+			EndIf
+			$aResult = _ObjGetValue($g_oBldgAttackInfo, $eBldgXBow & "_LOCATION")
+			If @error Then
+				_ObjErrMsg("_ObjGetValue " & $g_sBldgNames[$eBldgXBow] & " _LOCATION", @error) ; Log errors
+				SetLog("> " & $g_sBldgNames[$eBldgXBow] & " location not in dictionary", $COLOR_WARNING)
+			Else
+				If IsArray($aResult) Then $g_aiCSVXBowPos = $aResult
+			EndIf
+		Else
+			SetLog("> TH Level to low for " & $g_sBldgNames[$eBldgXBow] & " , ignore location", $COLOR_INFO)
+		EndIf
+	Else
+		SetDebugLog("> " & $g_sBldgNames[$eBldgXBow] & " detection not needed, skipping", $COLOR_DEBUG)
+	EndIf
+
+
+	; 10 - Wizard Tower -----------------------------------------------------------------
+
+	$g_aiCSVWizTowerPos = "" ; reset location array?
+
+	If $g_bCSVLocateWizTower Then
+		If Not _ObjSearch($g_oBldgAttackInfo, $eBldgWizTower & "_LOCATION") Then
+			$aResult = GetLocationBuilding($eBldgWizTower, $g_iSearchTH, False)
+			If $aResult = -1 Then SetLog("Monkey ate bad banana: " & "GetLocationBuilding " & $g_sBldgNames[$eBldgWizTower], $COLOR_ERROR)
+		EndIf
+		$aResult = _ObjGetValue($g_oBldgAttackInfo, $eBldgWizTower & "_LOCATION")
+		If @error Then
+			_ObjErrMsg("_ObjGetValue " & $g_sBldgNames[$eBldgWizTower] & " _LOCATION", @error) ; Log errors
+			SetLog("> " & $g_sBldgNames[$eBldgWizTower] & " location not in dictionary", $COLOR_WARNING)
+		Else
+			If IsArray($aResult) Then $g_aiCSVWizTowerPos = $aResult
+		EndIf
+	Else
+		SetDebugLog("> " & $g_sBldgNames[$eBldgWizTower] & " detection not needed, skipping", $COLOR_DEBUG)
+	EndIf
+
+	; 11 - Mortar ------------------------------------------------------------------------
+
+	$g_aiCSVMortarPos = "" ; reset location array?
+
+	If $g_bCSVLocateMortar Then
+		If Not _ObjSearch($g_oBldgAttackInfo, $eBldgMortar & "_LOCATION") Then
+			$aResult = GetLocationBuilding($eBldgMortar, $g_iSearchTH, False)
+			If $aResult = -1 Then SetLog("Monkey ate bad banana: " & "GetLocationBuilding " & $g_sBldgNames[$eBldgMortar], $COLOR_ERROR)
+		EndIf
+		$aResult = _ObjGetValue($g_oBldgAttackInfo, $eBldgMortar & "_LOCATION")
+		If @error Then
+			_ObjErrMsg("_ObjGetValue " & $g_sBldgNames[$eBldgMortar] & " _LOCATION", @error) ; Log errors
+			SetLog("> " & $g_sBldgNames[$eBldgMortar] & " location not in dictionary", $COLOR_WARNING)
+		Else
+			If IsArray($aResult) Then $g_aiCSVMortarPos = $aResult
+		EndIf
+	Else
+		SetDebugLog("> " & $g_sBldgNames[$eBldgMortar] & " detection not needed, skipping", $COLOR_DEBUG)
+	EndIf
+
+	; 12 - Air Defense ------------------------------------------------------------------------
+
+	$g_aiCSVAirDefensePos = "" ; reset location array?
+
+	If $g_bCSVLocateAirDefense Then
+		If Not _ObjSearch($g_oBldgAttackInfo, $eBldgAirDefense & "_LOCATION") Then
+			$aResult = GetLocationBuilding($eBldgAirDefense, $g_iSearchTH, False)
+			If $aResult = -1 Then SetLog("Monkey ate bad banana: " & "GetLocationBuilding " & $g_sBldgNames[$eBldgAirDefense], $COLOR_ERROR)
+		EndIf
+		$aResult = _ObjGetValue($g_oBldgAttackInfo, $eBldgAirDefense & "_LOCATION")
+		If @error Then
+			_ObjErrMsg("_ObjGetValue " & $g_sBldgNames[$eBldgAirDefense] & " _LOCATION", @error) ; Log errors
+			SetLog("> " & $g_sBldgNames[$eBldgAirDefense] & " location not in dictionary", $COLOR_WARNING)
+		Else
+			If IsArray($aResult) Then $g_aiCSVAirDefensePos = $aResult
+		EndIf
+	Else
+		SetDebugLog("> " & $g_sBldgNames[$eBldgAirDefense] & " detection not needed, skipping", $COLOR_DEBUG)
+	EndIf
+
+	; Calculate main attack side
+	Local $sMainSide = ParseAttackCSV_MainSide()
+
+	; 13 - Wall
+	If $g_bCSVLocateWall Then
+		Local $aCSVExternalWall[1], $aCSVInternalWall[1]
+		If FindWallCSV($aCSVExternalWall, $aCSVInternalWall) Then
+			_ObjAdd($g_oBldgAttackInfo, $eExternalWall & "_LOCATION", $aCSVExternalWall) ; save array of locations
+			If @error Then _ObjErrMsg("_ObjAdd " & $g_sBldgNames[$eExternalWall] & " _LOCATION", @error) ; Log errors
+			_ObjAdd($g_oBldgAttackInfo, $eInternalWall & "_LOCATION", $aCSVInternalWall) ; save array of locations
+			If @error Then _ObjErrMsg("_ObjAdd " & $g_sBldgNames[$eInternalWall] & " _LOCATION", @error) ; Log errors
+		EndIf
+	EndIf
+
+	; Log total CSV prep time
+	SetLog(">> Total time: " & Round(__timerdiff($hTimerTOTAL) / 1000, 2) & " seconds", $COLOR_INFO)
+	SetSlotSpecialTroops()
+	
+	; 14 - DEBUGIMAGE ------------------------------------------------------------------------
+	If $g_bDebugMakeIMGCSV Then AttackCSVDEBUGIMAGE() ;make IMG debug
+	If $g_bDebugAttackCSV Then _LogObjList($g_oBldgAttackInfo) ; display dictionary for raw find image debug
+
+	; 15 - LAUNCH PARSE FUNCTION -------------------------------------------------------------
+	If _Sleep($DELAYRESPOND) Then Return
+	If $sMainSide = "BOTTOM-RIGHT" Or $sMainSide = "BOTTOM-LEFT" Then
+		SetDebugLog("BOTTOM LEFT/RIGHT as MainSide, checking boost button")
+		For $i = 1 To 15
+			If QuickMIS("BFI", $g_sImgImgLocButtons & "\BoostButton*.xml", 300,520,390,550) Then
+				If _Sleep(2000) Then Return
+				SetLog("Wait Battle Start #" & $i, $COLOR_ACTION)
+			Else
+				ExitLoop
+			EndIf
+		Next
+	EndIf
+	
+	ParseAttackCSV($testattack)
+	CheckHeroesHealth()
+EndFunc   ;==>Algorithm_AttackCSV
+
+Func FindWallCSV(ByRef $aCSVExternalWall, ByRef $aCSVInternalWall)
+	SetLog("Searching for wall location")
+
+	Local $aOuterWall[2], $aInnerWall[2], $bResult = False
+	Local $aiWallPos[1][3] ; x, y, distance to edge
+	Local $aEdgeCoord[2], $aCenterCoord[2] = [$ExternalArea[2][0], $ExternalArea[0][1]]
+
+	For $i = 0 To UBound($ExternalArea) - 1
+		If $MAINSIDE = $ExternalArea[$i][2] Then
+			$aEdgeCoord[0] = Number($ExternalArea[$i][0])
+			$aEdgeCoord[1] = Number($ExternalArea[$i][1])
+			ExitLoop
+		EndIf
+	Next
+
+	If $g_bDebugImageSave Then
+		_CaptureRegion2()
+		; Create the necessery GDI stuff
+		Local $subDirectory = $g_sProfileTempDebugPath & "CSVWall"
+		DirCreate($subDirectory)
+		Local $Date = @YEAR & "-" & @MON & "-" & @MDAY
+		Local $Time = @HOUR & "." & @MIN & "." & @SEC
+		Local $filename = String($Date & "_" & $Time & "_.png")
+		Local $editedImage = _GDIPlus_BitmapCreateFromHBITMAP($g_hHBitmap2)
+		Local $hGraphic = _GDIPlus_ImageGetGraphicsContext($editedImage)
+		Local $hPenRED = _GDIPlus_PenCreate(0xFFFF0000, 3) ; Create a pencil Color FF0000/RED
+		Local $hPenBLUE = _GDIPlus_PenCreate(0xFF0000FF, 2)
+	EndIf
+
+	For $i = 0 To 2 ; 3 rectangulars from edge to center
+		Local $X1 = Int($aEdgeCoord[0] + $i * ($aEdgeCoord[0] < $aCenterCoord[0] ? 63 : -63))
+		Local $Y1 = Int($aEdgeCoord[1] + $i * ($aEdgeCoord[1] < $aCenterCoord[1] ? 47 : -47))
+		Local $X2 = Int($X1 + ($aEdgeCoord[0] < $aCenterCoord[0] ? 80 : -80))
+		Local $Y2 = Int($Y1 + ($aEdgeCoord[1] < $aCenterCoord[1] ? 60 : -60))
+
+		_CaptureRegion2(_Min($X1, $X2), _Min($Y1, $Y2), _Max($X1, $X2), _Max($Y1, $Y2))
+		Local $FoundWalls = imglocFindWalls("AnyWallLevel", "FV", "FV", 10)
+
+		If $g_bDebugImageSave Then _GDIPlus_GraphicsDrawRect($hGraphic, _Min($X1, $X2), _Min($Y1, $Y2), Abs($X1 - $X2), Abs ($Y1 - $Y2), $hPenBLUE)
+
+		If $FoundWalls[0] = "" Then ; nothing found
+			SetDebugLog("No wall(s) found in section " & $i + 1)
+		Else
+			Local $sWallString = _ArrayToString($FoundWalls)
+			Local $aWallCoordsArray = decodeMultipleCoords($sWallString, 7, 7)
+			SetDebugLog("Found " & UBound($aWallCoordsArray) & " walls in section " & $i + 1 & ": " & $sWallString)
+
+			For $j = 0 To UBound($aWallCoordsArray) - 1
+				Local $aTempPos = $aWallCoordsArray[$j]
+				Local $index = UBound($aiWallPos) - 1
+				$aiWallPos[$index][0] = $aTempPos[0] + _Min($X1, $X2)
+				$aiWallPos[$index][1] = $aTempPos[1] + _Min($Y1, $Y2)
+				$aiWallPos[$index][2] = Int(Sqrt(($aiWallPos[$index][0] - $aEdgeCoord[0]) ^ 2 + ($aiWallPos[$index][1] - $aEdgeCoord[1]) ^ 2))
+				ReDim $aiWallPos[UBound($aiWallPos) + 1][3]
+				If $g_bDebugImageSave Then _GDIPlus_GraphicsDrawEllipse($hGraphic, $aiWallPos[$index][0], $aiWallPos[$index][1], 3, 3, $hPenBLUE)
+			Next
+		EndIf
+	Next
+
+	If UBound($aiWallPos) > 1 And $aiWallPos[0][0] <> "" Then
+		_ArraySort($aiWallPos, 0, 0, 0, 2)
+		_ArrayDelete($aiWallPos, 0) ; remove 1st "" element
+		SetDebugLog(@CRLF & _ArrayToString($aiWallPos))
+
+		$aOuterWall[0] = $aiWallPos[0][0]
+		$aOuterWall[1] = $aiWallPos[0][1]
+
+		For $i = 0 To UBound($aiWallPos) - 1
+			If $i = 0 Then ContinueLoop
+			If $aiWallPos[$i][2] - $aiWallPos[0][2] >= 40 Then
+				$aInnerWall[0] = $aiWallPos[$i][0]
+				$aInnerWall[1] = $aiWallPos[$i][1]
+				ExitLoop
+			EndIf
+		Next
+
+		Setlog("External Wall: " & _ArrayToString($aOuterWall) & " , Internal Wall: " & _ArrayToString($aInnerWall))
+		If $aOuterWall[0] <> "" Then
+			$aCSVExternalWall[0] = $aOuterWall
+			$aCSVInternalWall[0] = $aInnerWall
+			If $g_bDebugImageSave Then
+				_GDIPlus_GraphicsDrawEllipse($hGraphic, $aOuterWall[0], $aOuterWall[1], 3, 3, $hPenRED)
+				_GDIPlus_GraphicsDrawEllipse($hGraphic, $aInnerWall[0], $aInnerWall[1], 3, 3, $hPenRED)
+			EndIf
+			$bResult = True
+		EndIf
+	Else
+		SetLog("No wall found")
+	EndIf
+	If $g_bDebugImageSave Then
+		; Destroy the used GDI stuff
+		_GDIPlus_ImageSaveToFile($editedImage, $subDirectory & "\" & $filename)
+		_GDIPlus_PenDispose($hPenRED)
+		_GDIPlus_GraphicsDispose($hGraphic)
+		_GDIPlus_BitmapDispose($editedImage)
+	EndIf
+
+	Return $bResult
+EndFunc
+
+Func TestDropLine($iRedLine = $REDLINE_EDGE, $bOpenFile = True)
+	Local $hTimer = TimerInit()
+	CheckZoomOut()
+	_GetRedArea($iRedLine)
+	AttackCSVDEBUGIMAGE($bOpenFile)
+EndFunc   ;==>TestDropLine
+
+Func resetEdge()
+	$g_aiPixelTopLeft = 0
+	$g_aiPixelTopRight = 0
+	$g_aiPixelBottomLeft = 0
+	$g_aiPixelBottomRight = 0
+	$g_aiPixelTopLeftDropLine = 0
+    $g_aiPixelTopRightDropLine = 0
+    $g_aiPixelBottomLeftDropLine = 0
+    $g_aiPixelBottomRightDropLine = 0
+    
+    $g_aiPixelTopLeftUPDropLine = 0
+    $g_aiPixelTopLeftDOWNDropLine = 0
+    $g_aiPixelTopRightUPDropLine = 0
+    $g_aiPixelTopRightDOWNDropLine = 0
+    $g_aiPixelBottomLeftUPDropLine = 0
+    $g_aiPixelBottomLeftDOWNDropLine = 0
+    $g_aiPixelBottomRightUPDropLine = 0
+    $g_aiPixelBottomRightDOWNDropLine = 0
+EndFunc
+
+Func TestCSV($iMatchMode = $LB)
+	Local $filename = $g_sAttackScrScriptName[$iMatchMode]
+	$g_iMatchMode = $iMatchMode
+	SetLog("will use script : " & $filename, $COLOR_INFO)
+	CheckZoomOut()
+	PrepareAttack($iMatchMode)
+	Algorithm_AttackCSV()
+	ReturnHome()
+EndFunc
+
+Func CSVLoop($iCountLoop = 1, $bStopWhenResourceFull = False)
+	Local $filename = $g_sAttackScrScriptName[$LB]
+	ZoomOut()
+	For $i = 1 To $iCountLoop
+		SetLog("TestCSVLoop #" & $i, $COLOR_ACTION)
+		PrepareSearch()
+		If Not $g_bRunState Then Return
+		VillageSearch()
+		If Not $g_bRunState Then Return
+		SetLog("will use script : " & $filename, $COLOR_INFO)
+		CheckZoomOut()
+		PrepareAttack($LB)
+		Algorithm_AttackCSV()
+		ReturnHome()
+		If Not $g_bRunState Then Return
+		VillageReport()
+		If Not $g_bRunState Then Return
+		RequestCC()
+		Setlog("TestCSV Loop [" & $i & "/" & $iCountLoop & "]", $COLOR_ACTION) 
+		If isGoldFull() And isElixirFull() And $bStopWhenResourceFull Then Return
+	Next
+EndFunc

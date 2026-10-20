@@ -1,0 +1,172 @@
+; #FUNCTION# ====================================================================================================================
+; Name ..........: SwitchBetweenBases
+; Description ...: Switches Between Normal Village and Builder Base
+; Syntax ........: SwitchBetweenBases()
+; Parameters ....:
+; Return values .: True: Successfully switched Bases  -  False: Failed to switch Bases
+; Author ........: Fliegerfaust (05-2017)
+; Modified ......:
+; Remarks .......: This file is part of MyBot, previously known as ClashGameBot. Copyright 2015-2019
+;                  MyBot is distributed under the terms of the GNU GPL
+; Related .......:
+; Link ..........: https://github.com/MyBotRun/MyBot/wiki
+; Example .......: No
+; ===============================================================================================================================
+Global $FalseDetectionCount = 0
+
+Func SwitchBetweenBases($ForcedSwitchTo = Default)
+	Local $bIsOnMainVillage = isOnMainVillage()
+	Local $bIsOnBuilderBase = False
+	
+	If IsProblemAffect() Then Return
+	If Not $bIsOnMainVillage Then $bIsOnBuilderBase = isOnBuilderBase()
+	SetDebugLog("ForcedSwitchTo: " & $ForcedSwitchTo & ", IsOnMainVillage: " & $bIsOnMainVillage)
+	
+	If $ForcedSwitchTo = Default Then
+		If $bIsOnMainVillage Then 
+			SetDebugLog("We are on MainVillage")
+			$ForcedSwitchTo = "BB"
+		Else
+			$ForcedSwitchTo = "Main"
+		EndIf
+	EndIf
+	
+	;we are not on builderbase nor in mainvillage, something need to be check, check obstacles called on checkmainscreen
+	If Not $bIsOnBuilderBase And Not $bIsOnMainVillage Then 
+		SetDebugLog("Cannont verify what screen we are now?")
+		checkObstacles($g_bStayOnBuilderBase)
+		If _Sleep(1000) Then Return
+		$bIsOnMainVillage = isOnMainVillage()
+		If $g_bStayOnBuilderBase Then $bIsOnBuilderBase = isOnBuilderBase() ;check again if we are on builderbases, after mainscreen located
+	EndIf
+	
+	If $ForcedSwitchTo = "BB" And $bIsOnBuilderBase Then
+		SetDebugLog("Already on BuilderBase, Skip SwitchBetweenBases", $COLOR_INFO)
+		Return True
+	EndIf
+	
+	If $ForcedSwitchTo = "Main" And $bIsOnMainVillage Then
+		SetDebugLog("Already on MainVillage, Skip SwitchBetweenBases", $COLOR_INFO)
+		Return True
+	EndIf
+	
+	If _Sleep(50) Then Return
+	If Not $g_bRunState Then Return
+	
+	If $g_bStayOnBuilderBase And Not $bIsOnBuilderBase Then
+		SetLog("StayOnBuilderBase = " & String($g_bStayOnBuilderBase), $COLOR_INFO)
+		SetLog(" --- Are we on BuilderBase ? " & String($bIsOnBuilderBase), $COLOR_INFO)
+		SetLog("Switching To BuilderBase")
+		$FalseDetectionCount += 1
+		SetDebugLog("CountFalseDetection: " & $FalseDetectionCount)
+		If $FalseDetectionCount > 2 Then 
+			SetDebugLog("BuilderBase Detection Maybe Failed, been trying " & $FalseDetectionCount & " times")
+			SetDebugLog("Let's assume we are on BuilderBase")
+			Return True ;just return true as assumed on BB
+		EndIf
+		Return SwitchTo("BB")
+	EndIf
+	
+	Switch $ForcedSwitchTo
+		Case "BB"
+			Return SwitchTo("BB")
+		Case "Main"
+			Return SwitchTo("Main")
+	EndSwitch
+EndFunc
+
+Func SwitchTo($To = "BB")
+	Local $sSwitchFrom, $sSwitchTo
+	Local $sTile, $x, $y, $x1, $y1, $Dir
+	Local $bRet = False
+	
+	If $To = "Main" Then 
+		$sSwitchFrom = "Builder Base"
+		$sSwitchTo = "Normal Village"
+		$sTile = "BoatBuilderBase"
+		$x = 500
+		$y = 0
+		$x1 = 700
+		$y1 = 200
+		$Dir = $g_sImgBoatBB
+	Else
+		$sSwitchFrom = "Normal Village"
+		$sSwitchTo = "Builder Base"
+		$sTile = "BoatNormalVillage"
+		$x = 70
+		$y = 330
+		$x1 = 400
+		$y1 = 600
+		$Dir = $g_sImgBoat
+	EndIf	
+	
+	For $i = 1 To 3
+		If _Sleep(50) Then Return
+		SetLog("[" & $i & "] Trying to Switch to " & $sSwitchTo, $COLOR_INFO)
+		ZoomOut()
+		If $To = "Main" Then 
+			ZoomOutHelperBB("SwitchBetweenBases")
+			If _Sleep(1000) Then Return
+		EndIf
+		
+		If QuickMIS("BC1", $Dir, $x, $y, $x1, $y1) Then
+			If $g_sQuickMISName = "BrokenBoat" Then Return BBTutorial($g_iQuickMISX, $g_iQuickMISY)
+			If $g_sQuickMISName = "BBBoatBadge" Then $g_iQuickMISY += 10
+			If $g_sQuickMISName = "BoatFront" Then 
+				$g_iQuickMISX += 10
+				$g_iQuickMISY -= 10
+			EndIf
+			
+			;If $To = "BB" Then CheckPetHouseTutorial()
+			
+			Click($g_iQuickMISX, $g_iQuickMISY)
+			If _Sleep(3000) Then Return
+			
+			Local $sScode = "DS"
+			For $j = 1 To 5
+				Switch $To
+				Case "BB"
+					$bRet = isOnBuilderBase()
+				Case "Main"
+					$bRet = isOnMainVillage()
+				EndSwitch
+				
+				If $bRet Then 
+					SetLog("[" & $i & "] Switch From " & $sSwitchFrom & " To " & $sSwitchTo & " Success", $COLOR_SUCCESS)
+					$FalseDetectionCount = 0
+					If $To = "BB" Then
+						$sScode = $g_sSceneryCode
+						$g_sSceneryCode = "BL"
+					Else
+						If $g_bStayOnBuilderBase Then $g_bStayOnBuilderBase = False
+						$g_sSceneryCode = $sScode
+					EndIf
+					ExitLoop 2
+				Else
+					Click($g_iQuickMISX, $g_iQuickMISY)
+				EndIf
+				If _Sleep(2000) Then Return
+			Next
+		Else
+			SetLog("[" & $i & "] " & $sTile & " Not Found, try again...", $COLOR_ERROR)
+			If $To = "Main" Then CheckBB20Tutor()
+		EndIf
+		
+		If $i = 3 Then 
+			SaveDebugImage("SwitchBetweenBases")
+			CloseCoC(True)
+		EndIf
+		If _Sleep(500) Then Return
+	Next
+	
+	If IsProblemAffect() Then Return
+	If Not $g_bRunState Then Return
+	Return $bRet
+EndFunc
+
+Func TestloopBB()
+	While True
+		BuilderBase()
+		If Not $g_bRunState Then Return
+	WEnd
+EndFunc

@@ -1,0 +1,167 @@
+; #FUNCTION# ====================================================================================================================
+; Name ..........: BuilderBaseReport()
+; Description ...: Make Resources report of Builders Base
+; Syntax ........: BuilderBaseReport()
+; Parameters ....:
+; Return values .: None
+; Author ........: ProMac (05-2017)
+; Modified ......: xbebenk (08-2021)
+; Remarks .......: This file is part of MyBot, previously known as ClashGameBot. Copyright 2015-2019
+;                  MyBot is distributed under the terms of the GNU GPL
+; Related .......:
+; Link ..........: https://github.com/MyBotRun/MyBot/wiki
+; Example .......: No
+; ===============================================================================================================================
+
+Func BuilderBaseReport($bBypass = False, $bSetLog = True); $CheckBH = True)
+	Switch $bBypass
+		Case False
+			If $bSetLog Then SetLog("Builder Base Report", $COLOR_INFO)
+		Case True
+			If $bSetLog Then SetLog("Updating Builder Base Resource Values", $COLOR_INFO)
+	EndSwitch
+
+	getBuilderCount($bSetLog, True) ; update builder data
+	If _Sleep($DELAYRESPOND) Then Return
+
+	$g_aiCurrentLootBB[$eLootTrophyBB] = getTrophyBB(70, 135)
+	$g_aiCurrentLootBB[$eLootGoldBB] = getResourcesMainScreen(690, 22)
+	$g_aiCurrentLootBB[$eLootElixirBB] = getResourcesMainScreen(690, 59)
+	If $bSetLog Then SetLog("[B]:" & $g_iFreeBuilderCountBB & "/" & $g_iTotalBuilderCountBB & " [G]:" & _NumberFormat($g_aiCurrentLootBB[$eLootGoldBB]) & " [E]:" & _NumberFormat($g_aiCurrentLootBB[$eLootElixirBB]) & "[T]: " & _NumberFormat($g_aiCurrentLootBB[$eLootTrophyBB]), $COLOR_SUCCESS)
+
+	If Not $bBypass Then ; update stats
+		UpdateStats()
+	EndIf
+	
+EndFunc   ;==>BuilderBaseReport
+
+Func isBHMaxed()
+	If $g_bIs6thBuilderUnlocked Then
+		$g_bisBHMaxed = True
+		Return True
+	EndIf
+	
+	Local $aBuildingName, $bRet = False
+	ClickAway("Left")
+	If _Sleep(1000) Then Return
+	If QuickMIS("BC1", $g_sImgBuilderHall) Then ; Search for Builder Hall
+		Click($g_iQuickMISX, $g_iQuickMISY)
+		If _Sleep(1000) Then Return
+		Local $aBuildingName = BuildingInfo()
+		If $aBuildingName[0] = 2 Then
+			; Verify if is Builder Hall and max level
+			If $aBuildingName[1] = "Builder Hall" Then
+				If $aBuildingName[2] = 9 Then
+					SetLog("Your Builder Hall is Maxed!", $COLOR_SUCCESS)
+					$g_bisBHMaxed = True
+					$bRet = True
+				Else
+					SetLog("Your Builder Hall Level is : " & $aBuildingName[2], $COLOR_SUCCESS)
+				EndIf
+				$g_iBHLevel = $aBuildingName[2]
+			Endif
+		EndIf
+	Else
+		Setlog("Trying to find Star Lab to guess your Builder Hall level!", $COLOR_DEBUG)
+		; If Builder Hall cannot be found, try search for lab
+		If QuickMIS("BC1", $g_sImgStarLaboratory) Then 
+			Click($g_iQuickMISX + 5, $g_iQuickMISY + 5)
+			If _Sleep(1000) Then Return
+			Local $aBuildingName = BuildingInfo()
+			If $aBuildingName[0] = 2 Then
+				; Verify if is Star Laboratory and max level
+				If $aBuildingName[1] = "Star Laboratory" Then
+					If $aBuildingName[2] = 9 Then
+						SetLog("Your Builder Hall is Maxed!", $COLOR_SUCCESS)
+						$g_bisBHMaxed = True
+						$bRet = True
+					Else
+						SetLog("Your Builder Hall Level must be : " & $aBuildingName[2], $COLOR_SUCCESS)
+					EndIf
+					$g_iBHLevel = $aBuildingName[2]
+				Endif
+			EndIf
+		Else
+			Setlog("isBHMaxed(): Cannot Find Builder Hall and Star Lab", $COLOR_DEBUG)
+		EndIf
+	EndIf
+	Return $bRet
+EndFunc
+
+Func isBattleMachineMaxed()
+	If $g_bIs6thBuilderUnlocked Then
+		$g_bisBattleMachineMaxed = True
+		Return True
+	EndIf
+
+	ClickAway("Left")
+	If $g_bisBattleMachineMaxed = True Then Return True
+	If _Sleep(1000) Then Return
+	
+	If QuickMIS("BC1", $g_sImgBattleMachine) Then ;Search for Battle Machine
+		If $g_sQuickMISName = "BattleMachineHealth" Then $g_iQuickMISY += 30
+		Click($g_iQuickMISX, $g_iQuickMISY + 5)
+		If _Sleep(1000) Then Return
+		Local $aBuildingName = BuildingInfo()
+		If $aBuildingName[0] = 2 Then
+			; Verify if is Mega Tesla is MaxLevel
+			If $aBuildingName[1] = "Battle Machine" Then
+				If $aBuildingName[2] = 30 Then
+					SetLog("Your Battle Machine is Maxed!", $COLOR_SUCCESS)
+					$g_bisBattleMachineMaxed = True
+					ClickAway("Left")
+					Return True
+				Else
+					SetLog("Your Battle Machine Level is : " & $aBuildingName[2], $COLOR_SUCCESS)
+					$g_bisBattleMachineMaxed = False
+				EndIf
+			Endif
+		EndIf
+	Else
+		Setlog("isBattleMachineMaxed(): Cannot Find Battle Machine", $COLOR_DEBUG)
+	EndIf
+	ClickAway("Left")
+	Return False
+EndFunc
+
+Func isGoldFullBB()
+	$g_bGoldStorageFullBB = False
+	$g_bGoldStorage50BB = False
+	Local $aIsGoldFullBB[4] = [666, 40 , 0xD9B40C, 20] ; BB Gold Resource bar is 90% Full
+	If _CheckPixel($aIsGoldFullBB, True) Then ;Hex if color of gold (orange)
+		SetLog("Builder Base Gold Storages are > 90% : " & _NumberFormat($g_aiCurrentLootBB[$eLootGoldBB]), $COLOR_SUCCESS)
+		$g_bGoldStorageFullBB = True
+	ElseIf $g_bDebugSetlog Then
+		Local $colorRead = _GetPixelColor($aIsGoldFullBB[0], $aIsGoldFullBB[1], True)
+		SetDebugLog("Builder Base Gold Storages are not > 90%", $COLOR_ACTION)
+		SetDebugLog("expected in (" & $aIsGoldFullBB[0] & "," & $aIsGoldFullBB[1] & ")  = " & Hex($aIsGoldFullBB[2], 6) & " - Found " & $colorRead, $COLOR_ACTION)
+	EndIf
+	
+	Local $aIsGold50BB[4] = [740, 40 , 0xD9B40C, 20] ; BB Gold Resource bar is 50%
+	If _CheckPixel($aIsGold50BB, True) Then ;Hex if color of gold (orange)
+		SetLog("Builder Base Gold Storages are > 50%", $COLOR_ACTION)
+		$g_bGoldStorage50BB = True ;only use it for wall upgrade
+	Else
+		SetDebugLog("Builder Base Gold Storages are not > 50%", $COLOR_ACTION)
+	EndIf
+	
+	Return $g_bGoldStorageFullBB
+EndFunc   ;==>isGoldFull
+
+Func isElixirFullBB()
+	$g_bElixirStorageFullBB = False
+	Local $aIsElixirFullBB[4] = [666, 75 , 0x8027FF, 10] ; Main Screen Elixir Resource bar is 90% Full
+	If _CheckPixel($aIsElixirFullBB, True) Then ;Hex if color of Elixir (orange)
+		SetLog("Builder Base Elixir Storages are > 90% : " & _NumberFormat($g_aiCurrentLootBB[$eLootElixirBB]), $COLOR_SUCCESS)
+		$g_bElixirStorageFullBB = True
+	ElseIf $g_bDebugSetlog Then
+		Local $colorRead = _GetPixelColor($aIsElixirFullBB[0], $aIsElixirFullBB[1], True)
+		SetLog("Builder Base Elixir Storages are not > 90%", $COLOR_ACTION)
+		SetLog("expected in (" & $aIsElixirFullBB[0] & "," & $aIsElixirFullBB[1] & ")  = " & Hex($aIsElixirFullBB[2], 6) & " - Found " & $colorRead, $COLOR_ACTION)
+	EndIf
+	
+	Return $g_bElixirStorageFullBB
+EndFunc   ;==>isElixirFull
+
+
+
