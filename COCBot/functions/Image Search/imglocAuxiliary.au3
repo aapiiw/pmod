@@ -300,6 +300,8 @@ Func GetButtonDiamond($sButtonName)
 			$btnDiamond = GetDiamondFromRect("5,515,121,560")
 		Case "Okay"
 			$btnDiamond = GetDiamondFromRect("241,249,616,478")
+		Case "Continue" ; Town Hall "before you upgrade" warning
+			$btnDiamond = GetDiamondFromRect("240,220,630,615")
 		Case Else
 			$btnDiamond = "FV" ; use full image to locate button
 	EndSwitch

@@ -23,6 +23,12 @@ Func CollectFreeMagicItems($bTest = False)
 	If Not OpenTraderWindow() Then Return
 	Local $Collected = False
 	Local $aResults = GetFreeMagic()
+	; trader window can still slide in right after the Gems tab is found: first slot read empty ("N/A"), read again
+	For $iRetry = 1 To 3
+		If UBound($aResults) = 0 Or $aResults[0][0] <> "N/A" Then ExitLoop
+		If _Sleep(1000) Then Return
+		$aResults = GetFreeMagic()
+	Next
 	Local $aGem[3]
 	For $i = 0 To UBound($aResults) - 1
 		$aGem[$i] = $aResults[$i][0]

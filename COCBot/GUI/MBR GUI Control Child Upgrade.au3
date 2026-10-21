@@ -792,10 +792,12 @@ Func chkRushTH()
 		For $i = 0 To UBound($g_hChkUpgradesToIgnore) - 1
 			GUICtrlSetState($g_hChkUpgradesToIgnore[$i], $g_asUpgradeIgnore[$i][2] = 1 ? $GUI_CHECKED : $GUI_UNCHECKED)
 		Next
-		GUICtrlSetState($g_hLvUpgradesToIgnore, $GUI_DISABLE) ; list view items cannot be disabled one by one, lock the whole list
+		GUICtrlSetState($g_hLvUpgradesToIgnore, $GUI_DISABLE) ; list view items cannot be disabled one by one, lock the whole lists
+		GUICtrlSetState($g_hLvUpgradesToIgnore2, $GUI_DISABLE)
 	Else
 		$g_bChkRushTH = False
 		GUICtrlSetState($g_hLvUpgradesToIgnore, $GUI_ENABLE)
+		GUICtrlSetState($g_hLvUpgradesToIgnore2, $GUI_ENABLE)
 	EndIf
 	chkUpgradesToIgnore() ; update $g_iChkUpgradesToIgnore now, not only when config is saved
 EndFunc   ;==>chkRushTH

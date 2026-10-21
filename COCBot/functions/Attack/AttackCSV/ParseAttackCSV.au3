@@ -299,14 +299,16 @@ Func ParseAttackCSV($debug = False)
 								SetLog("Drop|Remain:  Dropping left over troops", $COLOR_BLUE)
 								If PrepareAttack($g_iMatchMode, True) > 0 Then
 									; a Loop from all troops
-									For $ii = $eBarb To $eIWiza ; launch all remaining troops
+									For $ii = $eBarb To $eExtraTroopLast ; launch all remaining troops (also attack bar only troops)
+										If $ii > $eIWiza And $ii < $eExtraTroop Then ContinueLoop ; heroes, castle, spells, sieges
 										; Loop on all detected troops
 										For $x = 0 To UBound($g_avAttackTroops) - 1
 											; If the Name exist and haves more than zero is deploy it
 											If $g_avAttackTroops[$x][0] = $ii And $g_avAttackTroops[$x][1] > 0 Then
 												Local $name = GetTroopName($g_avAttackTroops[$x][0], $g_avAttackTroops[$x][1])
+												Local $sShort = $ii >= $eExtraTroop ? $g_asExtraTroopShortNames[$ii - $eExtraTroop] : $g_asTroopShortNames[$ii]
 												Setlog("Drop Remaining " & $name & " x" & $g_avAttackTroops[$x][1], $COLOR_DEBUG)
-												DropTroopFromINI($value1, $index1, $index2, $indexArray, $g_avAttackTroops[$x][1], $g_avAttackTroops[$x][1], $g_asTroopShortNames[$ii], $delaypoints1, $delaypoints2, $delaydrop1, $delaydrop2, $sleepdrop1, $sleepdrop2, $debug)
+												DropTroopFromINI($value1, $index1, $index2, $indexArray, $g_avAttackTroops[$x][1], $g_avAttackTroops[$x][1], $sShort, $delaypoints1, $delaypoints2, $delaydrop1, $delaydrop2, $sleepdrop1, $sleepdrop2, $debug)
 												If _Sleep($DELAYALGORITHM_ALLTROOPS5) Then Return
 											EndIf
 										Next

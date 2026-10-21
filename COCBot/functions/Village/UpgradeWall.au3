@@ -59,6 +59,8 @@ EndFunc   ;==>UpgradeWall
 ; select a wall from Build menu tab 1 ("Wall x N", any level) then upgrade it (with Upgrade More)
 ; Return True/False = upgrade result, -1 = no wall row found (use old way)
 Func UpgradeWallBuildMenu()
+	; no Type filter: "Permanent" holds almost every building, it does not shorten the list
+	Local $sFilter = ""
 	If Not OpenBuildMenu(1) Then Return -1
 	Local $aStop[1] = ["Wall"] ; stop scrolling when the wall row is seen
 	Local $aList = BuildMenuCollect($g_sImgResourceIcon, $g_iXFindUpgrade, -22, "building", $aStop)
@@ -79,7 +81,10 @@ Func UpgradeWallBuildMenu()
 	; resource check before the wall is selected (camera move + wall window cost ~10 s): same rule as DoUpgradeWall,
 	; loot minus wall Min Save, resource type of the GUI (0 Gold, 1 Elixir, 2 Elixir then Gold).
 	; Auto Adjust changes the Min Save values inside DoUpgradeWall, so the check is left to it then.
-	If Not $g_bAutoAdjustSaveWall Then
+	; loot read again now (shown top center while the menu is open): the value read at the start can be old or unread (0),
+	; builders keep upgrading between routines. Unread loot = no early skip, DoUpgradeWall checks after its own report.
+	BuildMenuReadLoot(False, False)
+	If Not $g_bAutoAdjustSaveWall And (Number($g_aiCurrentLoot[$eLootGold]) > 0 Or Number($g_aiCurrentLoot[$eLootElixir]) > 0) Then
 		Local $iCost = Number($aList[$iRow][5])
 		Local $iCanGold = Number($g_aiCurrentLoot[$eLootGold]) - $g_iUpgradeWallMinGold
 		Local $iCanElix = Number($g_aiCurrentLoot[$eLootElixir]) - $g_iUpgradeWallMinElixir
@@ -92,7 +97,7 @@ Func UpgradeWallBuildMenu()
 			Return False
 		EndIf
 	EndIf
-	Local $aCoord = BuildMenuGoToItem(1, $aList[$iRow][3], $aList[$iRow][8], $g_sImgResourceIcon, $g_iXFindUpgrade, -22, "building")
+	Local $aCoord = BuildMenuGoToItem(1, $aList[$iRow][3], $aList[$iRow][8], $g_sImgResourceIcon, $g_iXFindUpgrade, -22, "building", $sFilter)
 	If Not IsArray($aCoord) Then
 		CloseBuildMenu()
 		Return -1

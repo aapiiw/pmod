@@ -560,6 +560,17 @@ Func LabUpgrade($bTest = False)
 		Return False
 	EndIf
 
+	; selected upgrades all of one kind (troops / spells / sieges): Build menu filter of that kind, short list
+	Local $sFilter = LabFilterType()
+	If $sFilter <> "" Then
+		If OpenBuildMenu(2, False, $sFilter) Then
+			SetLog("Laboratory filter: " & $sFilter, $COLOR_INFO)
+		Else
+			$sFilter = ""
+			If Not OpenBuildMenu(2) Then Return False ; filter failed: whole list
+		EndIf
+	EndIf
+
 	; selected upgrades: stop scrolling when all of them are seen ("Upgrade Any" picks from the top rows already read)
 	Local $aStop = LabWantedNames()
 	; no order / no selection ("Any"): first affordable row from the top, page 1 is enough most of the time
@@ -578,7 +589,11 @@ Func LabUpgrade($bTest = False)
 	Next
 
 	Local $iPick = LabPickUpgrade($aList)
-	If $iPick < 0 And $g_bUpgradeAnyTroops And IsArray($aStop) Then ; list stopped at the selected upgrades: "Upgrade Any" needs the rest
+	If $iPick < 0 And $g_bUpgradeAnyTroops And (IsArray($aStop) Or $sFilter <> "") Then ; list stopped at the selected upgrades or filtered: "Upgrade Any" needs the rest
+		If $sFilter <> "" Then
+			$sFilter = ""
+			If Not OpenBuildMenu(2) Then Return False ; filter off, list back on top
+		EndIf
 		$aList = BuildMenuCollect($g_sImgResIcon, $g_iXFindLabUpgrade, -23, "lab")
 		$iPick = LabPickUpgrade($aList)
 	EndIf
@@ -588,7 +603,7 @@ Func LabUpgrade($bTest = False)
 		Return False
 	EndIf
 
-	Local $aCoord = BuildMenuGoToItem(2, $aList[$iPick][3], $aList[$iPick][8], $g_sImgResIcon, $g_iXFindLabUpgrade, -23, "lab")
+	Local $aCoord = BuildMenuGoToItem(2, $aList[$iPick][3], $aList[$iPick][8], $g_sImgResIcon, $g_iXFindLabUpgrade, -23, "lab", $sFilter)
 	If Not IsArray($aCoord) Then
 		CloseBuildMenu()
 		Return False
@@ -598,6 +613,37 @@ Func LabUpgrade($bTest = False)
 	CloseBuildMenu()
 	Return $bRet
 EndFunc   ;==>LabUpgrade
+
+; Build menu filter of the Lab tab for the selected upgrades (order or single selection): all of one kind gives
+; Troops / Spells / Siege, "" for "Any", no selection or mixed kinds
+Func LabFilterType()
+	Local $aIdx[0], $sKind = "", $sThis
+	If $g_bLabUpgradeOrderEnable Then
+		For $z = 0 To UBound($g_aCmbLabUpgradeOrder) - 1
+			If $g_aCmbLabUpgradeOrder[$z] >= 0 Then _ArrayAdd($aIdx, $g_aCmbLabUpgradeOrder[$z] + 1)
+		Next
+	ElseIf $g_iCmbLaboratory > 0 Then
+		_ArrayAdd($aIdx, $g_iCmbLaboratory)
+	EndIf
+	If UBound($aIdx) = 0 Then Return ""
+	For $i In $aIdx
+		If $i <= 0 Or $i >= UBound($g_avLabTroops) Then Return ""
+		If $i = $g_iLabAnySpell Then
+			$sThis = "Spells"
+		ElseIf $i = $g_iLabAnySiege Then
+			$sThis = "Siege"
+		ElseIf StringRight($g_avLabTroops[$i][3], 5) = "Spell" Then
+			$sThis = "Spells"
+		ElseIf StringInStr("|WallW|BattleB|StoneS|SiegeB|LogL|FlameF|BattleD|TroopL|SkyW|", "|" & $g_avLabTroops[$i][2] & "|") Then
+			$sThis = "Siege"
+		Else
+			$sThis = "Troops"
+		EndIf
+		If $sKind = "" Then $sKind = $sThis
+		If $sKind <> $sThis Then Return ""
+	Next
+	Return $sKind
+EndFunc   ;==>LabFilterType
 
 ; remember when lab should be free again ($iMin = lower bound read in Build menu, 0 = unknown)
 Func LabSaveBusyTime($iMin)

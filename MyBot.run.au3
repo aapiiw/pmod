@@ -847,7 +847,7 @@ Func __RunFunction($action)
 	If Not $g_bRunState Then Return
 	; routines currently disabled (CoC UI changed), skip them before daily run counting
 	Switch $action
-		Case "DailyChallenge", "SellMagicItem", "UpgradeBuilding", "AutoUpgrade", "UpgradeLow", "UpgradeWall"
+		Case "SellMagicItem", "UpgradeBuilding", "AutoUpgrade", "UpgradeLow", "UpgradeWall"
 			Broken($action)
 			Return
 	EndSwitch
@@ -908,6 +908,8 @@ Func __RunFunction($action)
 			EndIf
 		Case "CollectFreeMagicItems"
 			CollectFreeMagicItems()
+		Case "DailyChallenge"
+			DailyChallenges() ; reward collect fixed by xbebenk (#138, Oct 2026)
 		Case "AutoUpgradeCC"
 			AutoUpgradeCC()
 		Case "CollectCCGold"
@@ -1018,12 +1020,7 @@ Func FirstCheck()
 		Setlog("Your Account have FREE BUILDER", $COLOR_INFO)
 		If Not $g_bRunState Then Return
 
-		If $g_bAutoUpgradeWallsEnable Then
-			SetLog("Check Upgrade Wall", $COLOR_INFO)
-			UpgradeWall()
-		EndIf
-
-		If Not $g_bRunState Then Return
+		; Auto Upgrade first: buildings (army, hero, storage...) get the resources, walls take what is left
 		If $g_bAutoUpgradeEarly Then
 			SetLog("Check Auto Upgrade Early", $COLOR_INFO)
 			If $g_bUseWallReserveBuilder And WallReservedBuilder() = 1 And $g_iFreeBuilderCount = 1 Then
@@ -1032,7 +1029,14 @@ Func FirstCheck()
 				AutoUpgrade()
 			EndIf
 		EndIf
-		VillageReport()
+
+		If Not $g_bRunState Then Return
+		If $g_bAutoUpgradeWallsEnable Then
+			SetLog("Check Upgrade Wall", $COLOR_INFO)
+			UpgradeWall() ; reads the village again (builders, loot) before and after
+		Else
+			VillageReport()
+		EndIf
 		If _Sleep(50) Then Return
 		If Not $g_bRunState Then Return
 	EndIf

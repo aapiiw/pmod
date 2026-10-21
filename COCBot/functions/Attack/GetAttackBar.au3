@@ -139,7 +139,7 @@ Func ExtendedAttackBarCheck($aAttackBarFirstSearch, $bRemaining, $sSearchDiamond
 				EndIf
 			EndIf
 			; 0: Index, 1: Slot, 2: Amount, 3: X-Coord, 4: Y-Coord, 5: OCR X-Coord, 6: OCR Y-Coord
-			Local $aTempFinalArray[1][7] = [[TroopIndexLookup($aAttackBar[$i][0]), $aAttackBar[$i][3], $aAttackBar[$i][4], $aAttackBar[$i][1], $aAttackBar[$i][2], $aAttackBar[$i][5], $aAttackBar[$i][6]]]
+			Local $aTempFinalArray[1][7] = [[TroopIndexLookup($aAttackBar[$i][0], "", True), $aAttackBar[$i][3], $aAttackBar[$i][4], $aAttackBar[$i][1], $aAttackBar[$i][2], $aAttackBar[$i][5], $aAttackBar[$i][6]]]
 			_ArrayAdd($aFinalAttackBar, $aTempFinalArray)
 		EndIf
 	Next
@@ -301,22 +301,22 @@ Func GetAttackBar($bRemaining = False, $pMatchMode = $DB, $bDebug = False)
 				$sColor = _GetPixelColor($aAttackBar[$i][5] - 20, 569, True)
 				If _ColorCheck($sColor, $aAttackBar[$i][7], 30, Default, $aAttackBar[$i][0]) Then
 					$aAttackBar[$i][4] = 1
-					SetDebugLog("GetAttackBar(): Special Troop:  " & GetTroopName(TroopIndexLookup($aAttackBar[$i][0])) & " deploy failed?")
-					UpdateSpecialTroops(TroopIndexLookup($aAttackBar[$i][0]), False)
+					SetDebugLog("GetAttackBar(): Special Troop:  " & GetTroopName(TroopIndexLookup($aAttackBar[$i][0], "", True)) & " deploy failed?")
+					UpdateSpecialTroops(TroopIndexLookup($aAttackBar[$i][0], "", True), False)
 				Else
-					UpdateSpecialTroops(TroopIndexLookup($aAttackBar[$i][0]), True)
-					SetDebugLog("GetAttackBar(): Special Troop:  " & GetTroopName(TroopIndexLookup($aAttackBar[$i][0])) & " deployed successfully")
+					UpdateSpecialTroops(TroopIndexLookup($aAttackBar[$i][0], "", True), True)
+					SetDebugLog("GetAttackBar(): Special Troop:  " & GetTroopName(TroopIndexLookup($aAttackBar[$i][0], "", True)) & " deployed successfully")
 				EndIf
 			Else
 				$sColor = _GetPixelColor($aAttackBar[$i][5] - 20, 587, True)
 				If _ColorCheck($sColor, $aAttackBar[$i][7], 30, Default, $aAttackBar[$i][0]) Then
 					$aAttackBar[$i][4] = getTroopCount($aAttackBar[$i][5], 578)
 					If $aAttackBar[$i][4] = "111" Then $aAttackBar[$i][4] = 10
-					SetDebugLog("GetAttackBar(): Troop " & GetTroopName(TroopIndexLookup($aAttackBar[$i][0])) & " already deployed, but stay")
+					SetDebugLog("GetAttackBar(): Troop " & GetTroopName(TroopIndexLookup($aAttackBar[$i][0], "", True)) & " already deployed, but stay")
 					SetDebugLog($aAttackBar[$i][0] & " update amount: " & $aAttackBar[$i][4])
 				Else
 					$bRemoved = True
-					SetDebugLog("GetAttackBar(): Troop " & GetTroopName(TroopIndexLookup($aAttackBar[$i][0])) & " already deployed, now removed")
+					SetDebugLog("GetAttackBar(): Troop " & GetTroopName(TroopIndexLookup($aAttackBar[$i][0], "", True)) & " already deployed, now removed")
 					ContinueLoop
 				EndIf
 			EndIf
@@ -341,8 +341,8 @@ Func GetAttackBar($bRemaining = False, $pMatchMode = $DB, $bDebug = False)
 			EndIf
 		EndIf
 		; 0: Index, 1: Slot, 2: Amount, 3: X-Coord, 4: Y-Coord, 5: OCR X-Coord, 6: OCR Y-Coord, 7: TroopName, 8: ColorBar
-		Local $aTempFinalArray[1][9] = [[TroopIndexLookup($aAttackBar[$i][0]), $aAttackBar[$i][3], $aAttackBar[$i][4], $aAttackBar[$i][1], $aAttackBar[$i][2], _
-										$aAttackBar[$i][5], $aAttackBar[$i][6], GetTroopName(TroopIndexLookup($aAttackBar[$i][0])), $aAttackBar[$i][7]]]
+		Local $aTempFinalArray[1][9] = [[TroopIndexLookup($aAttackBar[$i][0], "", True), $aAttackBar[$i][3], $aAttackBar[$i][4], $aAttackBar[$i][1], $aAttackBar[$i][2], _
+										$aAttackBar[$i][5], $aAttackBar[$i][6], GetTroopName(TroopIndexLookup($aAttackBar[$i][0], "", True)), $aAttackBar[$i][7]]]
 		_ArrayAdd($aFinalAttackBar, $aTempFinalArray)
 	Next
 	

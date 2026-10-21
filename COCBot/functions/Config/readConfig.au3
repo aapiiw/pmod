@@ -67,8 +67,10 @@ Func ReadBuildingConfig()
 	Local $_ver630 = GetVersionNormalized("6.3.0")
 	Local $_ver63u = GetVersionNormalized("6.3.u")
 	Local $_ver63u3 = GetVersionNormalized("6.3.u3")
-	If $buildingVersion < $_ver630 _
-			Or ($buildingVersion >= $_ver63u And $buildingVersion <= $_ver63u3) Then
+	; piwMod numbers its versions from 1.0 (saved files 1.x are newer than 7.9.9, not an old MyBot.run 1.x-6.2)
+	Local $bPiwMod = ($buildingVersion >= GetVersionNormalized("1.0") And $buildingVersion < GetVersionNormalized("2.0"))
+	If Not $bPiwMod And ($buildingVersion < $_ver630 _
+			Or ($buildingVersion >= $_ver63u And $buildingVersion <= $_ver63u3)) Then
 		SetLog("New MyBot.run version! Re-locate all buildings!", $COLOR_WARNING)
 		$locationsInvalid = True
 	EndIf
@@ -812,6 +814,8 @@ Func ReadConfig_auto()
 	If Number(IniRead($g_sProfileConfigPath, "Auto Upgrade", "RushTHListVersion", 1)) < 2 And Number($g_aiCmbRushTHOption[0]) = 7 Then $g_aiCmbRushTHOption[0] = 10
 	IniReadS($g_bUpgradeOnlyTHLevelAchieve, $g_sProfileConfigPath, "Auto Upgrade", "UpgradeOnlyTHLevelAchieve", True, "Bool")
 	IniReadS($g_bHeroPriority, $g_sProfileConfigPath, "Auto Upgrade", "HeroPriority", False, "Bool")
+	IniReadS($g_iAutoUpgradeOrder, $g_sProfileConfigPath, "Auto Upgrade", "UpgradeOrder", 0, "int")
+	If $g_iAutoUpgradeOrder < 0 Or $g_iAutoUpgradeOrder > UBound($g_asAutoUpgradeOrder) Then $g_iAutoUpgradeOrder = 0
 	IniReadS($g_bUseHeroBooks, $g_sProfileConfigPath, "Auto Upgrade", "UseHeroBooks", True, "Bool")
 	IniReadS($g_iHeroMinUpgradeTime, $g_sProfileConfigPath, "Auto Upgrade", "HeroMinUpgradeTime", 5, "int")
 	IniReadS($g_bUpgradeOtherDefenses, $g_sProfileConfigPath, "Auto Upgrade", "UpgradeOtherDefenses", False, "Bool")

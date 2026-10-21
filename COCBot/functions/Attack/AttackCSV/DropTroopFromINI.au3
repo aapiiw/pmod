@@ -75,7 +75,7 @@ Func DropTroopFromINI($sDropVectors, $iStartIndex, $iEndIndex, $aiIndexArray, $i
 	debugAttackCSV(">> qty extra: " & $extraunit)
 
 	; Get the integer index of the troop name specified
-	Local $iTroopIndex = TroopIndexLookup($sTroopName, "DropTroopFromINI")
+	Local $iTroopIndex = TroopIndexLookup($sTroopName, "DropTroopFromINI", True)
 	If $iTroopIndex = -1 Then
 		SetLog("CSV troop name '" & $sTroopName & "' is unrecognized.")
 		Return
@@ -175,7 +175,7 @@ Func DropTroopFromINI($sDropVectors, $iStartIndex, $iEndIndex, $aiIndexArray, $i
 					EndIf
 
 					Switch $iTroopIndex
-						Case $eBarb To $eIWiza ; drop normal/super troops
+						Case $eBarb To $eIWiza, $eExtraTroop To $eExtraTroopLast ; drop normal/super troops (also attack bar only troops)
 							If $bDebug Then
 								SetLog("AttackClick( " & $pixel[0] & ", " & $pixel[1] & " , " & $qty2 & ", " & $delayPoint & ",#0668)")
 							Else
@@ -223,7 +223,7 @@ Func DropTroopFromINI($sDropVectors, $iStartIndex, $iEndIndex, $aiIndexArray, $i
 							Else
 								dropCC($pixel[0], $pixel[1], $troopPosition)
 							EndIf
-						Case $eLSpell To $eOgSpell
+						Case $eLSpell To $eOgSpell, $eExtraSpell To $eExtraSpellLast
 							If $bDebug Then
 								SetLog("Drop Spell AttackClick( " & $pixel[0] & ", " & $pixel[1] & " , " & $qty2 & ", " & $delayPoint & ",#0668)")
 							Else

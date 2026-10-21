@@ -141,6 +141,11 @@ Func SearchUpgrade($bTest = False, $bUpgradeLowCost = False)
 		SetLog("Build menu had nothing to upgrade at TH" & $g_iTownHallLevel & ", skip Auto Upgrade", $COLOR_INFO)
 		Return False
 	EndIf
+	; builders read on main screen by VillageReport: no free builder = no need to open the Build menu
+	If Not $bTest And Not $bUpgradeLowCost And $g_iTotalBuilderCount > 0 And $g_iFreeBuilderCount < 1 Then
+		SetLog("No free builder, skip Auto Upgrade", $COLOR_INFO)
+		Return False
+	EndIf
 	PlaceUnplacedBuilding()
 	If $bUpgradeLowCost And $g_iFreeBuilderCount = 1 And WallReservedBuilder() = 1 Then
 		OpenMainBuilder()
@@ -177,8 +182,41 @@ Func SearchUpgrade($bTest = False, $bUpgradeLowCost = False)
 	EndIf
 	
 	If _Sleep(50) Then Return
+	; Rush TH, Upgrade Other Defenses, low cost and wall reserve builder need the scored full list (old search)
+	Local $bByOrder = $g_iAutoUpgradeOrder < UBound($g_asAutoUpgradeOrder) And Not $g_bChkRushTH And Not $g_bUpgradeOtherDefenses And _
+			Not $g_bUpgradeLowCost And Not $g_bSkipWallReserve And Not $bSkip1st
+	If $bByOrder Then
+		AutoUpgradeByOrder($bTest)
+		If Not $g_bRunState Then Return
+		ZoomOut(True)
+		Return False
+	EndIf
 	SetLog("_SearchUpgrade(bTest=" & String($bTest) & ", bSkip1st=" & String($bSkip1st) & ", LowCost=" & String($g_bUpgradeLowCost) & ", UseWallReserve=" & String($g_bSkipWallReserve) & ")", $COLOR_DEBUG)
-	_SearchUpgrade($bTest, $bSkip1st, $g_bUpgradeLowCost, $g_bSkipWallReserve) ;search upgrade for existing building
+	Local $aPass = AutoUpgradeFilterPasses($g_bUpgradeLowCost Or $g_bSkipWallReserve Or $bSkip1st)
+	If UBound($aPass) = 1 And $aPass[0] = "" Then
+		_SearchUpgrade($bTest, $bSkip1st, $g_bUpgradeLowCost, $g_bSkipWallReserve) ;search upgrade for existing building
+	ElseIf UBound($aPass) = 0 Then
+		SetLog("Auto Upgrade: every group of Upgrades to ignore is ignored, nothing to search", $COLOR_INFO)
+	Else
+		; whole groups ignored (ex: all defenses): search only the wanted types with the Build menu filter, Town Hall (no filter
+		; button) on page 1 without filter. The filter is reset at the end, also when the search stops early
+		For $iPass = 0 To UBound($aPass) - 1
+			If Not $g_bRunState Then ExitLoop
+			If Not BuildMenuSetFilter($aPass[$iPass]) Then
+				SetLog("Auto Upgrade: Build menu filter failed, search without filter", $COLOR_WARNING)
+				BuildMenuSetFilter("")
+				_SearchUpgrade($bTest, $bSkip1st, $g_bUpgradeLowCost, $g_bSkipWallReserve)
+				ExitLoop
+			EndIf
+			If $iPass > 0 And Not AutoUpgradeCheckBuilder() Then ExitLoop ; builders used by the previous pass
+			SetLog("Auto Upgrade filter: " & ($aPass[$iPass] = "" ? "none (page 1, Town Hall)" : $aPass[$iPass]), $COLOR_INFO)
+			_SearchUpgrade($bTest, $bSkip1st, $g_bUpgradeLowCost, $g_bSkipWallReserve, $aPass[$iPass] = "" ? 1 : 15, True)
+		Next
+		If $g_bRunState Then
+			BuildMenuSetFilter("")
+			CloseBuildMenu()
+		EndIf
+	EndIf
 	If _Sleep(2000) Then Return
 
 	If Not $g_bRunState Then Return
@@ -186,19 +224,19 @@ Func SearchUpgrade($bTest = False, $bUpgradeLowCost = False)
 	Return False
 EndFunc
 
-Func _SearchUpgrade($bTest = False, $bSkip1st = False, $bLowCost = False, $bUseWallReserve = False)
+Func _SearchUpgrade($bTest = False, $bSkip1st = False, $bLowCost = False, $bUseWallReserve = False, $iMaxPage = 15, $bFiltered = False)
 	If Not $g_bRunState Then Return
 	SetLog("Search For Upgrade", $COLOR_DEBUG)
 	Local $Upgrades, $ZoomedIn = False, $bDoScroll = True, $bNew = False
 	Local $TmpUpgradeCost, $UpgradeCost, $sameCost = 0
 	Local $bAffordSeen = False, $bCheckNext = False ; scroll rule, see BuildMenuStopScroll
 	; list empty check: only a full search (no low cost / wall reserve filter) with the Build menu open can say "nothing to upgrade"
-	Local $bCanBeEmpty = Not $bSkip1st And Not $bLowCost And Not $bUseWallReserve And Not $bTest, $bMenuSeen = False, $bNotEmpty = False
+	Local $bCanBeEmpty = Not $bSkip1st And Not $bLowCost And Not $bUseWallReserve And Not $bTest And Not $bFiltered, $bMenuSeen = False, $bNotEmpty = False
 
 	;Local $bSkipNew = FindTHInUpgradeProgress()
 	Local $bSkipNew = True
 	
-	For $z = 1 To 15 ;for do scroll 15 times
+	For $z = 1 To $iMaxPage ;for do scroll (15 times without filter)
 		If Not $g_bRunState Then Return
 		If _Sleep(50) Then Return
 		SetLog("Search For Upgrade #" & $z, $COLOR_ACTION)
@@ -329,6 +367,44 @@ Func _SearchUpgrade($bTest = False, $bSkip1st = False, $bLowCost = False, $bUseW
 	EndIf
 EndFunc
 
+; Build menu filter types to search for Auto Upgrade, from the Upgrades to ignore list and $g_asUpgradeIgnoreFilter:
+; [""] = one search without filter (no group fully ignored, or ignore can be bypassed), [] = everything ignored,
+; else "" first (page 1 for groups without filter button = Town Hall) when needed, then each type with something to upgrade
+Func AutoUpgradeFilterPasses($bNoFilter = False)
+	Local $aNone[1] = [""], $aPass[0]
+	; ignored rows can still be upgraded with these options: the full list is needed
+	If $bNoFilter Or $g_bUpgradeOtherDefenses Then Return $aNone
+	If $g_bChkRushTH Then
+		For $k = 0 To UBound($g_aichkEssentialUpgrade) - 1
+			If $g_aichkEssentialUpgrade[$k] = 1 Then Return $aNone
+		Next
+		If $g_bUpgradeOnlyTHLevelAchieve And IsTHLevelAchieved() Then Return $aNone
+	EndIf
+	Local $bNeedNone = False, $aNeed[UBound($g_asUpgradeIgnoreFilter)], $iTypes = 0, $iNeeded = 0
+	For $i = 0 To UBound($g_asUpgradeIgnore) - 1
+		If $g_iChkUpgradesToIgnore[$i] = 1 Then ContinueLoop
+		For $g = 0 To UBound($g_asUpgradeIgnoreFilter) - 1
+			If $g_asUpgradeIgnoreFilter[$g][0] <> $g_asUpgradeIgnore[$i][3] Then ContinueLoop
+			If $g_asUpgradeIgnoreFilter[$g][1] = "" Then
+				$bNeedNone = True
+			Else
+				$aNeed[$g] = True
+			EndIf
+		Next
+	Next
+	For $g = 0 To UBound($g_asUpgradeIgnoreFilter) - 1
+		If $g_asUpgradeIgnoreFilter[$g][1] = "" Then ContinueLoop
+		$iTypes += 1
+		If $aNeed[$g] Then $iNeeded += 1
+	Next
+	If $iNeeded = $iTypes Then Return $aNone ; nothing fully ignored: the filter would not shorten the list
+	If $bNeedNone Then _ArrayAdd($aPass, "")
+	For $g = 0 To UBound($g_asUpgradeIgnoreFilter) - 1
+		If $g_asUpgradeIgnoreFilter[$g][1] <> "" And $aNeed[$g] Then _ArrayAdd($aPass, $g_asUpgradeIgnoreFilter[$g][1])
+	Next
+	Return $aPass
+EndFunc   ;==>AutoUpgradeFilterPasses
+
 ; current switch account index for the per account arrays (16 rows), 0 without switch account
 Func CurAccountIndex()
 	Local $i = Number($g_iCurAccount)
@@ -358,6 +434,247 @@ Func AutoUpgradeListEmpty()
 	$g_aiAutoUpgradeEmpty[$i][0] = 0 ; TH level changed or a builder finished: check the list again
 	Return False
 EndFunc   ;==>AutoUpgradeListEmpty
+
+; Auto Upgrade by type order ($g_asAutoUpgradeOrder, GUI combo): Build menu Type filter for each type, the first affordable
+; row (white cost) from the top is upgraded, like PH Mod. Name OCR only for the row to upgrade (Upgrades to ignore),
+; cost OCR only when a Min Save is set for its resource. Return number of upgrades started
+Func AutoUpgradeByOrder($bTest = False)
+	Local $iStarted = 0, $bNotEmpty = False, $bStop = False, $iRet, $iExt
+	For $p = 0 To UBound($g_asAutoUpgradeOrder, 2) - 1
+		If Not $g_bRunState Then Return $iStarted
+		Local $sType = $g_asAutoUpgradeOrder[$g_iAutoUpgradeOrder][$p]
+		If $sType <> "" And Not AutoUpgradeTypeWanted($sType) Then
+			SetDebugLog("Auto Upgrade " & $sType & ": every building of this type is ignored, skip")
+			ContinueLoop
+		EndIf
+		$iRet = AutoUpgradeTypePass($sType, $bTest)
+		$iExt = @extended
+		If BitAND($iExt, 1) Then $bNotEmpty = True
+		$iStarted += $iRet
+		If BitAND($iExt, 2) Or ($bTest And $iStarted > 0) Then
+			$bStop = True
+			ExitLoop
+		EndIf
+	Next
+	If Not $g_bRunState Then Return $iStarted
+	BuildMenuSetFilter("")
+	CloseBuildMenu()
+	; nothing left to wait for (no red row, every affordable row ignored): skip until TH level changes or a builder is free
+	If Not $bTest And Not $bStop And $iStarted = 0 And Not $bNotEmpty And $g_iTownHallLevel > 0 Then
+		Local $iAcc = CurAccountIndex()
+		$g_aiAutoUpgradeEmpty[$iAcc][0] = $g_iTownHallLevel
+		$g_aiAutoUpgradeEmpty[$iAcc][1] = $g_iFreeBuilderCount
+		SetLog("Nothing to upgrade in Build menu (empty / all ignored), Auto Upgrade paused until TH level changes or a builder is free", $COLOR_INFO)
+	EndIf
+	If $iStarted = 0 Then SetLog("Auto Upgrade: no upgrade started", $COLOR_INFO)
+	Return $iStarted
+EndFunc   ;==>AutoUpgradeByOrder
+
+; True when a building of Build menu Type $sType is not ignored in "Upgrades to ignore" (group -> type: $g_asUpgradeIgnoreFilter).
+; "Resource" pass is for storages (and Builder's Hut) only
+Func AutoUpgradeTypeWanted($sType)
+	For $i = 0 To UBound($g_asUpgradeIgnore) - 1
+		If $g_iChkUpgradesToIgnore[$i] = 1 Then ContinueLoop
+		If $sType = "Resource" And Not (StringInStr($g_asUpgradeIgnore[$i][1], "Storage") Or StringInStr($g_asUpgradeIgnore[$i][1], "Builder")) Then ContinueLoop
+		For $g = 0 To UBound($g_asUpgradeIgnoreFilter) - 1
+			If $g_asUpgradeIgnoreFilter[$g][0] = $g_asUpgradeIgnore[$i][3] And $g_asUpgradeIgnoreFilter[$g][1] = $sType Then Return True
+		Next
+	Next
+	Return False
+EndFunc   ;==>AutoUpgradeTypeWanted
+
+; one type of the order: set the filter, upgrade affordable rows from the top until no builder is left or no row can be
+; upgraded (scroll only while the page had affordable rows that were all skipped, see BuildMenuStopScroll).
+; Return number of upgrades started, @extended: 1 = a row to wait for (not ignored, or red cost), 2 = stop (no builder)
+Func AutoUpgradeTypePass($sType, $bTest = False)
+	SetLog("Auto Upgrade: " & ($sType = "" ? "rest of the list (no filter)" : $sType & " (filter)"), $COLOR_INFO)
+	If Not OpenBuildMenu(1, False, $sType) Then ; tab 1 (the menu opens on the last used tab) with the filter
+		SetLog("Build menu " & ($sType = "" ? "" : "filter " & $sType & " ") & "failed, skip", $COLOR_WARNING)
+		Return SetExtended(1, 0)
+	EndIf
+	BuildMenuReadLoot(False)
+	Local $iStarted = 0, $iExt = 0, $aSkip[0], $bAffordSeen = False, $bCheckNext = False, $iScroll = 0, $sSig = "", $sLastSig = ""
+	While $g_bRunState
+		Local $aRow = AutoUpgradeFindRow($sType, $aSkip, $sSig)
+		Local $iFlags = @extended
+		If BitAND($iFlags, 8) Then $iExt = BitOR($iExt, 1)
+		If IsArray($aRow) Then
+			Local $iRet = AutoUpgradeRow($aRow, $bTest)
+			If $iRet = 1 Then
+				$iStarted += 1
+				If $bTest Then ExitLoop
+				If Not IsBuildMenuOpen() And Not OpenBuildMenu(1, False, $sType) Then Return SetExtended(BitOR($iExt, 2), $iStarted) ; after Hero Hall window
+				If Not AutoUpgradeCheckBuilder() Then Return SetExtended(BitOR($iExt, 2), $iStarted)
+				ContinueLoop ; list changed: read this page again
+			EndIf
+			If $iRet < 0 Then Return SetExtended(BitOR($iExt, 2), $iStarted) ; upgrade not confirmed: stop, builders unknown
+			_ArrayAdd($aSkip, $aRow[5])
+			If Not IsBuildMenuOpen() Then ; row opened something else and it was closed with the menu
+				If Not OpenBuildMenu(1, False, $sType) Then ExitLoop
+				$iScroll = 0
+				$bAffordSeen = False
+				$bCheckNext = False
+			EndIf
+			ContinueLoop
+		EndIf
+		If BuildMenuStopScroll($iFlags, $bAffordSeen, $bCheckNext) Or $iScroll >= 6 Then ExitLoop
+		If $iScroll > 0 And $sSig = $sLastSig Then ExitLoop ; list did not move: end reached
+		$sLastSig = $sSig
+		BuildMenuScrollDown()
+		$iScroll += 1
+	WEnd
+	Return SetExtended($iExt, $iStarted)
+EndFunc   ;==>AutoUpgradeTypePass
+
+; first row of the visible page that can be upgraded: white cost, not "New", resource not ignored, name not in the
+; ignore list ($aSkip = rows tried before, "name|resource"), Min Save kept. Rows above it are checked first (list order).
+; Return [resource, icon x, icon y, name, cost (0 = not read), key] or 0. @extended = page flags of BuildMenuStopScroll,
+; + 8 when a row to wait for was seen (not ignored, or red cost). $sSig = icons of the page (end of list check)
+Func AutoUpgradeFindRow($sType, ByRef $aSkip, ByRef $sSig)
+	Local $iFlags = 0
+	$sSig = ""
+	Local $aIcon = QuickMIS("CNX", $g_sImgResourceIcon, 830, 60, 850, 575)
+	If Not IsArray($aIcon) Or UBound($aIcon) = 0 Then Return SetExtended(0, 0)
+	RemoveDupCNX($aIcon, 2, 5)
+	_ArraySort($aIcon, 0, 0, 0, 2)
+	_CaptureRegion() ; one frame for the color checks of all rows
+	For $i = 0 To UBound($aIcon) - 1
+		$sSig &= $aIcon[$i][0] & $aIcon[$i][2] & "|"
+	Next
+	For $i = 0 To UBound($aIcon) - 1
+		If Not $g_bRunState Then Return SetExtended($iFlags, 0)
+		Local $sRes = $aIcon[$i][0], $iX = Number($aIcon[$i][1]), $iY = Number($aIcon[$i][2])
+		If BuildMenuIsRedCost($iX, $iY) Then
+			$iFlags = BitOR($iFlags, BitAND($iFlags, 2) ? 5 : 4, 8)
+			ContinueLoop
+		EndIf
+		$iFlags = BitOR($iFlags, 2)
+		If AutoUpgradeIsNewRow($iY) Then ContinueLoop ; new building to place, not an upgrade
+		If AutoUpgradeResourceIgnored($sRes) Then ContinueLoop
+		Local $aName = getBuildingName($g_iXFindUpgrade, $iY - 20, $iX - $g_iXFindUpgrade - 80, 18)
+		Local $sName = $aName[0]
+		If StringInStr($sName, "Wall") Then $sName = "Wall"
+		If _ArraySearch($aSkip, $sName & "|" & $sRes) >= 0 Then ContinueLoop
+		; storages first: drills, collectors and mines come with the rest of the list
+		If $sType = "Resource" And (StringInStr($sName, "Drill") Or StringInStr($sName, "Collector") Or StringInStr($sName, "Mine")) Then ContinueLoop
+		If CheckIgnoreUpgrade($sName) Then ContinueLoop
+		$iFlags = BitOR($iFlags, 8)
+		If QuickMIS("BC1", $g_sImgAUpgradeObstGear, $g_iXFindUpgrade, $iY - 2, $iX - 230, $iY + 20) Then
+			If $g_sQuickMISName = "Gear" And Not $g_bGearUpDone Then
+				SetLog("Do GearUp result : " & String(DoGearUp($g_iQuickMISX + 20, $g_iQuickMISY)), $COLOR_INFO)
+				$g_bGearUpDone = True
+				Return SetExtended($iFlags, 0) ; GearUp window used the menu
+			EndIf
+			ContinueLoop
+		EndIf
+		Local $iCost = 0
+		If AutoUpgradeMinSave($sRes) > 0 Then ; cost OCR only to keep the Min Save
+			$iCost = BuildMenuReadCost($iX, $iY)
+			If $iCost <= 0 Then
+				SetLog($sName & ": cost not readable, skip (Min Save is set)", $COLOR_DEBUG1)
+				ContinueLoop
+			EndIf
+			If Not CheckResourceForDoUpgrade($sName, $iCost, $sRes) Then ContinueLoop
+		EndIf
+		Local $aRet[6] = [$sRes, $iX, $iY, $sName, $iCost, $sName & "|" & $sRes]
+		Return SetExtended($iFlags, $aRet)
+	Next
+	Return SetExtended($iFlags, 0)
+EndFunc   ;==>AutoUpgradeFindRow
+
+; green name = new building to place (from PH Mod, uses last _CaptureRegion frame)
+Func AutoUpgradeIsNewRow($iY)
+	Local $iGreen = 0
+	For $x = $g_iXFindUpgrade To $g_iXFindUpgrade + 150 Step 3
+		For $y = $iY - 22 To $iY - 6 Step 2
+			If _ColorCheck(_GetPixelColor($x, $y, False), Hex(0xB4F756, 6), 38) Then $iGreen += 1
+		Next
+	Next
+	Return $iGreen >= 5
+EndFunc   ;==>AutoUpgradeIsNewRow
+
+Func AutoUpgradeResourceIgnored($sRes)
+	Switch $sRes
+		Case "Gold"
+			Return $g_iChkResourcesToIgnore[0] = 1
+		Case "Elix"
+			Return $g_iChkResourcesToIgnore[1] = 1
+		Case "DE"
+			Return $g_iChkResourcesToIgnore[2] = 1
+	EndSwitch
+	Return False
+EndFunc   ;==>AutoUpgradeResourceIgnored
+
+Func AutoUpgradeMinSave($sRes)
+	Switch $sRes
+		Case "Gold"
+			Return Number($g_iTxtSmartMinGold)
+		Case "Elix"
+			Return Number($g_iTxtSmartMinElixir)
+		Case "DE"
+			Return Number($g_iTxtSmartMinDark)
+	EndSwitch
+	Return 0
+EndFunc   ;==>AutoUpgradeMinSave
+
+; click the row and start the upgrade. Return 1 = started (free builder count went down), 0 = not started (skip row),
+; -1 = upgrade clicked but not confirmed by the builder count
+Func AutoUpgradeRow(ByRef $aRow, $bTest = False)
+	Local $sName = $aRow[3], $iFreeBefore = $g_iFreeBuilderCount
+	SetLog("Auto Upgrade: " & $sName & ($aRow[4] > 0 ? ", cost " & _NumberFormat($aRow[4]) : "") & " " & $aRow[0], $COLOR_ACTION)
+	Click($aRow[1], $aRow[2])
+	If _Sleep(1000) Then Return 0
+	Local $aHeroes[6] = ["Barbarian", "Queen", "Warden", "Champion", "Prince", "Duke"]
+	For $sHero In $aHeroes
+		If StringInStr($sName, $sHero) Then
+			If $bTest Then ExitLoop
+			If Not DoUpgradeHero($sName, $aRow[4], $aRow[0]) Then
+				ClickAway()
+				Return 0
+			EndIf
+			; Hero Hall window: builder counters are read again when the menu is opened (AutoUpgradeTypePass)
+			ClickAway("Right")
+			If _Sleep(500) Then Return 1
+			Return 1
+		EndIf
+	Next
+	; Wall row selects a wall, Crafting Station opens its own panel: no upgrade window
+	If Not IsUpgradeWindowOpen() Then
+		SetLog($sName & ": upgrade window not opened, skip", $COLOR_WARNING)
+		ClickAway("Right")
+		If _Sleep(500) Then Return 0
+		Return 0
+	EndIf
+	If $bTest Then
+		SetLog("[test] " & $sName & " upgrade window OK, not confirmed", $COLOR_DEBUG)
+		ClickAway("Right")
+		Return 1
+	EndIf
+	If Not DoUpgrade(False, False, $sName) Then
+		ClickAway("Right")
+		Return 0
+	EndIf
+	If StringInStr($sName, "Town Hall") Then AutoUpgradeContinueTH()
+	; from PH Mod: a started upgrade takes a builder
+	For $i = 1 To 4
+		If _Sleep(500) Then Return 0
+		Local $sBuilder = getBuildersOnMenu()
+		If StringInStr($sBuilder, "#") And Int(StringLeft($sBuilder, StringInStr($sBuilder, "#") - 1)) < $iFreeBefore Then Return 1
+	Next
+	SetLog($sName & ": free builder count did not go down, upgrade not confirmed", $COLOR_ERROR)
+	Return -1
+EndFunc   ;==>AutoUpgradeRow
+
+; Town Hall "before you upgrade" warning after the upgrade click (from PH Mod)
+Func AutoUpgradeContinueTH()
+	If _Sleep(800) Then Return
+	Local $aBtn = findButton("Continue", Default, 1, True)
+	If IsArray($aBtn) And UBound($aBtn, 1) = 2 Then
+		SetLog("Town Hall upgrade warning: Continue", $COLOR_INFO)
+		Click($aBtn[0], $aBtn[1], 1, 0, "Continue Town Hall upgrade")
+		If _Sleep(800) Then Return
+	EndIf
+EndFunc   ;==>AutoUpgradeContinueTH
 
 Func FindUpgrade($bTest = False, $bSkipNew = False, $bLowCost = False, $bUseWallReserve = False)
 	If Not $g_bRunState Then Return

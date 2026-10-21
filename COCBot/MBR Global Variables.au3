@@ -594,6 +594,22 @@ Global Enum $eBarb, $eSBarb, $eArch, $eSArch, $eGiant, $eSGiant, $eGobl, $eSGobl
 			$eJSpell, $eFSpell, $eCSpell, $eISpell, $eReSpell, $ePSpell, $eESpell, $eHaSpell, $eSkSpell, $eBtSpell, $eOgSpell, _
 			$eWallW, $eBattleB, $eStoneS, $eSiegeB, $eLogL, $eFlameF, $eBattleD, $eTroopL, $eSkyW, $eArmyCount
 
+; Attack bar only: troops and spells not in the train lists above (new permanent ones and event / temporary ones).
+; Recognized on the attack bar (imgxml\AttackBar, image name = short name), dropped by name in CSV, troops also with
+; DROP REMAIN. Not trained / donated by the bot. Index after $eArmyCount: train and donate arrays are not changed.
+Global Const $g_asExtraTroopShortNames[30] = ["Throw", "MeteorG", "Druid", "Furn", "RuinW", "SYeti", _
+		"Debt", "ERider", "GGiant", "KANE", "YEET", "Disarmer", "YUnder", "Kicker", "GThrow", "Broom", "MECHA", "IceMini", "COOKIE", "Fire", _
+		"RamR", "PBarb", "Barcher", "HogWiz", "Lavaloon", "TThrow", "WitchG", "SBarrel", "ADrag", "GDrag"]
+Global Const $g_asExtraTroopNames[30] = ["Thrower", "Meteor Golem", "Druid", "Furnace", "Ruin Witch", "Super Yeti", _
+		"Debt Collector", "Elephant Rider", "Giant Giant", "KANE", "YEETer", "The Disarmer", "Yeti Undertaker", "Barbarian Kicker", "Giant Thrower", "Broom Witch", "MECHA", "Ice Minion", "COOKIE", "Firecracker", _
+		"Ram Rider", "Pumpkin Barbarian", "Barcher", "Hog Wizard", "Lavaloon", "Totem Thrower", "Witch Golem", "Skeleton Barrel", "Azure Dragon", "Golden Dragon"]
+Global Const $g_asExtraSpellShortNames[4] = ["RvSpell", "TSpell", "IBSpell", "ASpell"]
+Global Const $g_asExtraSpellNames[4] = ["Revive", "Totem", "Ice Block", "Angry"]
+Global Const $eExtraTroop = $eArmyCount + 1, $eExtraTroopLast = $eExtraTroop + UBound($g_asExtraTroopShortNames) - 1
+Global Const $eExtraSpell = $eExtraTroopLast + 1, $eExtraSpellLast = $eExtraSpell + UBound($g_asExtraSpellShortNames) - 1
+; other image names of troops already in the lists (PH Mod names): [image name, short name]
+Global Const $g_asAttackBarAlias[5][2] = [["RoyalG", "RGhost"], ["GiantS", "GSkel"], ["IceWiz", "IWiza"], ["PartyWiz", "PWiza"], ["Prince", "MinionP"]]
+
 ; Attack types
 Global Enum $DB, $LB, $TB, $DT ; DeadBase, ActiveBase, TownhallBully, DropTrophy
 Global Const $g_iModeCount = 3
@@ -737,7 +753,7 @@ Global Enum $eLootGoldBB, $eLootElixirBB, $eLootTrophyBB, $eLootCountBB
 ; The return value will be from $eBarb to $eSkSpell if a valid $sName is passed in.
 ; The return value will be -1 if an invalid $sname is passed in.
 ;--------------------------------------------------------------------------
-Func TroopIndexLookup(Const $sName, Const $sSource = "")
+Func TroopIndexLookup(Const $sName, Const $sSource = "", $bAttackBar = False)
 	; is the name a elixir or dark elixir troop?
 	For $i = 0 To UBound($g_asTroopShortNames) - 1
 		If $sName = $g_asTroopShortNames[$i] Then
@@ -769,6 +785,21 @@ Func TroopIndexLookup(Const $sName, Const $sSource = "")
 	; is the name "castle"?
 	If $sName = "castle" Then Return $eCastle
 
+	; attack bar only troops and spells ($bAttackBar: index after $eArmyCount, not valid for train / army arrays)
+	If Not $bAttackBar Then
+		SetDebugLog("TroopIndexLookup() Error: Index for troop name '" & $sName & "' not found" & (($sSource) ? (" (" & $sSource & ").") : (".")))
+		Return -1
+	EndIf
+	For $i = 0 To UBound($g_asExtraTroopShortNames) - 1
+		If $sName = $g_asExtraTroopShortNames[$i] Then Return $eExtraTroop + $i
+	Next
+	For $i = 0 To UBound($g_asExtraSpellShortNames) - 1
+		If $sName = $g_asExtraSpellShortNames[$i] Then Return $eExtraSpell + $i
+	Next
+	For $i = 0 To UBound($g_asAttackBarAlias) - 1
+		If $sName = $g_asAttackBarAlias[$i][0] Then Return TroopIndexLookup($g_asAttackBarAlias[$i][1], $sSource, True)
+	Next
+
 	SetDebugLog("TroopIndexLookup() Error: Index for troop name '" & $sName & "' not found" & (($sSource) ? (" (" & $sSource & ").") : (".")))
 	Return -1
 EndFunc   ;==>TroopIndexLookup
@@ -790,6 +821,10 @@ Func GetTroopName(Const $iIndex, $iQuantity = 1)
 		Return $g_asSiegeMachineNames[$iIndex - $eWallW]
 	ElseIf $iIndex = $eCastle Then
 		Return "Clan Castle"
+	ElseIf $iIndex >= $eExtraTroop And $iIndex <= $eExtraTroopLast Then
+		Return $g_asExtraTroopNames[$iIndex - $eExtraTroop] & ($iQuantity > 1 ? "s" : "")
+	ElseIf $iIndex >= $eExtraSpell And $iIndex <= $eExtraSpellLast Then
+		Return $g_asExtraSpellNames[$iIndex - $eExtraSpell] & ($iQuantity > 1 ? " Spells" : " Spell")
 	EndIf
 EndFunc   ;==>GetTroopName
 ;--------------------------------------------------------------------------
@@ -951,6 +986,10 @@ Global Const $g_aiHeroHallCost[11] = [800000, 1600000, 2300000, 3000000, 5000000
 
 ; Auto Upgrade
 Global $g_bChkRushTH = False, $g_bHeroPriority = False
+; Auto Upgrade order (GUI combo index): Build menu Type filter passes, "" = no filter (rest of the list).
+; "Resource" pass takes storages only (drills, collectors and mines are in the last pass). Last index = old full list search
+Global $g_iAutoUpgradeOrder = 0
+Global Const $g_asAutoUpgradeOrder[3][5] = [["Army", "Hero", "Resource", "Defense", ""], ["Hero", "Army", "Resource", "Defense", ""], ["Army", "Hero", "Defense", "Resource", ""]]
 Global $g_bAutoUpgradeEnabled = False, $g_bUseWallReserveBuilder = False, $g_bUseHeroBooks = False, $g_iHeroMinUpgradeTime = 0
 Global $g_bSkipWallReserve = False, $g_bUpgradeLowCost = False, $g_bUpgradeOtherDefenses = False, $g_bGearUpDone = False
 Global $g_bUseBuilderPotion = False
@@ -982,7 +1021,7 @@ Global Const $g_asUpgradeIgnore[51][4] = [ _
 		["Gold Storage", "Gold Storage", 0, "R"], _
 		["Elixir Storage", "Elixir Storage", 0, "R"], _
 		["DE Storage", "Dark Elixir Storage", 0, "R"], _
-		["Builder's Hut", "Builder's Hut", 1, "D"], _
+		["Builder's Hut", "Builder's Hut", 1, "R"], _
 		["Wall", "Wall|Walls", 1, "D"], _
 		["Cannon", "Cannon", 1, "D"], _
 		["Archer Tower", "Archer Tower", 1, "D"], _
@@ -1004,11 +1043,16 @@ Global Const $g_asUpgradeIgnore[51][4] = [ _
 		["Firespitter", "Firespitter", 1, "D"], _
 		["Revenge Tower", "Revenge Tower", 1, "D"], _
 		["Super Wizard Tower", "Super Wizard Tower", 1, "D"], _
-		["Smasher", "Smasher", 1, "D"], _
+		["Smasher", "Smasher|SMAasSHER", 1, "D"], _ ; OCR always reads Smasher as "SMAasSHER" (Oct 2026)
 		["Longshot", "Longshot", 1, "D"], _
 		["Logger", "Logger", 1, "D"], _
 		["Crafting Station", "Crafting Station", 1, "D"], _
 		["Traps", "Bomb|Spring Trap|Air Bomb|Giant Bomb|Seeking Air Mine|Skeleton Trap|Tornado Trap|Giga Bomb", 1, "D"]]
+; Build menu filter "Type" button of each ignore group, used by Auto Upgrade when a whole group is ignored
+; ("" = no filter button: read on page 1 without filter). The game "Permanent" type holds almost every building
+; (not only Town Hall and Wall): not used. Wall is in group D (Defense) of the ignore list.
+Global $g_asUpgradeIgnoreFilter[5][2] = [["T", ""], ["H", "Hero"], ["A", "Army"], ["R", "Resource"], ["D", "Defense"]]
+Global $g_asBuildMenuFilter[5] = ["", "", "", "", ""] ; Build menu filter set by the bot per home tab ("" = none)
 Global $g_iChkUpgradesToIgnore[51] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 Global $g_iChkResourcesToIgnore[3] = [0, 0, 0]
 Global $g_aiCmbRushTHOption[5] = [0, 0, 0, 0, 0]

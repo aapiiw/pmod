@@ -19,14 +19,93 @@ Global $g_iBuildMenuPage = 1 ; how many pages the list of current tab is scrolle
 Global $g_bBuildMenuBB = False ; menu opened on Builder Base
 
 ; Builder Base names as written in game (OCR)
-Global Const $g_asBBBuildingNames[34] = ["Cannon", "Double Cannon", "Archer Tower", "Hidden Tesla", "Firecrackers", "Crusher", "Guard Post", _
+Global Const $g_asBBBuildingNames[35] = ["Cannon", "Double Cannon", "Archer Tower", "Hidden Tesla", "Firecrackers", "Crusher", "Guard Post", _
 		"Air Bombs", "Multi Mortar", "Roaster", "Giant Cannon", "Mega Tesla", "Lava Launcher", "X-Bow", "Zappy", "Wall", _
 		"Push Trap", "Spring Trap", "Mine", "Mega Mine", "Builder Hall", "Gold Mine", "Elixir Collector", "Gold Storage", "Elixir Storage", _
-		"Gem Mine", "B.O.B Control", "Builder Barracks", "Army Camp", "Star Laboratory", "Battle Machine Altar", "Reinforcement Camp", _
-		"Healing Hut", "Battle Copter Altar"]
+		"Gem Mine", "B.O.B Control", "Builder Barracks", "Army Camp", "Star Laboratory", "Battle Machine", "Reinforcement Camp", _
+		"Healing Hut", "Battle Copter", "O.T.T.O's Outpost"]
 ; same index as $g_avStarLabTroops
 Global Const $g_asStarLabGameNames[13] = ["", "Raged Barbarian", "Sneaky Archer", "Boxer Giant", "Beta Minion", "Bomber", "Baby Dragon", _
 		"Cannon Cart", "Night Witch", "Drop Ship", "Power P.E.K.K.A", "Hog Glider", "Electrofire Wizard"]
+
+; Build menu list filter (button left of the tab title). One button per row can be on, a second click turns it off,
+; the filter stays after the menu is closed. Home tab 1 types: Army, Defense, Hero, Resource, New, Permanent
+; (Lab tab 2: Troops, Spells, Siege on the Army/Defense/Hero places). Sorting is not used: Cost Max moves red rows on top.
+; Tested on emulator (Oct 2026): button on EDAB27 (yellow), off 8D6848, read at (x - 49, y - 10). A click during the window
+; animation can be lost, so every button state is read again after the click.
+Global Const $g_aBuildMenuFilterBtn[11][3] = [["Gold", 214, 136], ["Elixir", 350, 136], ["Dark", 487, 136], _
+		["Army", 214, 220], ["Defense", 350, 220], ["Hero", 487, 220], ["Resource", 214, 272], ["New", 350, 272], ["Permanent", 487, 272], _
+		["CostMax", 214, 355], ["CostMin", 350, 355]]
+
+; filter button yellow = a filter is on (menu open, filter window closed): F3B52E on, 867B72 off
+Func BuildMenuFilterActive()
+	Return _ColorCheck(_GetPixelColor(515, 24, True), Hex(0xF3B52E, 6), 40)
+EndFunc   ;==>BuildMenuFilterActive
+
+Func BuildMenuFilterWindowOpen()
+	_CaptureRegion()
+	For $i = 3 To 5 ; first row of type buttons
+		Local $sColor = _GetPixelColor($g_aBuildMenuFilterBtn[$i][1] - 49, $g_aBuildMenuFilterBtn[$i][2] - 10, False)
+		If Not (_ColorCheck($sColor, Hex(0x8D6848, 6), 25) Or _ColorCheck($sColor, Hex(0xEDAB27, 6), 30)) Then Return False
+	Next
+	Return True
+EndFunc   ;==>BuildMenuFilterWindowOpen
+
+Func BuildMenuFilterBtnOn($i)
+	Return _ColorCheck(_GetPixelColor($g_aBuildMenuFilterBtn[$i][1] - 49, $g_aBuildMenuFilterBtn[$i][2] - 10, True), Hex(0xEDAB27, 6), 30)
+EndFunc   ;==>BuildMenuFilterBtnOn
+
+; set the list filter of the open tab $iTab: only type button $sType on ("" = no filter), resource and sorting off.
+; Lab tab names Troops / Spells / Siege are the Army / Defense / Hero buttons. Opens the menu (tab $iTab) when it is closed,
+; the menu stays open. Return True when the wanted state is verified
+Func BuildMenuSetFilter($sType = "", $iTab = 1)
+	If Not IsBuildMenuOpen() Then Return OpenBuildMenu($iTab, False, $sType)
+	Local $sBtn = $sType
+	Switch $sType
+		Case "Troops"
+			$sBtn = "Army"
+		Case "Spells"
+			$sBtn = "Defense"
+		Case "Siege"
+			$sBtn = "Hero"
+	EndSwitch
+	If $sType = "" And Not BuildMenuFilterActive() Then
+		$g_asBuildMenuFilter[$iTab] = ""
+		Return True
+	EndIf
+	For $iTry = 1 To 3
+		If BuildMenuFilterWindowOpen() Then ExitLoop
+		Click(540, 24, 1, 0, "Build menu filter")
+		If _Sleep(800) Then Return False
+	Next
+	If Not BuildMenuFilterWindowOpen() Then
+		SetLog("Build menu filter window not opened", $COLOR_WARNING)
+		Return False
+	EndIf
+	Local $bOk = True
+	For $i = 0 To UBound($g_aBuildMenuFilterBtn) - 1
+		Local $bWant = ($g_aBuildMenuFilterBtn[$i][0] = $sBtn)
+		For $iTry = 1 To 3
+			If BuildMenuFilterBtnOn($i) = $bWant Then ExitLoop
+			Click($g_aBuildMenuFilterBtn[$i][1], $g_aBuildMenuFilterBtn[$i][2], 1, 0, "Filter " & $g_aBuildMenuFilterBtn[$i][0])
+			If _Sleep(700) Then Return False
+		Next
+		If BuildMenuFilterBtnOn($i) <> $bWant Then $bOk = False
+	Next
+	For $iTry = 1 To 3 ; close the filter window (same button)
+		If Not BuildMenuFilterWindowOpen() Then ExitLoop
+		Click(540, 24, 1, 0, "Close Build menu filter")
+		If _Sleep(800) Then Return False
+	Next
+	$g_iBuildMenuPage = 1
+	If $bOk Then
+		$g_asBuildMenuFilter[$iTab] = $sType
+		SetDebugLog("Build menu filter tab " & $iTab & ": " & ($sType = "" ? "none" : $sType))
+	Else
+		SetLog("Build menu filter " & ($sType = "" ? "reset" : $sType) & " not verified", $COLOR_WARNING)
+	EndIf
+	Return $bOk
+EndFunc   ;==>BuildMenuSetFilter
 
 Func IsBuildMenuOpen()
 	Return _ColorCheck(_GetPixelColor(835, 35, True), Hex(0xD0151A, 6), 20)
@@ -62,7 +141,8 @@ Func BuildMenuTab($bBB = $g_bBuildMenuBB)
 	Return 0
 EndFunc   ;==>BuildMenuTab
 
-Func OpenBuildMenu($iTab = 1, $bBB = False)
+; $sFilter = list filter wanted on a home tab ("" = none, see BuildMenuSetFilter). @error = 1: tab open but filter failed
+Func OpenBuildMenu($iTab = 1, $bBB = False, $sFilter = "")
 	If Not $g_bRunState Then Return False
 	If IsBuildMenuOpen() And $g_bBuildMenuBB <> $bBB Then CloseBuildMenu() ; menu of the other village left open
 	If Not IsBuildMenuOpen() Then
@@ -82,6 +162,13 @@ Func OpenBuildMenu($iTab = 1, $bBB = False)
 	For $iTry = 1 To 3
 		If BuildMenuTab($bBB) = $iTab Then
 			If $iTry > 1 Or $g_iBuildMenuPage = 1 Then ReadBuildMenuCounters($bBB)
+			; home tabs: the filter stays in game after the menu is closed. Set the wanted one, and reset a filter left on
+			; (other routine, bot stopped while filtering, or set by hand) because it hides rows
+			; (tabs 1 and 2 only: Hero Equipment / Pets have another filter window)
+			If Not $bBB And $iTab <= 2 And ($sFilter <> $g_asBuildMenuFilter[$iTab] Or ($sFilter = "" And BuildMenuFilterActive())) Then
+				If $sFilter = "" Then SetLog("Build menu filter is on, reset it", $COLOR_INFO)
+				If Not BuildMenuSetFilter($sFilter, $iTab) And $sFilter <> "" Then Return SetError(1, 0, False)
+			EndIf
 			Return True
 		EndIf
 		Click($bBB ? $g_aiBuildMenuTabXBB[$iTab] : $g_aiBuildMenuTabX[$iTab], $g_iBuildMenuTabY, 1, 0, "Build menu tab " & $iTab)
@@ -268,11 +355,12 @@ Func BuildMenuReadCost($iX, $iY)
 	Return 0
 EndFunc   ;==>BuildMenuReadCost
 
-; minimum digit count of the white cost text from its pixel width (last _CaptureRegion frame), to catch a lost digit.
-; Text edges are searched (icon point differs a few px between home and builder base). Measured on Lab screenshots (Oct 2026):
-; 7 digits 76..84 px, 6 digits 57..66 px, 5 digits 46..53 px, 4 digits 44..45 px ("1" is narrow, so 4/5 can not be told apart)
+; digit count of the white cost text (last _CaptureRegion frame), to catch a lost digit ("12 600 000" read as "2 600 000").
+; Pixel width can not tell 7 from 8 digits ("1" is narrow), so digits are counted: white column runs are digits,
+; gaps of 1..3 px are inside a digit group, 5+ px between groups (Build menu screenshots, Oct 2026).
+; Return 1 (no check) when the text does not look like "d dd ddd" groups
 Func BuildMenuCostMinDigits($iX, $iY)
-	Local $iRight = 0, $iLeft = 0
+	Local $iRight = 0
 	For $x = $iX - 5 To $iX - 30 Step -1 ; right end of the text, left of the icon
 		If BuildMenuCostWhiteColumn($x, $iY) Then
 			$iRight = $x
@@ -280,17 +368,28 @@ Func BuildMenuCostMinDigits($iX, $iY)
 		EndIf
 	Next
 	If $iRight = 0 Then Return 1
-	For $x = $iX - 110 To $iRight
+	Local $iGroupDigits = 0, $iDigits = 0, $iRun = 0, $iGap = 0
+	For $x = $iRight To $iX - 125 Step -1
 		If BuildMenuCostWhiteColumn($x, $iY) Then
-			$iLeft = $x
-			ExitLoop
+			If $iRun = 0 And $iGap >= 5 Then ; new digit group: the one on the right must have 3 digits
+				If $iGroupDigits <> 3 Then Return 1
+				$iGroupDigits = 0
+			EndIf
+			$iRun += 1
+			$iGap = 0
+		Else
+			If $iRun > 0 Then
+				Local $iCount = ($iRun >= 15) ? 2 : 1 ; two digits touching
+				$iGroupDigits += $iCount
+				$iDigits += $iCount
+			EndIf
+			$iRun = 0
+			$iGap += 1
+			If $iGap >= 12 Then ExitLoop ; end of the text
 		EndIf
 	Next
-	Local $iWidth = $iRight - $iLeft
-	If $iWidth >= 71 Then Return 7
-	If $iWidth >= 55 Then Return 6
-	If $iWidth >= 40 Then Return 4
-	Return 1
+	If $iGroupDigits < 1 Or $iGroupDigits > 3 Then Return 1
+	Return $iDigits
 EndFunc   ;==>BuildMenuCostMinDigits
 
 Func BuildMenuCostWhiteColumn($x, $iY)
@@ -368,7 +467,9 @@ Func BuildMenuReadPage($sIconDir, $iNameX, $iNameDy, $sType)
 			$iFlags = BitOR($iFlags, BitAND($iFlags, 2) ? 5 : 4)
 			ContinueLoop
 		EndIf
-		If $iCost <= 0 Then ContinueLoop ; in progress / max level / unreadable: skip name OCR
+		; in progress / max level / unreadable: skip name OCR. BB rows are found by their resource icon (no row without
+		; cost): white cost not read ("500 000" read as "00 000") is kept with cost 0, the upgrade window checks the cost
+		If $iCost <= 0 And Not ($sType = "bb" And $iCost = 0) Then ContinueLoop
 		$iFlags = BitOR($iFlags, 2)
 		Local $iW = $iX - 80 - $iNameX ; like dev: keep upgrade time text out of the name
 		If $iW > 210 Then $iW = 210
@@ -475,8 +576,8 @@ EndFunc   ;==>BuildMenuCollect
 
 ; go to the row $sName on $iPage (scroll from current page, no close/reopen) and
 ; return [icon x, icon y, upgrade time min], or 0 if the row is not found
-Func BuildMenuGoToItem($iTab, $sName, $iPage, $sIconDir, $iNameX, $iNameDy, $sType)
-	If Not OpenBuildMenu($iTab, BuildMenuIsBBType($sType)) Then Return 0 ; already open on this tab: nothing done, page kept
+Func BuildMenuGoToItem($iTab, $sName, $iPage, $sIconDir, $iNameX, $iNameDy, $sType, $sFilter = "")
+	If Not OpenBuildMenu($iTab, BuildMenuIsBBType($sType), $sFilter) Then Return 0 ; already open on this tab (same filter): page kept
 	While $g_iBuildMenuPage > $iPage
 		BuildMenuScrollUp()
 	WEnd
@@ -616,10 +717,11 @@ Func BBFindFirstUpgrade(ByRef $aSkip)
 		Local $bAfford = (BitAND(@extended, 2) = 2)
 		BuildMenuLogList("BB Upgrade List (page " & $iPage & ")", $aPage)
 		For $i = 0 To UBound($aPage) - 1
-			If Not $aPage[$i][7] Then ContinueLoop
+			; name not read (a lone "Mine" always gives empty OCR): still a building to upgrade, so Wall is not taken first
+			If Not $aPage[$i][7] Then $aPage[$i][3] = "?"
 			If _ArraySearch($aSkip, $aPage[$i][3]) >= 0 Then ContinueLoop
 			If $aPage[$i][3] = "Builder Hall" And $g_bChkAutoUpgradeBBIgnoreHall Then ContinueLoop
-			If $aPage[$i][3] = "Wall" And $g_bChkAutoUpgradeBBIgnoreWall Then ContinueLoop
+			If $aPage[$i][3] = "Wall" And ($g_bChkAutoUpgradeBBIgnoreWall Or $aPage[$i][5] = 0) Then ContinueLoop ; wall needs its cost (Upgrade More)
 			Local $iLoot = $aPage[$i][0] = "Elix" ? $g_aiCurrentLootBB[$eLootElixirBB] : $g_aiCurrentLootBB[$eLootGoldBB]
 			If Number($iLoot) < $aPage[$i][5] Then ContinueLoop
 			Local $aRet[5] = [$aPage[$i][3], $aPage[$i][0], $aPage[$i][5], $aPage[$i][1], $aPage[$i][2]]
