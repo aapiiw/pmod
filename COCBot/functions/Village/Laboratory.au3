@@ -460,36 +460,11 @@ Func CheckIfLabIdle($bDebug = False)
 		EndSelect
 	EndIf
 	
+	; lab busy: the Lab Assistant can speed up the research (Build menu tab 2, checked once per hour per account)
 	If Not $bRet Then
-		If $g_iTownHallLevel >= 9 Then
-			OpenLabMenu()
-			If _Sleep(500) Then Return
-			If QuickMIS("BC1", $g_sImgLabAssistant, 450, 200, 495, 245) Then
-				If QuickMIS("BC1", $g_sImgBuilderMenu, 425, 220, 450, 230) Then ; check available text
-					Click($g_iQuickMISX, $g_iQuickMISY)
-					If _Sleep(500) Then Return
-					If WaitForPixel(830, 130, 831, 131, Hex(0x635550, 6), 10, 2, "LabAssistant") Then
-						If QuickMIS("BC1", $g_sImgLabAssistant, 720, 270, 810, 310) Then
-							Click($g_iQuickMISX, $g_iQuickMISY)
-							If _Sleep(500) Then Return
-							If WaitForPixel(430, 525, 431, 526, Hex(0x8BD43A, 6), 10, 2, "LabAssistant") Then
-								Click(250, 421, 1, 0, "Click Keep Assign")
-								If _Sleep(500) Then Return
-								Click(430, 520, 1, 0, "Click Confirm")
-								If _Sleep(1000) Then Return
-								ClickAway("Left")
-							EndIf
-						EndIf
-					EndIf
-				Else
-					SetLog("LabAssistant not Available", $COLOR_DEBUG2)
-				EndIf
-			EndIf
-			
-			;close builder menu
-			If WaitforPixel(835, 35, 836, 35, "D0151A", 20, 2) Then
-				Click(835, 35, 1, 0, "Click Close Builder Menu")
-			EndIf
+		If BuildMenuHelperDue(1) And OpenBuildMenu(2) Then
+			CheckLabAssistant()
+			CloseBuildMenu()
 		EndIf
 	EndIf
 	
@@ -553,7 +528,7 @@ Func LabUpgrade($bTest = False)
 
 	If Not OpenBuildMenu(2) Then Return False
 	BuildMenuReadLoot()
-	CheckLabAssistant() ; dev: assign Lab Assistant when available
+	; Lab Assistant is checked while the lab is busy (CheckIfLabIdle): an idle lab has no research to speed up
 	If $g_aiBuildMenuCounter[2][0] = 0 And Not $bTest Then
 		LabSaveBusyTime(BuildMenuBusyTime())
 		CloseBuildMenu()
@@ -986,32 +961,10 @@ Func AutoLocateLab()
 	Return $LabFound	
 EndFunc
 
+; Lab Assistant: icon left of Build menu tab 2 (see BuildMenuAssignHelper), the menu must be open on tab 2
 Func CheckLabAssistant()
-	Local $bRet = False
-	SetLog("Checking LabAssistant", $COLOR_INFO)
-	If QuickMIS("BC1", $g_sImgLabAssistant, 170, 130, 320, 170) Then
-		SetLog("LabAssistant Available", $COLOR_INFO)
-		Click($g_iQuickMISX, $g_iQuickMISY)
-		If _Sleep(500) Then Return
-		If WaitForPixel(830, 130, 831, 131, Hex(0x635550, 6), 10, 2, "LabAssistant") Then
-			If QuickMIS("BC1", $g_sImgLabAssistant, 720, 270, 810, 310) Then
-				Click($g_iQuickMISX, $g_iQuickMISY)
-				If _Sleep(500) Then Return
-				If WaitForPixel(430, 525, 431, 526, Hex(0x8BD43A, 6), 10, 2, "LabAssistant") Then
-					Click(250, 421, 1, 0, "Click Keep Assign")
-					If _Sleep(500) Then Return
-					Click(430, 520, 1, 0, "Click Confirm")
-					If _Sleep(1000) Then Return
-					ClickAway("Left")
-					If _Sleep(1000) Then Return
-					SetLog("SpeedUp LabUpgrade, activating LabAssistant", $COLOR_SUCCESS)
-				EndIf
-			Else
-				SetLog("LabAssistant not Available", $COLOR_DEBUG2)
-			EndIf
-		EndIf
-	EndIf
-EndFunc
+	Return BuildMenuAssignHelper(1, 2)
+EndFunc   ;==>CheckLabAssistant
 
 Func UpgradeLabAny($bDebug = False)
 	;just start from page 1, close and open again lab window

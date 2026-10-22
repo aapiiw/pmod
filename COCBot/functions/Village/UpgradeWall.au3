@@ -73,9 +73,11 @@ Func UpgradeWallBuildMenu()
 		EndIf
 	Next
 	If $iRow < 0 Then
-		SetLog("No wall upgrade in Build menu, search wall on village", $COLOR_DEBUG1)
 		CloseBuildMenu()
-		Return -1
+		; list read (red rows are not returned): the wall row is red (not enough resource) or not there.
+		; The old village search (slow, ~20 s) can not do better, it is only used when the menu can not be opened
+		SetLog("No affordable wall in Build menu, skip", $COLOR_INFO)
+		Return False
 	EndIf
 	SetLog("Wall from Build menu: x" & $aList[$iRow][4] & ", cost " & _NumberFormat($aList[$iRow][5]) & " " & $aList[$iRow][0], $COLOR_INFO)
 	; resource check before the wall is selected (camera move + wall window cost ~10 s): same rule as DoUpgradeWall,

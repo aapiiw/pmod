@@ -46,10 +46,15 @@ Func AutoUpgradeCheckResource()
 		Return False
 	EndIf
 	
-	$g_aiCurrentLoot[$eLootGold] = getResourcesMainScreen(350, 22)
-	$g_aiCurrentLoot[$eLootElixir] = getResourcesMainScreen(350, 59)
-	$g_aiCurrentLoot[$eLootDarkElixir] = getResourcesMainScreen(350, 96)
-	
+	; loot shown top center while the menu is open: read again once when it is not read (menu still opening)
+	For $i = 1 To 2
+		$g_aiCurrentLoot[$eLootGold] = getResourcesMainScreen(350, 22)
+		$g_aiCurrentLoot[$eLootElixir] = getResourcesMainScreen(350, 59)
+		$g_aiCurrentLoot[$eLootDarkElixir] = getResourcesMainScreen(350, 96)
+		If Number($g_aiCurrentLoot[$eLootGold]) > 0 And Number($g_aiCurrentLoot[$eLootElixir]) > 0 Then ExitLoop
+		If $i = 1 And _Sleep(700) Then Return False
+	Next
+
 	SetLog("[Builder]:" & $g_iFreeBuilderCount & "/" & $g_iTotalBuilderCount, $COLOR_SUCCESS)
 	SetLog("[G]:" & _NumberFormat($g_aiCurrentLoot[$eLootGold]) & " [E]:" & _NumberFormat($g_aiCurrentLoot[$eLootElixir]) & " [D]:" & _NumberFormat($g_aiCurrentLoot[$eLootDarkElixir]), $COLOR_SUCCESS)
 	
@@ -57,43 +62,26 @@ Func AutoUpgradeCheckResource()
 	
 EndFunc
 
+; Builder's Apprentice: icon left of Build menu tab 1 (see BuildMenuAssignHelper). Works with or without free builder:
+; the apprentice speeds up an ongoing upgrade. Opens tab 1 when needed (checked once per hour per account)
 Func CheckBuilderApprentice()
-	Local $bRet = False
-	If $g_iFreeBuilderCount = 0 And $g_iTownHallLevel >= 9 Then
-		SetLog("Checking BuilderApprentice", $COLOR_INFO)
-		If QuickMIS("BC1", $g_sImgBuilderMenu, 450, 200, 495, 245) Then ; check apprentice icon
-			If QuickMIS("BC1", $g_sImgBuilderMenu, 425, 220, 450, 230) Then ; check available text
-				SetLog("BuilderApprentice Available", $COLOR_INFO)
-				Click($g_iQuickMISX, $g_iQuickMISY)
-				If _Sleep(500) Then Return
-				If WaitForPixel(830, 130, 831, 131, Hex(0x635550, 6), 10, 2, "BuilderApprentice Window") Then
-					If QuickMIS("BC1", $g_sImgLabAssistant, 720, 270, 810, 310) Then
-						Click($g_iQuickMISX, $g_iQuickMISY)
-						If _Sleep(500) Then Return
-						If WaitForPixel(430, 525, 431, 526, Hex(0x8BD43A, 6), 10, 2, "BuilderApprentice") Then
-							Click(250, 421, 1, 0, "Click Keep Assign")
-							If _Sleep(500) Then Return
-							Click(430, 520, 1, 0, "Click Confirm")
-							If _Sleep(1000) Then Return
-							ClickAway("Left")
-							If _Sleep(1000) Then Return
-							SetLog("SpeedUp Upgrade, activating BuilderApprentice", $COLOR_SUCCESS)
-						EndIf
-					EndIf
-				EndIf
-			Else
-				SetLog("BuilderApprentice not Available", $COLOR_DEBUG2)
-			EndIf
-		EndIf
-	EndIf
-EndFunc
+	If Not $g_bRunState Then Return False
+	If Not BuildMenuHelperDue(0) Then Return False
+	If Not OpenBuildMenu(1) Then Return False
+	Return BuildMenuAssignHelper(0, 1)
+EndFunc   ;==>CheckBuilderApprentice
 
 Func AutoUpgradeCheckBuilder($bTest = False)
 	Local $bRet = False
 
 	If Not AutoUpgradeCheckResource() Then Return $bRet ;check available builder and resource (Gold,Elix,DE)
 	If Not $g_bRunState Then Return
-	If $g_aiCurrentLoot[$eLootGold] < $g_iTxtSmartMinGold Then Return $bRet
+	; stop only when no resource is above its Min Save (many army upgrades cost elixir / DE, not gold)
+	If Number($g_aiCurrentLoot[$eLootGold]) < $g_iTxtSmartMinGold And Number($g_aiCurrentLoot[$eLootElixir]) < $g_iTxtSmartMinElixir And _
+			Number($g_aiCurrentLoot[$eLootDarkElixir]) < $g_iTxtSmartMinDark Then
+		SetLog("Every resource is below its Min Save, skip Auto Upgrade", $COLOR_INFO)
+		Return $bRet
+	EndIf
 	
 	;Check if there is a free builder for Auto Upgrade
 	If $g_iFreeBuilderCount > 0 Then $bRet = True ;builder available
@@ -144,11 +132,12 @@ Func SearchUpgrade($bTest = False, $bUpgradeLowCost = False)
 	; builders read on main screen by VillageReport: no free builder = no need to open the Build menu
 	If Not $bTest And Not $bUpgradeLowCost And $g_iTotalBuilderCount > 0 And $g_iFreeBuilderCount < 1 Then
 		SetLog("No free builder, skip Auto Upgrade", $COLOR_INFO)
+		If CheckBuilderApprentice() Or IsBuildMenuOpen() Then CloseBuildMenu() ; apprentice speeds up an ongoing upgrade
 		Return False
 	EndIf
 	PlaceUnplacedBuilding()
 	If $bUpgradeLowCost And $g_iFreeBuilderCount = 1 And WallReservedBuilder() = 1 Then
-		OpenMainBuilder()
+		OpenBuildMenu(1)
 		SetLog("Checking current upgrade", $COLOR_INFO)
 		Local $aHour = QuickMIS("CNX", $g_sImgAUpgradeHour, 785, 66, 830, 82)
 		If IsArray($aHour) And UBound($aHour) > 0 Then
@@ -172,7 +161,7 @@ Func SearchUpgrade($bTest = False, $bUpgradeLowCost = False)
 
 	;skip search new on first page
 	Local $bSkip1st = $g_bUpgradeLowCost Or $g_bSkipWallReserve
-	OpenMainBuilder()
+	OpenBuildMenu(1) ; also sets the village of the menu (OpenMainBuilder left it unknown: menu closed and opened again)
 	CheckBuilderApprentice()
 	If Not AutoUpgradeCheckBuilder() Then 
 		If WaitforPixel(835, 35, 836, 35, "D0151A", 20, 2) Then

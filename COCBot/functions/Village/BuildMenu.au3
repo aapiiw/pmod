@@ -42,14 +42,30 @@ Func BuildMenuFilterActive()
 	Return _ColorCheck(_GetPixelColor(515, 24, True), Hex(0xF3B52E, 6), 40)
 EndFunc   ;==>BuildMenuFilterActive
 
+; area of the first row of type buttons (brown off / yellow on, panel between them is brown too) instead of 3 pixels:
+; the 3 pixels failed on tab 1 every time overnight (22 Oct 2026) while the popup was open (captured window a few px off)
 Func BuildMenuFilterWindowOpen()
 	_CaptureRegion()
-	For $i = 3 To 5 ; first row of type buttons
-		Local $sColor = _GetPixelColor($g_aBuildMenuFilterBtn[$i][1] - 49, $g_aBuildMenuFilterBtn[$i][2] - 10, False)
-		If Not (_ColorCheck($sColor, Hex(0x8D6848, 6), 25) Or _ColorCheck($sColor, Hex(0xEDAB27, 6), 30)) Then Return False
+	Local $iHits = 0, $iAll = 0, $sColor
+	For $x = 160 To 540 Step 12
+		For $y = 204 To 236 Step 8
+			$iAll += 1
+			$sColor = _GetPixelColor($x, $y, False)
+			If _ColorCheck($sColor, Hex(0x8D6848, 6), 25) Or _ColorCheck($sColor, Hex(0xEDAB27, 6), 30) Then $iHits += 1
+		Next
 	Next
-	Return True
+	Return $iHits >= $iAll * 0.3 ; screenshots: popup open 0.51 (white labels), closed 0.02..0.07
 EndFunc   ;==>BuildMenuFilterWindowOpen
+
+; popup opens / closes with an animation: wait for the state before a new click (a second click too early toggles it back)
+Func BuildMenuFilterWaitWindow($bOpen, $iMs = 2000)
+	Local $hTimer = __TimerInit()
+	While __TimerDiff($hTimer) < $iMs
+		If _Sleep(250) Then Return False
+		If BuildMenuFilterWindowOpen() = $bOpen Then Return True
+	WEnd
+	Return False
+EndFunc   ;==>BuildMenuFilterWaitWindow
 
 Func BuildMenuFilterBtnOn($i)
 	Return _ColorCheck(_GetPixelColor($g_aBuildMenuFilterBtn[$i][1] - 49, $g_aBuildMenuFilterBtn[$i][2] - 10, True), Hex(0xEDAB27, 6), 30)
@@ -73,13 +89,16 @@ Func BuildMenuSetFilter($sType = "", $iTab = 1)
 		$g_asBuildMenuFilter[$iTab] = ""
 		Return True
 	EndIf
-	For $iTry = 1 To 3
+	For $iTry = 1 To 2
 		If BuildMenuFilterWindowOpen() Then ExitLoop
 		Click(540, 24, 1, 0, "Build menu filter")
-		If _Sleep(800) Then Return False
+		If BuildMenuFilterWaitWindow(True) Then ExitLoop
+		If Not $g_bRunState Then Return False
 	Next
 	If Not BuildMenuFilterWindowOpen() Then
 		SetLog("Build menu filter window not opened", $COLOR_WARNING)
+		SaveDebugImage("BuildMenuFilter")
+		ClickAway("Left") ; do not leave a half open popup over the list
 		Return False
 	EndIf
 	Local $bOk = True
@@ -92,10 +111,10 @@ Func BuildMenuSetFilter($sType = "", $iTab = 1)
 		Next
 		If BuildMenuFilterBtnOn($i) <> $bWant Then $bOk = False
 	Next
-	For $iTry = 1 To 3 ; close the filter window (same button)
+	For $iTry = 1 To 2 ; close the filter window (same button)
 		If Not BuildMenuFilterWindowOpen() Then ExitLoop
 		Click(540, 24, 1, 0, "Close Build menu filter")
-		If _Sleep(800) Then Return False
+		If BuildMenuFilterWaitWindow(False) Then ExitLoop
 	Next
 	$g_iBuildMenuPage = 1
 	If $bOk Then
@@ -199,6 +218,54 @@ Func BuildMenuOnVillage($bBB)
 	Return ($bBB ? isOnBuilderBase() : isOnMainVillage())
 EndFunc   ;==>BuildMenuOnVillage
 
+; Builder's Apprentice (tab 1) / Lab Assistant (tab 2): face icon left of the open Build menu, "Available" text when idle
+; (same images and steps as dev, checked on qruel 23 Oct 2026). Idle: open it, Assign the first ongoing upgrade (longest),
+; "Keep assigned until upgrade is complete", Confirm. The menu is opened again on $iTab after it.
+; Checked again after 60 min per account ($iHelper 0 = builder, 1 = lab). Return True = assigned
+Func BuildMenuAssignHelper($iHelper, $iTab)
+	Local $sName = $iHelper = 0 ? "Builder's Apprentice" : "Lab Assistant"
+	If Not BuildMenuHelperDue($iHelper) Or Not IsBuildMenuOpen() Then Return False
+	$g_ahHelperCheckTimer[CurAccountIndex()][$iHelper] = __TimerInit()
+	If Not QuickMIS("BC1", $iHelper = 0 ? $g_sImgBuilderMenu : $g_sImgLabAssistant, 450, 200, 495, 245) Then
+		SetDebugLog($sName & ": no icon left of Build menu")
+		Return False
+	EndIf
+	If Not QuickMIS("BC1", $g_sImgBuilderMenu, 425, 220, 450, 230) Then ; "Available" text
+		SetLog($sName & " is working", $COLOR_DEBUG1)
+		Return False
+	EndIf
+	SetLog($sName & " available, assign it", $COLOR_INFO)
+	Click($g_iQuickMISX, $g_iQuickMISY)
+	Local $bRet = False
+	If WaitForPixel(830, 130, 831, 131, Hex(0x635550, 6), 10, 2, $sName & " window") Then
+		If QuickMIS("BC1", $g_sImgLabAssistant, 720, 270, 810, 310) Then ; first Assign button = longest ongoing upgrade
+			Click($g_iQuickMISX, $g_iQuickMISY)
+			If _Sleep(500) Then Return False
+			If WaitForPixel(430, 525, 431, 526, Hex(0x8BD43A, 6), 10, 2, $sName & " confirm") Then
+				Click(250, 421, 1, 0, "Keep assigned until upgrade is complete")
+				If _Sleep(500) Then Return False
+				Click(430, 520, 1, 0, "Confirm " & $sName)
+				If _Sleep(1000) Then Return False
+				SetLog($sName & " assigned", $COLOR_SUCCESS)
+				$bRet = True
+			EndIf
+		Else
+			SetLog($sName & ": Assign button not found", $COLOR_WARNING)
+		EndIf
+	EndIf
+	ClickAway("Left")
+	If _Sleep(800) Then Return $bRet
+	If Not IsBuildMenuOpen() Then OpenBuildMenu($iTab)
+	Return $bRet
+EndFunc   ;==>BuildMenuAssignHelper
+
+; True when the helper check is due (TH 9+, not checked in the last 60 min on this account): callers open the menu only then
+Func BuildMenuHelperDue($iHelper)
+	If $g_iTownHallLevel < 9 Then Return False
+	Local $h = $g_ahHelperCheckTimer[CurAccountIndex()][$iHelper]
+	Return $h = 0 Or __TimerDiff($h) >= 3600000
+EndFunc   ;==>BuildMenuHelperDue
+
 Func CloseBuildMenu()
 	If IsBuildMenuOpen() Then
 		Click(836, 24, 1, 0, "Close Build menu")
@@ -213,12 +280,14 @@ Func ReadBuildMenuCounters($bBB = $g_bBuildMenuBB)
 	Local $sRead, $aSplit, $iTab
 	For $sTab In $aTabs
 		$iTab = Number($sTab)
-		; template font reads these small digits best: totalreq on home village, armycap on builder base (tested on screenshots)
-		If $bBB Then
-			$sRead = getOcrAndCapture("coc-armycap", $g_aiBuildMenuCounterXBB[$iTab] - 2, 636, 40, 16, True)
-		Else
-			$sRead = getOcrAndCapture("coc-totalreq", $g_aiBuildMenuCounterX[$iTab], 636, 36, 16, True)
-		EndIf
+		; template font reads these small digits best: totalreq on home village, armycap on builder base (tested on screenshots).
+		; The text is at the edge of the box: 2 px off reads nothing (BB counters were -1/-1 most of the night, 22 Oct 2026),
+		; so other y are tried when the read is not "n#n" (same font: totalreq reads BB "0/3" as "0#4")
+		Local $aY[4] = [636, 638, 634, 640], $sFont = $bBB ? "coc-armycap" : "coc-totalreq", $iX = $bBB ? $g_aiBuildMenuCounterXBB[$iTab] - 2 : $g_aiBuildMenuCounterX[$iTab]
+		For $iTry = 0 To 3
+			$sRead = getOcrAndCapture($sFont, $iX, $aY[$iTry], $bBB ? 40 : 36, 16, True)
+			If StringRegExp($sRead, "^\d+#\d+$") Then ExitLoop
+		Next
 		If StringRegExp($sRead, "^\d+#\d+$") Then
 			$aSplit = StringSplit($sRead, "#", $STR_NOCOUNT)
 			$g_aiBuildMenuCounter[$iTab][0] = Number($aSplit[0])
@@ -836,9 +905,16 @@ Func BBWallUpgradeMore($sResource, $iCount)
 		Return 0
 	EndIf
 	Click(340, 510, 1, 50, "Wall Upgrade More")
-	If _Sleep(700) Then Return -1
-	_CaptureRegion()
-	If BBWallTopButtonPixels(340, "green") < 15 Then
+	Local $bPlus = False
+	For $i = 1 To 6 ; buttons change with an animation (one check after 700 ms missed it, 21 Oct 2026)
+		If _Sleep(350) Then Return -1
+		_CaptureRegion()
+		If BBWallTopButtonPixels(340, "green") >= 15 Then
+			$bPlus = True
+			ExitLoop
+		EndIf
+	Next
+	If Not $bPlus Then
 		SetLog("Wall: +1 button not found after Upgrade More, Upgrade More disabled until restart", $COLOR_WARNING)
 		If $g_bDebugImageSave Then SaveDebugImage("BBWallUpgradeMore")
 		$bDisabled = True

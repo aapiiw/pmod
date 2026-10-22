@@ -14,10 +14,10 @@
 #Au3Stripper_Off
 #pragma compile(Icon, "Images\MyBot.ico")
 #pragma compile(FileDescription, Clash of Clans Bot - A Free Clash of Clans bot - https://mybot.run)
-#pragma compile(ProductVersion, 1.1)
-#pragma compile(FileVersion, 1.1)
+#pragma compile(ProductVersion, 1.2)
+#pragma compile(FileVersion, 1.2)
 #pragma compile(LegalCopyright, © https://mybot.run)
 #Au3Stripper_On
 
-Global $g_sBotVersion = "v1.1" ;~ piwMod version (vX.y.z max). building.ini saved by 1.x is accepted in ReadBuildingConfig
-Global $g_sXModversion = "v1.1" ; piwMod version shown in titles, GUI and log
+Global $g_sBotVersion = "v1.2" ;~ piwMod version (vX.y.z max). building.ini saved by 1.x is accepted in ReadBuildingConfig
+Global $g_sXModversion = "v1.2" ; piwMod version shown in titles, GUI and log

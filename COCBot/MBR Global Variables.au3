@@ -1404,6 +1404,7 @@ Global $g_bMainWindowOk = False ; Updated in IsMainPage() when main page found o
 ; My village
 Global $g_aiCurrentLoot[$eLootCount] = [0, 0, 0, 0] ; current stats
 Global $g_iTownHallLevel = 0 ; Level of user townhall (Level 1 = 1)
+Global $g_ahHelperCheckTimer[16][2] ; per account: last check of Builder's Apprentice / Lab Assistant (BuildMenuAssignHelper)
 Global $g_aiAutoUpgradeEmpty[16][2] ; per account: [TH level, free builders] when Build menu had nothing to upgrade, TH level 0 = not empty
 Global $g_asSceneryCodeAcc[16][2] ; per account: last found scenery code [main village, builder base], tried first by GetVillageSize
 Global $g_hBuildMenuCounterTime = 0, $g_bBuildMenuCounterBB = False, $g_iBuildMenuCounterAcc = -1 ; last ReadBuildMenuCounters: timer, village, account
