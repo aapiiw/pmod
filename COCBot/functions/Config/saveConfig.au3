@@ -112,17 +112,10 @@ Func SaveBuildingConfig()
 	_Ini_Add("upgrade", "upgradelabdelexircost", $g_iLaboratoryDElixirCost)
 	_Ini_Add("upgrade", "upgradestartroops", $g_bAutoStarLabUpgradeEnable ? 1 : 0)
 	_Ini_Add("upgrade", "upgradestartroopname", $g_iCmbStarLaboratory)
-	_Ini_Add("upgrade", "uselabpotion", $g_bUseLabPotion)
 
 	;mod
 	_Ini_Add("upgrade", "upgradeorder", $g_bLabUpgradeOrderEnable ? 1 : 0)
 	_Ini_Add("upgrade", "upgradeanytroops", $g_bUpgradeAnyTroops ? 1 : 0)
-	_Ini_Add("upgrade", "usebookfighting", $g_bUseBOF ? 1 : 0)
-	_Ini_Add("upgrade", "usebookfightingMinTime", $g_iUseBOFTime)
-	_Ini_Add("upgrade", "usebookspell", $g_bUseBOS ? 1 : 0)
-	_Ini_Add("upgrade", "usebookspellMinTime", $g_iUseBOSTime)
-	_Ini_Add("upgrade", "usebookeverything", $g_bUseBOE ? 1 : 0)
-	_Ini_Add("upgrade", "usebookeverythingMinTime", $g_iUseBOETime)
 
 	Local $string = ""
 	For $i = 0 To UBound($g_aCmbLabUpgradeOrder) - 1
@@ -666,7 +659,6 @@ Func SaveConfig_auto()
 	_Ini_Add("Auto Upgrade", "AutoUpgradeEnabled", $g_bAutoUpgradeEnabled)
 	_Ini_Add("Auto Upgrade", "ChkRushTH", $g_bChkRushTH)
 	_Ini_Add("Auto Upgrade", "UseWallReserveBuilder", $g_bUseWallReserveBuilder)
-	_Ini_Add("Auto Upgrade", "UseBuilderPotion", $g_bUseBuilderPotion)
 
 	Local $string = ""
 	For $i = 0 To UBound($g_aiCmbRushTHOption) - 1
@@ -681,7 +673,6 @@ Func SaveConfig_auto()
 	_Ini_Add("Auto Upgrade", "EssentialBuildings", $string)
 	_Ini_Add("Auto Upgrade", "UpgradeOnlyTHLevelAchieve", $g_bUpgradeOnlyTHLevelAchieve)
 	_Ini_Add("Auto Upgrade", "HeroPriority", $g_bHeroPriority)
-	_Ini_Add("Auto Upgrade", "UpgradeOrder", $g_iAutoUpgradeOrder)
 	_Ini_Add("Auto Upgrade", "UseHeroBooks", $g_bUseHeroBooks)
 	_Ini_Add("Auto Upgrade", "HeroMinUpgradeTime", $g_iHeroMinUpgradeTime)
 	_Ini_Add("Auto Upgrade", "UpgradeOtherDefenses", $g_bUpgradeOtherDefenses)
@@ -706,11 +697,7 @@ Func SaveConfig_600_17()
 	_Ini_Add("upgrade", "use-storage", $g_iUpgradeWallLootType)
 	_Ini_Add("upgrade", "AutoAdjustSaveMinWall", $g_bAutoAdjustSaveWall ? 1 : 0)
 	_Ini_Add("upgrade", "savebldr", $g_bUpgradeWallSaveBuilder ? 1 : 0)
-	_Ini_Add("upgrade", "WallBuildMenu", $g_bChkWallBuildMenu ? 1 : 0)
 	_Ini_Add("upgrade", "Only1Builder", $g_bChkOnly1Builder ? 1 : 0)
-	_Ini_Add("upgrade", "SpesificWall", $g_bUpgradeSpesificWall ? 1 : 0)
-	_Ini_Add("upgrade", "WallLevel", $g_iTargetWallLevel)
-	_Ini_Add("upgrade", "SearchWallSort", $g_iSearchWallSort)
 EndFunc   ;==>SaveConfig_600_17
 
 Func SaveConfig_600_18()

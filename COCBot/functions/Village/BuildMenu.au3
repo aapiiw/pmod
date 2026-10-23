@@ -71,13 +71,16 @@ Func BuildMenuFilterBtnOn($i)
 	Return _ColorCheck(_GetPixelColor($g_aBuildMenuFilterBtn[$i][1] - 49, $g_aBuildMenuFilterBtn[$i][2] - 10, True), Hex(0xEDAB27, 6), 30)
 EndFunc   ;==>BuildMenuFilterBtnOn
 
-; set the list filter of the open tab $iTab: only type button $sType on ("" = no filter), resource and sorting off.
+; set the list filter of the open tab $iTab: only type button $sType on ("" = no filter), resource off, sorting off unless
+; $sType ends with "|CostMin" (e.g. "Army|CostMin", "|CostMin": cheapest first, used by the wall reserve builder low cost mode).
 ; Lab tab names Troops / Spells / Siege are the Army / Defense / Hero buttons. Opens the menu (tab $iTab) when it is closed,
 ; the menu stays open. Return True when the wanted state is verified
 Func BuildMenuSetFilter($sType = "", $iTab = 1)
 	If Not IsBuildMenuOpen() Then Return OpenBuildMenu($iTab, False, $sType)
-	Local $sBtn = $sType
-	Switch $sType
+	Local $aPart = StringSplit($sType, "|", $STR_NOCOUNT)
+	Local $sSort = UBound($aPart) > 1 ? $aPart[1] : ""
+	Local $sBtn = $aPart[0]
+	Switch $sBtn
 		Case "Troops"
 			$sBtn = "Army"
 		Case "Spells"
@@ -103,7 +106,7 @@ Func BuildMenuSetFilter($sType = "", $iTab = 1)
 	EndIf
 	Local $bOk = True
 	For $i = 0 To UBound($g_aBuildMenuFilterBtn) - 1
-		Local $bWant = ($g_aBuildMenuFilterBtn[$i][0] = $sBtn)
+		Local $bWant = ($g_aBuildMenuFilterBtn[$i][0] = $sBtn Or ($sSort <> "" And $g_aBuildMenuFilterBtn[$i][0] = $sSort))
 		For $iTry = 1 To 3
 			If BuildMenuFilterBtnOn($i) = $bWant Then ExitLoop
 			Click($g_aBuildMenuFilterBtn[$i][1], $g_aBuildMenuFilterBtn[$i][2], 1, 0, "Filter " & $g_aBuildMenuFilterBtn[$i][0])
@@ -739,11 +742,18 @@ EndFunc   ;==>BBIsGreen
 ; Takes the first row from the top that can be upgraded (resource enough, not ignored in GUI): no full list read.
 Func BBUpgradeBuildMenu($bTest = False)
 	If Not $g_bAutoUpgradeBBEnabled Or Not $g_bRunState Then Return False
-	Local $iUpgraded = 0, $aSkip[0]
+	Local $iUpgraded = 0, $aSkip[0], $iExpectFree = -1, $sLast = ""
 	For $iTry = 1 To 6 ; never loop forever
 		If Not $g_bRunState Then ExitLoop
 		CloseBuildMenu() ; list back on top for every try
 		If Not OpenBuildMenu(1, True) Then ExitLoop
+		; a started building upgrade takes a Master Builder (counters read again when the menu opens, walls are instant)
+		If $iExpectFree >= 0 And $g_aiBuildMenuCounter[1][1] > 0 And $g_iFreeBuilderCountBB > $iExpectFree Then
+			SetLog("BB " & $sLast & ": free Master Builders did not go down, upgrade not confirmed, stop", $COLOR_ERROR)
+			$iUpgraded -= 1
+			ExitLoop
+		EndIf
+		$iExpectFree = -1
 		BuildMenuReadLoot($iTry = 1, True)
 		If $g_iFreeBuilderCountBB < 1 And Not $bTest Then
 			If $iUpgraded = 0 Then SetLog("No free Master Builder", $COLOR_INFO)
@@ -764,7 +774,13 @@ Func BBUpgradeBuildMenu($bTest = False)
 		Else
 			$bOk = BBConfirmUpgradeWindow($aRow[0], $bTest) ; other rows open the upgrade window
 		EndIf
-		If $bOk Then $iUpgraded += 1
+		If $bOk Then
+			$iUpgraded += 1
+			If $aRow[0] <> "Wall" Then
+				$iExpectFree = $g_iFreeBuilderCountBB - 1
+				$sLast = $aRow[0]
+			EndIf
+		EndIf
 		If $bTest Then ExitLoop
 	Next
 	ClickAway("Left")
@@ -914,14 +930,13 @@ Func BBWallUpgradeMore($sResource, $iCount)
 			ExitLoop
 		EndIf
 	Next
-	If Not $bPlus Then
-		SetLog("Wall: +1 button not found after Upgrade More, Upgrade More disabled until restart", $COLOR_WARNING)
-		If $g_bDebugImageSave Then SaveDebugImage("BBWallUpgradeMore")
-		$bDisabled = True
-		ClickAway("Left")
-		Return -1
-	EndIf
 	Local $iWalls = 1
+	; +1 grey (last wall of this level, checked on zone 23 Oct 2026: green +1 shows within 350 ms when it can be used):
+	; the selected wall is still upgraded alone with the buttons below
+	If Not $bPlus Then
+		SetLog("Wall: +1 not available (no other wall of this level), upgrade 1 wall", $COLOR_INFO)
+		$iCount = 1
+	EndIf
 	If $iCount >= 11 And BBWallTopButtonPixels(248, "green") >= 40 Then
 		While $iWalls + 10 <= $iCount
 			Click(248, 510, 1, 50, "Wall +10")

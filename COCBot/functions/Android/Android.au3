@@ -4540,6 +4540,9 @@ Func PullSharedPrefs($sProfile = $g_sProfileCurrentName)
 	Local $iFiles = 5
 	Local $iFilesPulled = 0
 
+	; switch account with Supercell ID: shared_prefs are never pushed back (_RestartAndroidCoC skips them), no pull needed
+	If ProfileSwitchAccountEnabled() And $g_bChkSuperCellID Then Return SetError(0, 0, $Result)
+
 	If Not $g_sAndroidPicturesPathAvailable Then
 		SetLog("Shared folder in Android not availble, cannot pull shared_prefs", $COLOR_ERROR)
 		Return SetError(0, 0, $Result)

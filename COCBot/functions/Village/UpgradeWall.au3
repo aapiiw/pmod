@@ -44,8 +44,11 @@ Func UpgradeWall($bTest = False)
 		For $i = 1 To $iLoop
 			SetDebugLog("$iLoop = " & $i & "/" & $iLoop)
 			$bWallUpgraded = -1
-			If $g_bChkWallBuildMenu Then $bWallUpgraded = UpgradeWallBuildMenu()
-			If $bWallUpgraded = -1 Then $bWallUpgraded = DoUpgradeWall() ; old way: search wall image on village
+			$bWallUpgraded = UpgradeWallBuildMenu()
+			; old way (search wall image on village, ~30 s) only when the Build menu was not usable on the first try: after a
+			; Build menu wall upgrade, the 2nd loop (Elixir then Gold) went there 18 times in one night, 15 times not enough resource
+			If $bWallUpgraded = -1 And $i > 1 Then ExitLoop
+			If $bWallUpgraded = -1 Then $bWallUpgraded = DoUpgradeWall()
 			If Not $bWallUpgraded Then ExitLoop
 			If _Sleep(1000) Then Return
 		Next
@@ -61,7 +64,10 @@ EndFunc   ;==>UpgradeWall
 Func UpgradeWallBuildMenu()
 	; no Type filter: "Permanent" holds almost every building, it does not shorten the list
 	Local $sFilter = ""
-	If Not OpenBuildMenu(1) Then Return -1
+	If Not OpenBuildMenu(1) Then
+		SetLog("Wall: Build menu not opened (village: " & (isOnMainVillage() ? "main" : "not main") & ", menu open: " & IsBuildMenuOpen() & ")", $COLOR_DEBUG1)
+		Return -1
+	EndIf
 	Local $aStop[1] = ["Wall"] ; stop scrolling when the wall row is seen
 	Local $aList = BuildMenuCollect($g_sImgResourceIcon, $g_iXFindUpgrade, -22, "building", $aStop)
 	BuildMenuLogList("Build menu list (wall search)", $aList)
@@ -101,6 +107,7 @@ Func UpgradeWallBuildMenu()
 	EndIf
 	Local $aCoord = BuildMenuGoToItem(1, $aList[$iRow][3], $aList[$iRow][8], $g_sImgResourceIcon, $g_iXFindUpgrade, -22, "building", $sFilter)
 	If Not IsArray($aCoord) Then
+		SetLog("Wall: row not found again after scrolling", $COLOR_DEBUG1)
 		CloseBuildMenu()
 		Return -1
 	EndIf

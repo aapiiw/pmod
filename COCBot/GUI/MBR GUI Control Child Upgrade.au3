@@ -227,6 +227,7 @@ Func chkLab()
 		GUICtrlSetState($g_hCmbLaboratory, $GUI_DISABLE)
 		_GUICtrlSetImage($g_hPicLabUpgrade, $g_sLibIconPath, $g_avLabTroops[0][1])
 	EndIf
+	GUICtrlSetState($g_hBtnHeroEquipment, $GUI_ENABLE) ; inside the Lab range above but does not depend on the Lab (TH check: EnableUpgradeEquipment)
 	If $g_iCmbLaboratory = 0 Then
 		GUICtrlSetState($g_hChkLabUpgradeOrder, $GUI_ENABLE)
 	Else
@@ -718,27 +719,8 @@ Func chkAutoAdjustSaveMinWall()
 	$g_bAutoAdjustSaveWall = (GUICtrlRead($g_hAutoAdjustSaveWall) = $GUI_CHECKED)
 EndFunc
 
-Func cmbWallLevel()
-	$g_bUpgradeSpesificWall = (GUICtrlRead($g_hCmbTargetWallLevel) = 0 ? False : True)
-	$g_iTargetWallLevel = _GUICtrlComboBox_GetCurSel($g_hCmbTargetWallLevel)
-	If $g_bUpgradeSpesificWall then
-		GUICtrlSetState($g_hCmbSearchWallSort, $GUI_DISABLE) 
-	Else 
-		GUICtrlSetState($g_hCmbSearchWallSort, $GUI_ENABLE)
-	EndIf
-EndFunc
 
-Func cmbSortWall()
-	$g_iSearchWallSort = _GUICtrlComboBox_GetCurSel($g_hCmbSearchWallSort)
-EndFunc
 
-Func btnWalls()
-	Local $wasRunState = $g_bRunState
-	$g_bRunState = True
-	SearchWall(0)
-	SetLog("Wall Detect done", $COLOR_SUCCESS)
-	$g_bRunState = $wasRunState
-EndFunc   ;==>btnWalls
 
 Func chkAutoUpgrade()
 	If GUICtrlRead($g_hChkAutoUpgrade) = $GUI_CHECKED Then
@@ -780,6 +762,28 @@ Func chkUpgradesToIgnore()
 	Next
 EndFunc   ;==>chkUpgradesToIgnore
 
+; buttons below Upgrades to ignore ($g_asIgnoreGroupBtn): Reset = nothing ignored; a group button ignores every upgrade of
+; the group, or none of them when all are already ignored
+Func btnIgnoreGroup()
+	If $g_bChkRushTH Then Return ; list is set by the Rush TH preset and locked
+	Local $sGroup = ""
+	For $b = 0 To UBound($g_hBtnIgnoreGroup) - 1
+		If @GUI_CtrlId = $g_hBtnIgnoreGroup[$b] Then $sGroup = $g_asIgnoreGroupBtn[$b][1]
+	Next
+	Local $bAllIgnored = True
+	For $i = 0 To UBound($g_asUpgradeIgnore) - 1
+		If $sGroup <> "" And $g_asUpgradeIgnore[$i][3] = $sGroup And Not IsUpgradeIgnoreChecked($i) Then $bAllIgnored = False
+	Next
+	For $i = 0 To UBound($g_asUpgradeIgnore) - 1
+		If $sGroup = "" Then
+			GUICtrlSetState($g_hChkUpgradesToIgnore[$i], $GUI_UNCHECKED)
+		ElseIf $g_asUpgradeIgnore[$i][3] = $sGroup Then
+			GUICtrlSetState($g_hChkUpgradesToIgnore[$i], $bAllIgnored ? $GUI_UNCHECKED : $GUI_CHECKED)
+		EndIf
+	Next
+	chkUpgradesToIgnore()
+EndFunc   ;==>btnIgnoreGroup
+
 ; Upgrades to ignore are list view items with check box
 Func IsUpgradeIgnoreChecked($i)
 	Return BitAND(GUICtrlRead($g_hChkUpgradesToIgnore[$i], $GUI_READ_EXTENDED), $GUI_CHECKED) = $GUI_CHECKED
@@ -794,10 +798,16 @@ Func chkRushTH()
 		Next
 		GUICtrlSetState($g_hLvUpgradesToIgnore, $GUI_DISABLE) ; list view items cannot be disabled one by one, lock the whole lists
 		GUICtrlSetState($g_hLvUpgradesToIgnore2, $GUI_DISABLE)
+		For $b = 0 To UBound($g_hBtnIgnoreGroup) - 1
+			GUICtrlSetState($g_hBtnIgnoreGroup[$b], $GUI_DISABLE)
+		Next
 	Else
 		$g_bChkRushTH = False
 		GUICtrlSetState($g_hLvUpgradesToIgnore, $GUI_ENABLE)
 		GUICtrlSetState($g_hLvUpgradesToIgnore2, $GUI_ENABLE)
+		For $b = 0 To UBound($g_hBtnIgnoreGroup) - 1
+			GUICtrlSetState($g_hBtnIgnoreGroup[$b], $GUI_ENABLE)
+		Next
 	EndIf
 	chkUpgradesToIgnore() ; update $g_iChkUpgradesToIgnore now, not only when config is saved
 EndFunc   ;==>chkRushTH

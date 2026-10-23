@@ -731,17 +731,10 @@ Func ReadConfig_600_14()
 	IniReadS($g_iLaboratoryDElixirCost, $g_sProfileBuildingPath, "upgrade", "upgradelabdelexircost", 0, "int")
 	IniReadS($g_bAutoStarLabUpgradeEnable, $g_sProfileBuildingPath, "upgrade", "upgradestartroops", False, "Bool")
 	IniReadS($g_iCmbStarLaboratory, $g_sProfileBuildingPath, "upgrade", "upgradestartroopname", 0, "int")
-	IniReadS($g_bUseLabPotion, $g_sProfileBuildingPath, "upgrade", "uselabpotion", True, "Bool")
 
 	;mod
 	IniReadS($g_bLabUpgradeOrderEnable, $g_sProfileBuildingPath, "upgrade", "upgradeorder", False, "Bool")
 	IniReadS($g_bUpgradeAnyTroops, $g_sProfileBuildingPath, "upgrade", "upgradeanytroops", True, "Bool")
-	IniReadS($g_bUseBOF, $g_sProfileBuildingPath, "upgrade", "usebookfighting", False, "Bool")
-	IniReadS($g_iUseBOFTime, $g_sProfileBuildingPath, "upgrade", "usebookfightingMinTime", 7, "int")
-	IniReadS($g_bUseBOS, $g_sProfileBuildingPath, "upgrade", "usebookspell", False, "Bool")
-	IniReadS($g_iUseBOSTime, $g_sProfileBuildingPath, "upgrade", "usebookspellMinTime", 7, "int")
-	IniReadS($g_bUseBOE, $g_sProfileBuildingPath, "upgrade", "usebookeverything", False, "Bool")
-	IniReadS($g_iUseBOETime, $g_sProfileBuildingPath, "upgrade", "usebookeverythingMinTime", 14, "int")
 
 	Local $str = StringSplit(IniRead($g_sProfileBuildingPath, "upgrade", "upgradeorderlist", "-1| -1| -1| -1| -1| -1| -1| -1| -1| -1"), "|", $STR_NOCOUNT)
 	For $i = 0 To UBound($g_aCmbLabUpgradeOrder) - 1
@@ -770,7 +763,8 @@ Func ReadConfig_600_15()
 	IniReadS($g_bUpgradeChampionEnable, $g_sProfileConfigPath, "upgrade", "UpgradeChampion", False, "Bool")
 	IniReadS($g_bUpgradePrinceEnable, $g_sProfileConfigPath, "upgrade", "UpgradePrince", False, "Bool")
 	IniReadS($g_bUpgradeDukeEnable, $g_sProfileConfigPath, "upgrade", "UpgradeDuke", False, "Bool")
-	IniReadS($g_iHeroReservedBuilder, $g_sProfileConfigPath, "upgrade", "HeroReservedBuilder", 0, "int")
+	; no GUI anymore (Heroes sub tab removed, heroes are upgraded by Auto Upgrade): never keep builders for heroes
+	$g_iHeroReservedBuilder = 0
 
 	; Equipment Order
 	IniReadS($g_bChkCustomEquipmentOrderEnable, $g_sProfileConfigPath, "upgrade", "ChkUpgradeEquipment", False, "Bool")
@@ -803,7 +797,6 @@ Func ReadConfig_auto()
 	IniReadS($g_bAutoUpgradeEnabled, $g_sProfileConfigPath, "Auto Upgrade", "AutoUpgradeEnabled", False, "Bool")
 	IniReadS($g_bChkRushTH, $g_sProfileConfigPath, "Auto Upgrade", "ChkRushTH", True, "Bool")
 	IniReadS($g_bUseWallReserveBuilder, $g_sProfileConfigPath, "Auto Upgrade", "UseWallReserveBuilder", True, "Bool")
-	IniReadS($g_bUseBuilderPotion, $g_sProfileConfigPath, "Auto Upgrade", "UseBuilderPotion", False, "Bool")
 
 	Local $str = ""
 	$str = StringSplit(IniRead($g_sProfileConfigPath, "Auto Upgrade", "RushTHOption", "5|13|7|4|3"), "|", $STR_NOCOUNT)
@@ -814,8 +807,6 @@ Func ReadConfig_auto()
 	If Number(IniRead($g_sProfileConfigPath, "Auto Upgrade", "RushTHListVersion", 1)) < 2 And Number($g_aiCmbRushTHOption[0]) = 7 Then $g_aiCmbRushTHOption[0] = 10
 	IniReadS($g_bUpgradeOnlyTHLevelAchieve, $g_sProfileConfigPath, "Auto Upgrade", "UpgradeOnlyTHLevelAchieve", True, "Bool")
 	IniReadS($g_bHeroPriority, $g_sProfileConfigPath, "Auto Upgrade", "HeroPriority", False, "Bool")
-	IniReadS($g_iAutoUpgradeOrder, $g_sProfileConfigPath, "Auto Upgrade", "UpgradeOrder", 0, "int")
-	If $g_iAutoUpgradeOrder < 0 Or $g_iAutoUpgradeOrder > UBound($g_asAutoUpgradeOrder) Then $g_iAutoUpgradeOrder = 0
 	IniReadS($g_bUseHeroBooks, $g_sProfileConfigPath, "Auto Upgrade", "UseHeroBooks", True, "Bool")
 	IniReadS($g_iHeroMinUpgradeTime, $g_sProfileConfigPath, "Auto Upgrade", "HeroMinUpgradeTime", 5, "int")
 	IniReadS($g_bUpgradeOtherDefenses, $g_sProfileConfigPath, "Auto Upgrade", "UpgradeOtherDefenses", False, "Bool")
@@ -856,11 +847,7 @@ Func ReadConfig_600_17()
 	IniReadS($g_iUpgradeWallLootType, $g_sProfileConfigPath, "upgrade", "use-storage", 0, "int")
 	IniReadS($g_bAutoAdjustSaveWall, $g_sProfileConfigPath, "upgrade", "AutoAdjustSaveMinWall", False, "Bool")
 	IniReadS($g_bUpgradeWallSaveBuilder, $g_sProfileConfigPath, "upgrade", "savebldr", False, "Bool")
-	IniReadS($g_bChkWallBuildMenu, $g_sProfileConfigPath, "upgrade", "WallBuildMenu", False, "Bool")
 	IniReadS($g_bChkOnly1Builder, $g_sProfileConfigPath, "upgrade", "Only1Builder", True, "Bool")
-	IniReadS($g_bUpgradeSpesificWall, $g_sProfileConfigPath, "upgrade", "SpesificWall", True, "Bool")
-	IniReadS($g_iTargetWallLevel, $g_sProfileConfigPath, "upgrade", "WallLevel", 0, "int")
-	IniReadS($g_iSearchWallSort, $g_sProfileConfigPath, "upgrade", "SearchWallSort", 0, "int")
 EndFunc   ;==>ReadConfig_600_17
 
 Func ReadConfig_600_18()

@@ -831,19 +831,12 @@ Func ApplyConfig_600_14($TypeReadSave)
 	Switch $TypeReadSave
 		Case "Read"
 			GUICtrlSetState($g_hChkAutoLabUpgrades, $g_bAutoLabUpgradeEnable ? $GUI_CHECKED : $GUI_UNCHECKED)
-			GUICtrlSetState($g_hUseLabPotion, $g_bUseLabPotion ? $GUI_CHECKED : $GUI_UNCHECKED)
 			_GUICtrlComboBox_SetCurSel($g_hCmbLaboratory, $g_iCmbLaboratory)
 			_GUICtrlSetImage($g_hPicLabUpgrade, $g_sLibIconPath, $g_avLabTroops[$g_iCmbLaboratory][1])
 			chkLab()
 
 			GUICtrlSetState($g_hChkLabUpgradeOrder, $g_bLabUpgradeOrderEnable ? $GUI_CHECKED : $GUI_UNCHECKED)
 			GUICtrlSetState($g_hUpgradeAnyTroops, $g_bUpgradeAnyTroops ? $GUI_CHECKED : $GUI_UNCHECKED)
-			GUICtrlSetState($g_hUseBOF, $g_bUseBOF ? $GUI_CHECKED : $GUI_UNCHECKED)
-			GUICtrlSetData($g_hUseBOFTime, $g_iUseBOFTime)
-			GUICtrlSetState($g_hUseBOS, $g_bUseBOS ? $GUI_CHECKED : $GUI_UNCHECKED)
-			GUICtrlSetData($g_hUseBOSTime, $g_iUseBOSTime)
-			GUICtrlSetState($g_hUseBOE, $g_bUseBOE ? $GUI_CHECKED : $GUI_UNCHECKED)
-			GUICtrlSetData($g_hUseBOETime, $g_iUseBOETime)
 
 			For $i = 0 To UBound($g_aCmbLabUpgradeOrder) - 1
 				_GUICtrlComboBox_SetCurSel($g_ahCmbLabUpgradeOrder[$i], $g_aCmbLabUpgradeOrder[$i])
@@ -861,19 +854,12 @@ Func ApplyConfig_600_14($TypeReadSave)
 			chkSLabUpgradeOrder()
 		Case "Save"
 			$g_bAutoLabUpgradeEnable = (GUICtrlRead($g_hChkAutoLabUpgrades) = $GUI_CHECKED)
-			$g_bUseLabPotion = (GUICtrlRead($g_hUseLabPotion) = $GUI_CHECKED)
 			$g_iCmbLaboratory = _GUICtrlComboBox_GetCurSel($g_hCmbLaboratory)
 			$g_bAutoStarLabUpgradeEnable = (GUICtrlRead($g_hChkAutoStarLabUpgrades) = $GUI_CHECKED)
 			$g_iCmbStarLaboratory = _GUICtrlComboBox_GetCurSel($g_hCmbStarLaboratory)
 
 			$g_bLabUpgradeOrderEnable = (GUICtrlRead($g_hChkLabUpgradeOrder) = $GUI_CHECKED)
 			$g_bUpgradeAnyTroops = (GUICtrlRead($g_hUpgradeAnyTroops) = $GUI_CHECKED)
-			$g_bUseBOF = (GUICtrlRead($g_hUseBOF) = $GUI_CHECKED)
-			$g_iUseBOFTime =  GUICtrlRead($g_hUseBOFTime)
-			$g_bUseBOS = (GUICtrlRead($g_hUseBOS) = $GUI_CHECKED)
-			$g_iUseBOSTime =  GUICtrlRead($g_hUseBOSTime)
-			$g_bUseBOE = (GUICtrlRead($g_hUseBOE) = $GUI_CHECKED)
-			$g_iUseBOETime =  GUICtrlRead($g_hUseBOETime)
 
 			For $i = 0 To UBound($g_ahCmbLabUpgradeOrder) - 1
 				$g_aCmbLabUpgradeOrder[$i] = _GUICtrlComboBox_GetCurSel($g_ahCmbLabUpgradeOrder[$i])
@@ -1025,7 +1011,6 @@ Func ApplyConfig_auto($TypeReadSave)
 			GUICtrlSetState($g_hChkAutoUpgrade, $g_bAutoUpgradeEnabled ? $GUI_CHECKED : $GUI_UNCHECKED)
 			GUICtrlSetState($g_hChkRushTH, $g_bChkRushTH ? $GUI_CHECKED : $GUI_UNCHECKED)
 			GUICtrlSetState($g_hUseWallReserveBuilder, $g_bUseWallReserveBuilder ? $GUI_CHECKED : $GUI_UNCHECKED)
-			GUICtrlSetState($g_hUseBuilderPotion, $g_bUseBuilderPotion ? $GUI_CHECKED : $GUI_UNCHECKED)
 			For $y = 0 To UBound($g_aiCmbRushTHOption) - 1
 				_GUICtrlComboBox_SetCurSel($g_ahCmbRushTHOption[$y], $g_aiCmbRushTHOption[$y])
 			Next
@@ -1034,7 +1019,6 @@ Func ApplyConfig_auto($TypeReadSave)
 			Next
 			GUICtrlSetState($g_hUpgradeOnlyTHLevelAchieve, $g_bUpgradeOnlyTHLevelAchieve ? $GUI_CHECKED : $GUI_UNCHECKED)
 			GUICtrlSetState($g_hHeroPriority, $g_bHeroPriority ? $GUI_CHECKED : $GUI_UNCHECKED)
-			_GUICtrlComboBox_SetCurSel($g_hCmbAutoUpgradeOrder, $g_iAutoUpgradeOrder)
 			GUICtrlSetState($g_hUseHeroBooks, $g_bUseHeroBooks ? $GUI_CHECKED : $GUI_UNCHECKED)
 			GUICtrlSetData($g_hHeroMinUpgradeTime, $g_iHeroMinUpgradeTime)
 			GUICtrlSetState($g_hUpgradeOtherDefenses, $g_bUpgradeOtherDefenses ? $GUI_CHECKED : $GUI_UNCHECKED)
@@ -1052,7 +1036,6 @@ Func ApplyConfig_auto($TypeReadSave)
 			$g_bAutoUpgradeEnabled = (GUICtrlRead($g_hChkAutoUpgrade) = $GUI_CHECKED)
 			$g_bChkRushTH = (GUICtrlRead($g_hChkRushTH) = $GUI_CHECKED)
 			$g_bUseWallReserveBuilder = (GUICtrlRead($g_hUseWallReserveBuilder) = $GUI_CHECKED)
-			$g_bUseBuilderPotion = (GUICtrlRead($g_hUseBuilderPotion) = $GUI_CHECKED)
 			For $y = 0 To UBound($g_aiCmbRushTHOption) - 1
 				$g_aiCmbRushTHOption[$y] = _GUICtrlComboBox_GetCurSel($g_ahCmbRushTHOption[$y])
 			Next
@@ -1061,7 +1044,6 @@ Func ApplyConfig_auto($TypeReadSave)
 			Next
 			$g_bUpgradeOnlyTHLevelAchieve = (GUICtrlRead($g_hUpgradeOnlyTHLevelAchieve) = $GUI_CHECKED)
 			$g_bHeroPriority = (GUICtrlRead($g_hHeroPriority) = $GUI_CHECKED)
-			$g_iAutoUpgradeOrder = _GUICtrlComboBox_GetCurSel($g_hCmbAutoUpgradeOrder)
 			$g_bUseHeroBooks = (GUICtrlRead($g_hUseHeroBooks) = $GUI_CHECKED)
 			$g_iHeroMinUpgradeTime =  GUICtrlRead($g_hHeroMinUpgradeTime)
 			$g_bUpgradeOtherDefenses = (GUICtrlRead($g_hUpgradeOtherDefenses) = $GUI_CHECKED)
@@ -1095,12 +1077,8 @@ Func ApplyConfig_600_17($TypeReadSave)
 			
 			GUICtrlSetState($g_hAutoAdjustSaveWall, $g_bAutoAdjustSaveWall ? $GUI_CHECKED : $GUI_UNCHECKED)
 			GUICtrlSetState($g_hChkSaveWallBldr, $g_bUpgradeWallSaveBuilder ? $GUI_CHECKED : $GUI_UNCHECKED)
-			GUICtrlSetState($g_hChkWallBuildMenu, $g_bChkWallBuildMenu ? $GUI_CHECKED : $GUI_UNCHECKED)
 			GUICtrlSetState($g_hChkOnly1Builder, $g_bChkOnly1Builder ? $GUI_CHECKED : $GUI_UNCHECKED)
-			_GUICtrlComboBox_SetCurSel($g_hCmbTargetWallLevel, $g_iTargetWallLevel)
-			_GUICtrlComboBox_SetCurSel($g_hCmbSearchWallSort, $g_iSearchWallSort)
 			chkWalls()
-			cmbWallLevel()
 		Case "Save"
 			$g_bAutoUpgradeWallsEnable = (GUICtrlRead($g_hChkWalls) = $GUI_CHECKED)
 			$g_iUpgradeWallMinGold = Number(GUICtrlRead($g_hTxtWallMinGold))
@@ -1115,11 +1093,7 @@ Func ApplyConfig_600_17($TypeReadSave)
 			EndIf
 			$g_bAutoAdjustSaveWall = (GUICtrlRead($g_hAutoAdjustSaveWall) = $GUI_CHECKED)
 			$g_bUpgradeWallSaveBuilder = (GUICtrlRead($g_hChkSaveWallBldr) = $GUI_CHECKED)
-			$g_bChkWallBuildMenu = (GUICtrlRead($g_hChkWallBuildMenu) = $GUI_CHECKED)
 			$g_bChkOnly1Builder = (GUICtrlRead($g_hChkOnly1Builder) = $GUI_CHECKED)
-			$g_iTargetWallLevel = _GUICtrlComboBox_GetCurSel($g_hCmbTargetWallLevel)
-			$g_iSearchWallSort = _GUICtrlComboBox_GetCurSel($g_hCmbSearchWallSort)
-			$g_bUpgradeSpesificWall = (_GUICtrlComboBox_GetCurSel($g_hCmbTargetWallLevel) = 0 ? False : True)
 	EndSwitch
 EndFunc   ;==>ApplyConfig_600_17
 

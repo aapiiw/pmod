@@ -940,7 +940,6 @@ Global $g_bChkExtraPersian = False ; extra Persian alphabets
 ; <><><><> Village / Upgrade <><><><>
 ; Lab
 Global $g_bAutoLabUpgradeEnable = False, $g_iCmbLaboratory = 0, $g_bAutoStarLabUpgradeEnable = False, $g_iCmbStarLaboratory = 0
-Global $g_bUseBOF = 0, $g_iUseBOFTime = 0, $g_bUseBOS = 0, $g_iUseBOSTime = 0, $g_bUseBOE = 0, $g_iUseBOETime = 0
 Global $g_bLabUpgradeOrderEnable = False
 Global $g_bSLabUpgradeOrderEnable = False, $g_bChkUpgradeAnyIfAllOrderMaxed = False
 Global $g_aCmbLabUpgradeOrder[10] = [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1]
@@ -974,10 +973,10 @@ Global $g_abUpgradeRepeatEnable[$g_iUpgradeSlots] = [False, False, False, False,
 Global $g_bAutoUpgradeWallsEnable = 0
 Global $g_iUpgradeWallMinGold = 0, $g_iUpgradeWallMinElixir = 0, $g_bUpgradeWallIfStorageIsFull = True
 Global $g_iUpgradeWallLootType = 0, $g_bUpgradeWallSaveBuilder = False, $g_bChkOnly1Builder = False
-Global $g_bChkWallBuildMenu = False ; also find wall from Build menu (any level)
-Global $g_iUpgradedWallLevel = 0, $g_bUpgradeLowWall = False, $g_iLowLevelWall = 4, $g_bUpgradeAnyWallLevel = False
+Global $g_iUpgradedWallLevel = 0
 Global $g_iSaveGoldWall = 0, $g_iSaveElixWall = 0
-Global $g_bUpgradeSpesificWall = False, $g_iTargetWallLevel = 0, $g_iSearchWallSort = 0, $g_bAutoAdjustSaveWall = False
+; old village wall search (only when the Build menu can not be opened): any level, highest first
+Global $g_bUpgradeSpesificWall = False, $g_iTargetWallLevel = 0, $g_iSearchWallSort = 1, $g_bAutoAdjustSaveWall = False
 
 ; Upgrading - Wall
 Global Const $g_aiWallCost[19] = [0, 1000, 5000, 10000, 20000, 30000, 50000, 75000, 100000, 200000, 500000, 1000000, 1500000, 2000000, 3000000, 4000000, 5000000, 7000000, 10000000]
@@ -986,13 +985,11 @@ Global Const $g_aiHeroHallCost[11] = [800000, 1600000, 2300000, 3000000, 5000000
 
 ; Auto Upgrade
 Global $g_bChkRushTH = False, $g_bHeroPriority = False
-; Auto Upgrade order (GUI combo index): Build menu Type filter passes, "" = no filter (rest of the list).
-; "Resource" pass takes storages only (drills, collectors and mines are in the last pass). Last index = old full list search
-Global $g_iAutoUpgradeOrder = 0
-Global Const $g_asAutoUpgradeOrder[3][5] = [["Army", "Hero", "Resource", "Defense", ""], ["Hero", "Army", "Resource", "Defense", ""], ["Army", "Hero", "Defense", "Resource", ""]]
+; Auto Upgrade order: Build menu Type filter passes, "" = no filter (the rest of the list: drills, collectors, mines, traps,
+; walls, Town Hall...). "Resource" pass takes storages only (drills, collectors and mines are in the last pass)
+Global Const $g_asAutoUpgradeOrder[5] = ["Army", "Hero", "Resource", "Defense", ""]
 Global $g_bAutoUpgradeEnabled = False, $g_bUseWallReserveBuilder = False, $g_bUseHeroBooks = False, $g_iHeroMinUpgradeTime = 0
 Global $g_bSkipWallReserve = False, $g_bUpgradeLowCost = False, $g_bUpgradeOtherDefenses = False, $g_bGearUpDone = False
-Global $g_bUseBuilderPotion = False
 Global $g_iTxtSmartMinGold = 150000, $g_iTxtSmartMinElixir = 150000, $g_iTxtSmartMinDark = 1500
 ; Auto Upgrade "Upgrades to ignore": [GUI label, names as written in game separated by |, Rush TH preset (1 = ignore), group]
 ; group: T = Town Hall, H = heroes, A = army, R = resource, D = defense. Profiles save the index (IgnoreListVersion 5 = this order)
@@ -1426,7 +1423,7 @@ Global $g_bFullArmySpells = False ; true when $g_iTotalTrainSpaceSpell = $iTotal
 Global $g_CurrentCampUtilization = 0, $g_iTotalCampSpace = 0
 
 ; Upgrading - Lab
-Global $g_iLaboratoryElixirCost = 0, $g_iLaboratoryDElixirCost = 0, $g_bUseLabPotion = False, $g_bUpgradeAnyTroops = False
+Global $g_iLaboratoryElixirCost = 0, $g_iLaboratoryDElixirCost = 0, $g_bUpgradeAnyTroops = False
 Global $g_sLabUpgradeTime = ""
 Global $g_sStarLabUpgradeTime = ""
 
