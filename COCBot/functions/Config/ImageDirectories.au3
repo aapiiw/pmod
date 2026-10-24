@@ -69,10 +69,7 @@ Global $g_sImgLabResearch = @ScriptDir & "\imgxml\Research\Laboratory\"
 Global $g_sImgAnySpell = @ScriptDir & "\imgxml\Research\Laboratory\AllSpell\"
 Global $g_sImgAnySiege = @ScriptDir & "\imgxml\Research\Laboratory\AllSiege\"
 Global $g_sImgResIcon = @ScriptDir & "\imgxml\Research\ResIcon\"
-Global $g_sImgResourcePotion = @ScriptDir & "\imgxml\Research\Potion\"
 Global $g_sImgLabAssistant = @ScriptDir & "\imgxml\Research\Laboratory\LabAssistant\"
-Global $g_sImgLabMenu = @ScriptDir & "\imgxml\Research\Laboratory\LabMenu\"
-Global $g_sImgBooks = @ScriptDir & "\imgxml\Research\Books\"
 Global $g_sImgEquipmentMenu = @ScriptDir & "\imgxml\Research\Blacksmith\EquipmentMenu\" ; Blacksmith tab title of Build menu
 Global $g_sImgEquipmentCorner = @ScriptDir & "\imgxml\Research\Blacksmith\Corner\" ; corner mark of an equipment row in Blacksmith tab
 #EndRegion
@@ -158,18 +155,11 @@ Global $g_sImgAUpgradeRes = @ScriptDir & "\imgxml\Resources\AutoUpgrade\Resource
 Global $g_sImgAUpgradeGreenZone = @ScriptDir & "\imgxml\Resources\AutoUpgrade\GreenZone\"
 Global $g_sImgGreenCheck = @ScriptDir & "\imgxml\Resources\AutoUpgrade\GreenCheck\"
 Global $g_sImgGoblin = @ScriptDir & "\imgxml\Resources\AutoUpgrade\Goblin\"
-Global $g_sImgRedX = @ScriptDir & "\imgxml\Resources\AutoUpgrade\RedX\"
 Global $g_sImgAUpgradeHour = @ScriptDir & "\imgxml\Resources\AutoUpgrade\Hour\"
 Global $g_sImgResourceIcon = @ScriptDir & "\imgxml\Resources\AutoUpgrade\ResourceIcon\"
 Global $g_sImgBuildingAndTraps = @ScriptDir & "\imgxml\Resources\AutoUpgrade\Shop\BuildingAndTraps\"
-Global $g_sImgShopArmy = @ScriptDir & "\imgxml\Resources\AutoUpgrade\Shop\Army\"
-Global $g_sImgShopResources = @ScriptDir & "\imgxml\Resources\AutoUpgrade\Shop\Resources\"
-Global $g_sImgShopDefenses = @ScriptDir & "\imgxml\Resources\AutoUpgrade\Shop\Defenses\"
-Global $g_sImgShopTraps = @ScriptDir & "\imgxml\Resources\AutoUpgrade\Shop\Traps\"
 Global $g_sImgBuilderMenu = @ScriptDir & "\imgxml\Resources\AutoUpgrade\BuilderMenu\"
 Global $g_sImgHeroHall = @ScriptDir & "\imgxml\Resources\AutoUpgrade\HeroHall\"
-Global $g_sImgBuilderPotion = @ScriptDir & "\imgxml\Resources\AutoUpgrade\Potion\"
-Global $g_sImgHeroBooks = @ScriptDir & "\imgxml\Resources\AutoUpgrade\HeroBooks\"
 Global $g_sImgUpgradeMenu = @ScriptDir & "\imgxml\Resources\AutoUpgrade\UpgradeMenu\"
 #EndRegion
 
