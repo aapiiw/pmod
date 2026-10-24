@@ -636,7 +636,7 @@ Func ReadConfig_600_12()
 	IniReadS($g_bChkDonate, $g_sProfileConfigPath, "donate", "Doncheck", True, "Bool")
 	For $i = 0 To $eTroopCount - 1
 		Local $sIniName = ""
-		If $i >= $eTroopBarbarian And $i <= $eTroopHeadhunter Then
+		If $i >= $eTroopBarbarian And $i <= $eTroopIceWizard Then ; same keys as SaveConfig (App. Warden was read as "chkDonate")
 			$sIniName = StringReplace($g_asTroopNamesPlural[$i], " ", "")
 		EndIf
 
@@ -675,14 +675,17 @@ Func ReadConfig_600_12()
 	$g_asTxtDonateTroop[$eTroopValkyrie] = StringReplace(IniRead($g_sProfileConfigPath, "donate", "txtDonateValkyries", "valkyries|valkyrie|valk"), "|", @CRLF)
 	$g_asTxtDonateTroop[$eTroopSuperValkyrie] = StringReplace(IniRead($g_sProfileConfigPath, "donate", "txtDonateSuperValkyries", "Super valkyries|Super valkyrie|Super valk"), "|", @CRLF)
 	$g_asTxtDonateTroop[$eTroopGolem] = StringReplace(IniRead($g_sProfileConfigPath, "donate", "txtDonateGolems", "golem"), "|", @CRLF)
-	$g_asTxtDonateTroop[$eTroopWitch] = StringReplace(IniRead($g_sProfileConfigPath, "donate", "txtDonateWitches", "witches|witch"), "|", @CRLF)
-	$g_asTxtDonateTroop[$eTroopSuperWitch] = StringReplace(IniRead($g_sProfileConfigPath, "donate", "txtDonateSuperWitches", "Super witches|Super witch"), "|", @CRLF)
+	$g_asTxtDonateTroop[$eTroopWitch] = StringReplace(IniRead($g_sProfileConfigPath, "donate", "txtDonateWitchs", IniRead($g_sProfileConfigPath, "donate", "txtDonateWitches", "witches|witch")), "|", @CRLF)
+	$g_asTxtDonateTroop[$eTroopSuperWitch] = StringReplace(IniRead($g_sProfileConfigPath, "donate", "txtDonateSuperWitchs", IniRead($g_sProfileConfigPath, "donate", "txtDonateSuperWitches", "Super witches|Super witch")), "|", @CRLF)
 	$g_asTxtDonateTroop[$eTroopLavaHound] = StringReplace(IniRead($g_sProfileConfigPath, "donate", "txtDonateLavaHounds", "lavahounds|lava|hound"), "|", @CRLF)
 	$g_asTxtDonateTroop[$eTroopIceHound] = StringReplace(IniRead($g_sProfileConfigPath, "donate", "txtDonateIceHounds", "Icehounds|IceH|IHound"), "|", @CRLF)
 	$g_asTxtDonateTroop[$eTroopBowler] = StringReplace(IniRead($g_sProfileConfigPath, "donate", "txtDonateBowlers", "bowler|bowl"), "|", @CRLF)
 	$g_asTxtDonateTroop[$eTroopSuperBowler] = StringReplace(IniRead($g_sProfileConfigPath, "donate", "txtDonateSuperBowlers", "Super Bowler|SBowl"), "|", @CRLF)
 	$g_asTxtDonateTroop[$eTroopIceGolem] = StringReplace(IniRead($g_sProfileConfigPath, "donate", "txtDonateIceGolems", "ice golem|ice golems"), "|", @CRLF)
 	$g_asTxtDonateTroop[$eTroopHeadhunter] = StringReplace(IniRead($g_sProfileConfigPath, "donate", "txtDonateHeadhunters", "headhunter|hunt"), "|", @CRLF)
+	$g_asTxtDonateTroop[$eTroopRootRider] = StringReplace(IniReadDonateTxt("txtDonateRootRiders", "Root Rider|root"), "|", @CRLF)
+	$g_asTxtDonateTroop[$eTroopAppWard] = StringReplace(IniReadDonateTxt("txtDonateApprenticeWardens", "Apprentice Warden|warden"), "|", @CRLF)
+	$g_asTxtDonateTroop[$eTroopSuperHogRider] = StringReplace(IniReadDonateTxt("txtDonateSuperHogRiders", "Super Hog Rider|shog"), "|", @CRLF)
 
 	For $i = 0 To $eSpellCount - 1
 		Local $sIniName = $g_asSpellNames[$i] & "Spells"
@@ -690,7 +693,7 @@ Func ReadConfig_600_12()
 	Next
 
 	$g_asTxtDonateSpell[$eSpellLightning] = StringReplace(IniRead($g_sProfileConfigPath, "donate", "txtDonateLightningSpells", "lightning"), "|", @CRLF)
-	$g_asTxtDonateSpell[$eSpellHeal] = StringReplace(IniRead($g_sProfileConfigPath, "donate", "txtDonateHealSpells", "heal"), "|", @CRLF)
+	$g_asTxtDonateSpell[$eSpellHeal] = StringReplace(IniRead($g_sProfileConfigPath, "donate", "txtDonateHealingSpells", IniRead($g_sProfileConfigPath, "donate", "txtDonateHealSpells", "heal")), "|", @CRLF)
 	$g_asTxtDonateSpell[$eSpellRage] = StringReplace(IniRead($g_sProfileConfigPath, "donate", "txtDonateRageSpells", "rage"), "|", @CRLF)
 	$g_asTxtDonateSpell[$eSpellJump] = StringReplace(IniRead($g_sProfileConfigPath, "donate", "txtDonateJumpSpells", "jump"), "|", @CRLF)
 	$g_asTxtDonateSpell[$eSpellFreeze] = StringReplace(IniRead($g_sProfileConfigPath, "donate", "txtDonateFreezeSpells", "freeze"), "|", @CRLF)
@@ -702,6 +705,7 @@ Func ReadConfig_600_12()
 	$g_asTxtDonateSpell[$eSpellHaste] = StringReplace(IniRead($g_sProfileConfigPath, "donate", "txtDonateHasteSpells", "haste"), "|", @CRLF)
 	$g_asTxtDonateSpell[$eSpellSkeleton] = StringReplace(IniRead($g_sProfileConfigPath, "donate", "txtDonateSkeletonSpells", "skeleton"), "|", @CRLF)
 	$g_asTxtDonateSpell[$eSpellBat] = StringReplace(IniRead($g_sProfileConfigPath, "donate", "txtDonateBatSpells", "bat"), "|", @CRLF)
+	$g_asTxtDonateSpell[$eSpellOverGrowth] = StringReplace(IniReadDonateTxt("txtDonateOverGrowthSpells", "overgrowth"), "|", @CRLF)
 
 	For $i = $eSiegeWallWrecker to $eSiegeMachineCount - 1
 		Local $index = $eTroopCount
@@ -716,6 +720,8 @@ Func ReadConfig_600_12()
 	$g_asTxtDonateTroop[$eTroopCount + $eSiegeLogLauncher] = StringReplace(IniRead($g_sProfileConfigPath, "donate", "txtDonateLogL", "Log Launcher"), "|", @CRLF)
 	$g_asTxtDonateTroop[$eTroopCount + $eSiegeFlameFlinger] = StringReplace(IniRead($g_sProfileConfigPath, "donate", "txtDonateFlameF", "Flame Flinger"), "|", @CRLF)
 	$g_asTxtDonateTroop[$eTroopCount + $eSiegeBattleDrill] = StringReplace(IniRead($g_sProfileConfigPath, "donate", "txtDonateBattleD", "Battle Drill"), "|", @CRLF)
+	$g_asTxtDonateTroop[$eTroopCount + $eSiegeTroopLauncher] = StringReplace(IniReadDonateTxt("txtDonateTroopL", "Troop Launcher|siege"), "|", @CRLF)
+	$g_asTxtDonateTroop[$eTroopCount + $eSiegeSkyWagon] = StringReplace(IniReadDonateTxt("txtDonateSkyW", "Sky Wagon|siege"), "|", @CRLF)
 
 	$g_bChkExtraAlphabets = (IniRead($g_sProfileConfigPath, "donate", "chkExtraAlphabets", "0") = "1")
 	$g_bChkExtraChinese = (IniRead($g_sProfileConfigPath, "donate", "chkExtraChinese", "0") = "1")
@@ -1426,3 +1432,9 @@ Func LabIndexFromV1($iOld)
 	Next
 	Return 0
 EndFunc   ;==>LabIndexFromV1
+
+; donate keywords of items that had no GUI control before: their key was saved as "0" (GUICtrlRead of control 0), use the default then
+Func IniReadDonateTxt($sKey, $sDefault)
+	Local $s = IniRead($g_sProfileConfigPath, "donate", $sKey, $sDefault)
+	Return ($s = "0" Or $s = "") ? $sDefault : $s
+EndFunc   ;==>IniReadDonateTxt
