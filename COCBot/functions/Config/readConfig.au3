@@ -723,6 +723,18 @@ Func ReadConfig_600_12()
 	$g_asTxtDonateTroop[$eTroopCount + $eSiegeTroopLauncher] = StringReplace(IniReadDonateTxt("txtDonateTroopL", "Troop Launcher|siege"), "|", @CRLF)
 	$g_asTxtDonateTroop[$eTroopCount + $eSiegeSkyWagon] = StringReplace(IniReadDonateTxt("txtDonateSkyW", "Sky Wagon|siege"), "|", @CRLF)
 
+	; donate only troops / spells (Thrower, Revive...)
+	For $i = 0 To $eDonExTroopCount - 1
+		Local $sKey = StringReplace($g_asDonExTroopNamesPlural[$i], " ", "")
+		$g_abChkDonateTroop[$g_iDonExTroopBase + $i] = (IniRead($g_sProfileConfigPath, "donate", "chkDonate" & $sKey, "0") = "1")
+		$g_asTxtDonateTroop[$g_iDonExTroopBase + $i] = StringReplace(IniReadDonateTxt("txtDonate" & $sKey, StringLower($g_asDonExTroopNames[$i])), "|", @CRLF)
+	Next
+	For $i = 0 To $eDonExSpellCount - 1
+		Local $sKey = StringReplace($g_asDonExSpellNames[$i], " ", "") & "Spells"
+		$g_abChkDonateSpell[$g_iDonExSpellBase + $i] = (IniRead($g_sProfileConfigPath, "donate", "chkDonate" & $sKey, "0") = "1")
+		$g_asTxtDonateSpell[$g_iDonExSpellBase + $i] = StringReplace(IniReadDonateTxt("txtDonate" & $sKey, StringLower($g_asDonExSpellNames[$i])), "|", @CRLF)
+	Next
+
 	$g_bChkExtraAlphabets = (IniRead($g_sProfileConfigPath, "donate", "chkExtraAlphabets", "0") = "1")
 	$g_bChkExtraChinese = (IniRead($g_sProfileConfigPath, "donate", "chkExtraChinese", "0") = "1")
 	$g_bChkExtraKorean = (IniRead($g_sProfileConfigPath, "donate", "chkExtraKorean", "0") = "1")

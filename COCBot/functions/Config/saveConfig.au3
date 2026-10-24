@@ -610,6 +610,16 @@ Func SaveConfig_600_12()
 		_Ini_Add("donate", "chkDonate" & $sIniName, $g_abChkDonateTroop[$index + $i] ? 1 : 0)
 		_Ini_Add("donate", "txtDonate" & $sIniName, StringReplace($g_asTxtDonateTroop[$index + $i], @CRLF, "|"))
 	Next
+	For $i = 0 To $eDonExTroopCount - 1 ; donate only troops / spells
+		Local $sKey = StringReplace($g_asDonExTroopNamesPlural[$i], " ", "")
+		_Ini_Add("donate", "chkDonate" & $sKey, $g_abChkDonateTroop[$g_iDonExTroopBase + $i] ? 1 : 0)
+		_Ini_Add("donate", "txtDonate" & $sKey, StringReplace($g_asTxtDonateTroop[$g_iDonExTroopBase + $i], @CRLF, "|"))
+	Next
+	For $i = 0 To $eDonExSpellCount - 1
+		Local $sKey = StringReplace($g_asDonExSpellNames[$i], " ", "") & "Spells"
+		_Ini_Add("donate", "chkDonate" & $sKey, $g_abChkDonateSpell[$g_iDonExSpellBase + $i] ? 1 : 0)
+		_Ini_Add("donate", "txtDonate" & $sKey, StringReplace($g_asTxtDonateSpell[$g_iDonExSpellBase + $i], @CRLF, "|"))
+	Next
 
 	_Ini_Add("donate", "chkExtraAlphabets", $g_bChkExtraAlphabets ? 1 : 0)
 	_Ini_Add("donate", "chkExtraChinese", $g_bChkExtraChinese ? 1 : 0)

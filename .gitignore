@@ -19,6 +19,9 @@ BuildMBR.exe
 !lib/*.dll
 !lib/*/*.dll
 
+# image templates in imgxml are needed by the bot (some are .bmp)
+!imgxml/**/*.bmp
+
 # Exclude Global Folders
 [Ll]anguages/
 [Pp]rofiles/

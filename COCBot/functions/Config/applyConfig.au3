@@ -794,6 +794,16 @@ Func ApplyConfig_600_12($TypeReadSave)
 
 				GUICtrlSetData($g_ahTxtDonateTroop[$index + $i], $g_asTxtDonateTroop[$index + $i])
 			Next
+			For $i = $g_iDonExTroopBase To UBound($g_abChkDonateTroop) - 1 ; donate only troops
+				GUICtrlSetState($g_ahChkDonateTroop[$i], $g_abChkDonateTroop[$i] ? $GUI_CHECKED : $GUI_UNCHECKED)
+				GUICtrlSetBkColor($g_ahLblDonateTroop[$i], $g_abChkDonateTroop[$i] ? $COLOR_ORANGE : $GUI_BKCOLOR_TRANSPARENT)
+				GUICtrlSetData($g_ahTxtDonateTroop[$i], $g_asTxtDonateTroop[$i])
+			Next
+			For $i = $g_iDonExSpellBase To UBound($g_abChkDonateSpell) - 1 ; donate only spells
+				GUICtrlSetState($g_ahChkDonateSpell[$i], $g_abChkDonateSpell[$i] ? $GUI_CHECKED : $GUI_UNCHECKED)
+				GUICtrlSetBkColor($g_ahLblDonateSpell[$i], $g_abChkDonateSpell[$i] ? $COLOR_ORANGE : $GUI_BKCOLOR_TRANSPARENT)
+				GUICtrlSetData($g_ahTxtDonateSpell[$i], $g_asTxtDonateSpell[$i])
+			Next
 
 			GUICtrlSetState($g_hChkExtraAlphabets, $g_bChkExtraAlphabets ? $GUI_CHECKED : $GUI_UNCHECKED)
 			GUICtrlSetState($g_hChkExtraChinese, $g_bChkExtraChinese ? $GUI_CHECKED : $GUI_UNCHECKED)
@@ -816,6 +826,14 @@ Func ApplyConfig_600_12($TypeReadSave)
 				Local $index = $eTroopCount
 				$g_abChkDonateTroop[$index + $i] = (GUICtrlRead($g_ahChkDonateTroop[$index + $i]) = $GUI_CHECKED)
 				$g_asTxtDonateTroop[$index + $i] = GUICtrlRead($g_ahTxtDonateTroop[$index + $i])
+			Next
+			For $i = $g_iDonExTroopBase To UBound($g_abChkDonateTroop) - 1
+				$g_abChkDonateTroop[$i] = (GUICtrlRead($g_ahChkDonateTroop[$i]) = $GUI_CHECKED)
+				$g_asTxtDonateTroop[$i] = GUICtrlRead($g_ahTxtDonateTroop[$i])
+			Next
+			For $i = $g_iDonExSpellBase To UBound($g_abChkDonateSpell) - 1
+				$g_abChkDonateSpell[$i] = (GUICtrlRead($g_ahChkDonateSpell[$i]) = $GUI_CHECKED)
+				$g_asTxtDonateSpell[$i] = GUICtrlRead($g_ahTxtDonateSpell[$i])
 			Next
 
 			$g_bChkExtraAlphabets = (GUICtrlRead($g_hChkExtraAlphabets) = $GUI_CHECKED)

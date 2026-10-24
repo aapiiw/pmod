@@ -76,7 +76,7 @@ Func RequestQty()
 EndFunc
 
 Func btnDonateTroop()
-	For $i = 0 To $eTroopCount - 1 + $eSiegeMachineCount
+	For $i = 0 To UBound($g_ahBtnDonateTroop) - 1
 		If @GUI_CtrlId = $g_ahBtnDonateTroop[$i] Then
 			If GUICtrlGetState($g_ahGrpDonateTroop[$i]) = BitOR($GUI_HIDE, $GUI_ENABLE) Then
 				_DonateBtn($g_ahGrpDonateTroop[$i], $g_ahTxtDonateTroop[$i]) ;Hide/Show controls on Donate tab
@@ -87,7 +87,7 @@ Func btnDonateTroop()
 EndFunc   ;==>btnDonateTroop
 
 Func btnDonateSpell()
-	For $i = 0 To $eSpellCount - 1
+	For $i = 0 To UBound($g_ahBtnDonateSpell) - 1
 		If @GUI_CtrlId = $g_ahBtnDonateSpell[$i] Then
 			If GUICtrlGetState($g_ahGrpDonateSpell[$i]) = BitOR($GUI_HIDE, $GUI_ENABLE) Then
 				_DonateBtn($g_ahGrpDonateSpell[$i], $g_ahTxtDonateSpell[$i])
@@ -98,7 +98,7 @@ Func btnDonateSpell()
 EndFunc   ;==>btnDonateSpell
 
 Func chkDonateTroop()
-	For $i = 0 To $eTroopCount - 1 + $eSiegeMachineCount
+	For $i = 0 To UBound($g_ahChkDonateTroop) - 1
 		If @GUI_CtrlId = $g_ahChkDonateTroop[$i] Then
 			If GUICtrlRead($g_ahChkDonateTroop[$i]) = $GUI_CHECKED Then
 				_DonateControls($i)
@@ -110,7 +110,7 @@ Func chkDonateTroop()
 EndFunc   ;==>chkDonateTroop
 
 Func chkDonateSpell()
-	For $i = 0 To $eSpellCount - 1
+	For $i = 0 To UBound($g_ahChkDonateSpell) - 1
 		If @GUI_CtrlId = $g_ahChkDonateSpell[$i] Then
 			If GUICtrlRead($g_ahChkDonateSpell[$i]) = $GUI_CHECKED Then
 				_DonateControlsSpell($i)
@@ -145,14 +145,7 @@ Func _DonateBtn($hFirstControl, $hLastControl)
 EndFunc   ;==>_DonateBtn
 
 Func _DonateControls($iTroopIndex)
-	Local $iFirstTroop = 0, $iLastTroop = $eTroopCount - 1 + $eSiegeMachineCount
-	If $iTroopIndex <= $eTroopCount - 1 Then
-		$iLastTroop = $eTroopCount - 1
-	Else
-		$iFirstTroop = $eTroopCount
-	EndIf
-
-	For $i = $iFirstTroop To $iLastTroop
+	For $i = 0 To UBound($g_ahLblDonateTroop) - 1 ; troops, sieges and donate only troops
 		If $i = $iTroopIndex Then
 			GUICtrlSetBkColor($g_ahLblDonateTroop[$i], $COLOR_ORANGE)
 		Else
@@ -164,7 +157,7 @@ Func _DonateControls($iTroopIndex)
 EndFunc   ;==>_DonateControls
 
 Func _DonateControlsSpell($iSpellIndex)
-	For $i = 0 To $eSpellCount - 1
+	For $i = 0 To UBound($g_ahLblDonateSpell) - 1
 		If $i = $iSpellIndex Then
 			GUICtrlSetBkColor($g_ahLblDonateSpell[$i], $COLOR_ORANGE)
 		Else
@@ -174,6 +167,53 @@ Func _DonateControlsSpell($iSpellIndex)
 		If BitAND(GUICtrlGetState($g_ahTxtDonateSpell[$i]), $GUI_DISABLE) = $GUI_DISABLE Then GUICtrlSetState($g_ahTxtDonateSpell[$i], $GUI_ENABLE)
 	Next
  EndFunc   ;==>_DonateControlsSpell
+
+; drop down Troops / Spells / Sieges (Mod PH): show the icons of one category, each already at its slot
+Func cmbDonateCategory()
+	Local $iCat = _GUICtrlComboBox_GetCurSel($g_hCmbDonateCategory)
+	If $iCat < 0 Then $iCat = 0
+	For $c = 0 To UBound($g_aDonateCategory) - 1
+		Local $aCat = $g_aDonateCategory[$c]
+		If Not IsArray($aCat) Then ContinueLoop
+		Local $iState = ($c = $iCat) ? $GUI_SHOW : $GUI_HIDE
+		For $k = 0 To UBound($aCat) - 1
+			Local $iIdx = $aCat[$k][1]
+			Local $hBtn = $aCat[$k][0] ? $g_ahBtnDonateSpell[$iIdx] : $g_ahBtnDonateTroop[$iIdx]
+			Local $hLbl = $aCat[$k][0] ? $g_ahLblDonateSpell[$iIdx] : $g_ahLblDonateTroop[$iIdx]
+			GUICtrlSetState($hBtn, $iState)
+			GUICtrlSetState($hLbl, $iState)
+			If $c = $iCat Then GUICtrlSetState($hLbl, $GUI_DISABLE) ; the label is only the colored frame, clicks go to the button
+		Next
+	Next
+EndFunc   ;==>cmbDonateCategory
+
+; "All": donate every troop, spell and siege (keywords kept)
+Func BtnAllSelected()
+	For $i = 0 To UBound($g_ahChkDonateTroop) - 1
+		If $g_ahChkDonateTroop[$i] = 0 Then ContinueLoop
+		GUICtrlSetState($g_ahChkDonateTroop[$i], $GUI_CHECKED)
+		GUICtrlSetBkColor($g_ahLblDonateTroop[$i], $COLOR_ORANGE)
+	Next
+	For $i = 0 To UBound($g_ahChkDonateSpell) - 1
+		If $g_ahChkDonateSpell[$i] = 0 Then ContinueLoop
+		GUICtrlSetState($g_ahChkDonateSpell[$i], $GUI_CHECKED)
+		GUICtrlSetBkColor($g_ahLblDonateSpell[$i], $COLOR_ORANGE)
+	Next
+EndFunc   ;==>BtnAllSelected
+
+; "Reset": donate nothing
+Func BtnResetSelected()
+	For $i = 0 To UBound($g_ahChkDonateTroop) - 1
+		If $g_ahChkDonateTroop[$i] = 0 Then ContinueLoop
+		GUICtrlSetState($g_ahChkDonateTroop[$i], $GUI_UNCHECKED)
+		GUICtrlSetBkColor($g_ahLblDonateTroop[$i], $GUI_BKCOLOR_TRANSPARENT)
+	Next
+	For $i = 0 To UBound($g_ahChkDonateSpell) - 1
+		If $g_ahChkDonateSpell[$i] = 0 Then ContinueLoop
+		GUICtrlSetState($g_ahChkDonateSpell[$i], $GUI_UNCHECKED)
+		GUICtrlSetBkColor($g_ahLblDonateSpell[$i], $GUI_BKCOLOR_TRANSPARENT)
+	Next
+EndFunc   ;==>BtnResetSelected
 
 Func Doncheck()
 	tabDONATE() ; just call tabDONATE()

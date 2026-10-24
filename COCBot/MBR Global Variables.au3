@@ -926,11 +926,22 @@ Global $g_aCmbRequestSiege[9][3] = [["WallW", "Wall Wrecker", 1], _
 
 ; <><><><> Village / Donate - Donate <><><><>
 Global $g_bChkDonate = True
-Global $g_abChkDonateTroop[$eTroopCount + $eSiegeMachineCount] = [False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False]
-Global $g_asTxtDonateTroop[$eTroopCount + $eSiegeMachineCount] = ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""] ; array of pipe-delimited list of strings to match to a request string
+; donate only: troops / spells newer than the troop and spell lists (not trained or used in attack yet), found by image
+; short name like Mod PH (imgxml\DonateCC\RequestArmy for the chat request, Troops / Spells for the donate window)
+Global Enum $eDonExThrower, $eDonExMeteorGolem, $eDonExDruid, $eDonExFurnace, $eDonExRuinWitch, $eDonExSuperYeti, $eDonExTroopCount
+Global Const $g_asDonExTroopShortNames[$eDonExTroopCount] = ["Throw", "MeteorG", "Druid", "Furn", "RuinW", "SYeti"]
+Global Const $g_asDonExTroopNames[$eDonExTroopCount] = ["Thrower", "Meteor Golem", "Druid", "Furnace", "Ruin Witch", "Super Yeti"]
+Global Const $g_asDonExTroopNamesPlural[$eDonExTroopCount] = ["Throwers", "Meteor Golems", "Druids", "Furnaces", "Ruin Witches", "Super Yetis"]
+Global Const $g_aiDonExTroopSpace[$eDonExTroopCount] = [16, 40, 16, 18, 26, 35] ; housing space (Mod PH, Oct 2026)
+Global Enum $eDonExRevive, $eDonExTotem, $eDonExIceBlock, $eDonExAngry, $eDonExSpellCount
+Global Const $g_asDonExSpellShortNames[$eDonExSpellCount] = ["RvSpell", "TSpell", "IBSpell", "ASpell"]
+Global Const $g_asDonExSpellNames[$eDonExSpellCount] = ["Revive", "Totem", "Ice Block", "Angry"]
+Global Const $g_aiDonExSpellSpace[$eDonExSpellCount] = [2, 1, 1, 1]
+; donate arrays: [troops][sieges][donate only troops], spells: [spells][donate only spells]
+Global Const $g_iDonExTroopBase = $eTroopCount + $eSiegeMachineCount, $g_iDonExSpellBase = $eSpellCount
+Global $g_abChkDonateTroop[$eTroopCount + $eSiegeMachineCount + $eDonExTroopCount], $g_asTxtDonateTroop[$eTroopCount + $eSiegeMachineCount + $eDonExTroopCount]
 
-Global $g_abChkDonateSpell[$eSpellCount] = [False, False, False, False, False, False, False, False, False, False, False, False, False, False]
-Global $g_asTxtDonateSpell[$eSpellCount] = ["", "", "", "", "", "", "", "", "", "", "", "", "", ""]
+Global $g_abChkDonateSpell[$eSpellCount + $eDonExSpellCount], $g_asTxtDonateSpell[$eSpellCount + $eDonExSpellCount]
 
 Global $g_bChkExtraAlphabets = False ; extra alphabets
 Global $g_bChkExtraChinese = False ; extra Chinese alphabets

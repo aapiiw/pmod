@@ -22,6 +22,7 @@ Global $g_bSkipDonTroops = False, $g_bSkipDonSpells = False, $g_bSkipDonSiege = 
 Global $g_bDonateAllRespectBlk = False ; is turned on off durning donate all section, must be false all other times
 Global $g_aiAvailQueuedTroop[$eTroopCount], $g_aiAvailQueuedSpell[$eSpellCount]
 Global $g_aiDonTroopQuant, $g_aiDonSpellQuant
+Global $g_aiDonExTroopQuant[$eDonExTroopCount], $g_aiDonExSpellQuant[$eDonExSpellCount] ; requested quantity of donate only troops / spells
 Global $g_aiZero52[5][2] = [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0]]
 
 Func PrepareDonateCC()
@@ -204,6 +205,15 @@ Func DonateCC($bTest = False, $bSwitch = False, $bClanChatOpened = False)
 							EndIf
 						Next
 					EndIf
+					; donate only troops (Thrower, Druid...): same check and image way as the troops above
+					For $i = 0 To $eDonExTroopCount - 1
+						If $g_bSkipDonTroops Then ExitLoop
+						If Not $g_abChkDonateTroop[$g_iDonExTroopBase + $i] Then ContinueLoop
+						If CheckDonate($g_asDonExTroopNames[$i], $g_bNewSystemToDonate ? $g_asDonExTroopNames[$i] : $g_asTxtDonateTroop[$g_iDonExTroopBase + $i], $ClanString) Then
+							DonateExtraTroop($i, $aiDonateButton)
+							If _Sleep(50) Then Return
+						EndIf
+					Next
 				EndIf
 				
 				If _Sleep(50) Then Return
@@ -244,6 +254,15 @@ Func DonateCC($bTest = False, $bSwitch = False, $bClanChatOpened = False)
 								If _Sleep(50) Then Return
 								If $g_bSkipDonSpells Then ExitLoop
 							EndIf
+						EndIf
+					Next
+					; donate only spells (Revive, Totem...)
+					For $i = 0 To $eDonExSpellCount - 1
+						If $g_bSkipDonSpells Then ExitLoop
+						If Not $g_abChkDonateSpell[$g_iDonExSpellBase + $i] Then ContinueLoop
+						If CheckDonate($g_asDonExSpellNames[$i], $g_bNewSystemToDonate ? $g_asDonExSpellNames[$i] : $g_asTxtDonateSpell[$g_iDonExSpellBase + $i], $ClanString) Then
+							DonateExtraSpell($i, $aiDonateButton)
+							If _Sleep(50) Then Return
 						EndIf
 					Next
 				EndIf
@@ -456,6 +475,60 @@ Func DonateSiegeType($iSiegeIndex, $aiDonateButton)
 	EndIf
 EndFunc   ;==>DonateSiegeType
 
+; donate only troop $iEx ($eDonExThrower...), same steps as DonateTroopType
+Func DonateExtraTroop($iEx, $aiDonateButton)
+	If $g_iTotalDonateTroopCapacity <= 0 Then Return
+	Local $sName = $g_asDonExTroopNames[$iEx]
+	Local $iAv = Floor($g_iTotalDonateTroopCapacity / $g_aiDonExTroopSpace[$iEx])
+	If $iAv < 1 Then
+		SetLog("Sorry Chief! " & $g_asDonExTroopNamesPlural[$iEx] & " don't fit in the remaining space!")
+		Return
+	EndIf
+	Local $iQuant = $g_aiDonExTroopQuant[$iEx]
+	If $iQuant = 0 Or $iQuant > _Min($iAv, Number($g_iDonTroopsLimit)) Then $iQuant = _Min($iAv, Number($g_iDonTroopsLimit))
+	Local $aSlot = DetectSlotTroop(0, $g_asDonExTroopShortNames[$iEx], $sName)
+	If $aSlot = -1 Then Return
+	SetLog("Donating " & $iQuant & " " & ($iQuant > 1 ? $g_asDonExTroopNamesPlural[$iEx] : $sName), $COLOR_SUCCESS)
+	For $i = 1 To $iQuant
+		Click($aSlot[0], $aSlot[1], 1, 0, "Donate " & $sName)
+	Next
+	$g_iTotalDonateTroopCapacity -= ($iQuant * $g_aiDonExTroopSpace[$iEx])
+	If $g_iTotalDonateTroopCapacity < 1 Then $g_bSkipDonTroops = True
+	$g_bDonated = True
+	If Not $g_bNewSystemToDonate Then
+		ClickP($aiDonateButton)
+		If _Sleep(1000) Then Return
+		ClickP($aiDonateButton)
+		If _Sleep(1000) Then Return
+	EndIf
+EndFunc   ;==>DonateExtraTroop
+
+; donate only spell $iEx ($eDonExRevive...), same steps as DonateSpellType
+Func DonateExtraSpell($iEx, $aiDonateButton)
+	If $g_iTotalDonateSpellCapacity <= 0 Then Return
+	Local $sName = $g_asDonExSpellNames[$iEx]
+	Local $iAv = Floor($g_iTotalDonateSpellCapacity / $g_aiDonExSpellSpace[$iEx])
+	If $iAv < 1 Then
+		SetLog("Sorry Chief! " & $sName & " spells don't fit in the remaining space!")
+		Return
+	EndIf
+	Local $iQuant = $g_aiDonExSpellQuant[$iEx]
+	If $iQuant = 0 Or $iQuant > _Min($iAv, Number($iDonSpellsLimit)) Then $iQuant = _Min($iAv, Number($iDonSpellsLimit))
+	Local $aSlot = DetectSlotSpell(0, $g_asDonExSpellShortNames[$iEx], $sName)
+	If $aSlot = -1 Then Return
+	ClickP($aSlot, $iQuant, 200, "Donate " & $sName)
+	SetLog("Donating " & $iQuant & " " & $sName & " Spell.", $COLOR_SUCCESS)
+	$g_iTotalDonateSpellCapacity -= ($iQuant * $g_aiDonExSpellSpace[$iEx])
+	If $g_iTotalDonateSpellCapacity < 1 Then $g_bSkipDonSpells = True
+	$g_bDonated = True
+	If Not $g_bNewSystemToDonate Then
+		ClickP($aiDonateButton)
+		If _Sleep(1000) Then Return
+		ClickP($aiDonateButton)
+		If _Sleep(1000) Then Return
+	EndIf
+EndFunc   ;==>DonateExtraSpell
+
 ;DonateWindow(StringSplit("284|561", "|", $STR_NOCOUNT))
 Func DonateWindow($DonateButton = -1, $bOpen = True)
 
@@ -545,16 +618,21 @@ Func DonateWindowCap(ByRef $g_bSkipDonTroops, ByRef $g_bSkipDonSpells)
 	EndIf
 EndFunc   ;==>DonateWindowCap
 
-Func DetectSlotTroop($iTroopIndex = 0)
+Func DetectSlotTroop($iTroopIndex = 0, $sShortEx = "", $sNameEx = "")
 	Local $aSlot[2] = [0, 0]
 	Local $sShort = "", $sName = ""
 	Local $x = $g_iDonationWindowX - 12, $x1 = $x + 480
 	Local $y = $g_iDonationWindowY + 20, $y1 = $y + 170
 	
 	If _Sleep(200) Then Return
-	If $iTroopIndex > UBound($g_asTroopShortNames) Then Return -1
-	$sShort = $g_asTroopShortNames[$iTroopIndex]
-	$sName = $g_asTroopNames[$iTroopIndex]
+	If $sShortEx <> "" Then
+		$sShort = $sShortEx
+		$sName = $sNameEx
+	Else
+		If $iTroopIndex > UBound($g_asTroopShortNames) Then Return -1
+		$sShort = $g_asTroopShortNames[$iTroopIndex]
+		$sName = $g_asTroopNames[$iTroopIndex]
+	EndIf
 
 	SetDebugLog("DetectSlotTroop : [" & $iTroopIndex & "] " & $sName)	
 	For $i = 1 To 4
@@ -586,15 +664,20 @@ Func DetectSlotTroop($iTroopIndex = 0)
 	Return -1
 EndFunc   ;==>DetectSlotTroop
 
-Func DetectSlotSpell($iSpellIndex = 0)
+Func DetectSlotSpell($iSpellIndex = 0, $sShortEx = "", $sNameEx = "")
 	Local $aSlot[2] = [0, 0]
 	Local $sShort = "", $sName = ""
 	Local $x = $g_iDonationWindowX - 12, $x1 = $x + 480
 	Local $y = $g_iDonationWindowY + 245, $y1 = $y + 65
 
-	If $iSpellIndex > UBound($g_asSpellShortNames) Then Return -1
-	$sShort = $g_asSpellShortNames[$iSpellIndex]
-	$sName = $g_asSpellNames[$iSpellIndex]
+	If $sShortEx <> "" Then
+		$sShort = $sShortEx
+		$sName = $sNameEx
+	Else
+		If $iSpellIndex > UBound($g_asSpellShortNames) Then Return -1
+		$sShort = $g_asSpellShortNames[$iSpellIndex]
+		$sName = $g_asSpellNames[$iSpellIndex]
+	EndIf
 
 	SetDebugLog("DetectSlotSpell : [" & $iSpellIndex & "] " & $sName)
 	For $i = 1 To 2
@@ -840,6 +923,12 @@ Func getArmyRequest($DonateButton = -1)
 	Local $aTempRequestArray, $iArmyIndex = -1, $sClanText = "", $sDebugText = ""
 	$g_aiDonTroopQuant = $g_aiZero52 ;reset array
 	$g_aiDonSpellQuant = $g_aiZero52 ;reset array
+	For $i = 0 To $eDonExTroopCount - 1
+		$g_aiDonExTroopQuant[$i] = 0
+	Next
+	For $i = 0 To $eDonExSpellCount - 1
+		$g_aiDonExSpellQuant[$i] = 0
+	Next
 	
 	Local $aiDonateCoords[2] = [0, 0]
 	If $DonateButton = -1 Then
@@ -892,6 +981,20 @@ Func getArmyRequest($DonateButton = -1)
 				$sClanText &= ", " & $g_asSiegeMachineNames[$iArmyIndex - $eWallW]
 				$sDebugText &= ", " & $g_asSiegeMachineNames[$iArmyIndex - $eWallW] & ":" & (Number($sQuant) > 0 ? $sQuant : 1)
 			ElseIf $iArmyIndex = -1 Then
+				; donate only troops / spells (not in the troop and spell lists)
+				Local $iEx = _ArraySearch($g_asDonExTroopShortNames, $aQuick[$i][0])
+				If $iEx >= 0 Then
+					$sClanText &= ", " & $g_asDonExTroopNames[$iEx]
+					$sDebugText &= ", " & $g_asDonExTroopNames[$iEx] & ":" & (Number($sQuant) > 0 ? $sQuant : 1)
+					$g_aiDonExTroopQuant[$iEx] = (Number($sQuant) > 0 ? Number($sQuant) : 1)
+					ContinueLoop
+				EndIf
+				$iEx = _ArraySearch($g_asDonExSpellShortNames, $aQuick[$i][0])
+				If $iEx >= 0 Then
+					$sClanText &= ", " & $g_asDonExSpellNames[$iEx]
+					$sDebugText &= ", " & $g_asDonExSpellNames[$iEx] & ":" & (Number($sQuant) > 0 ? $sQuant : 1)
+					$g_aiDonExSpellQuant[$iEx] = (Number($sQuant) > 0 ? Number($sQuant) : 1)
+				EndIf
 				ContinueLoop
 			EndIf
 			
