@@ -188,8 +188,8 @@ Func CreatePetsGroup()
 		$g_hChkUpgradePets[$i] = GUICtrlCreateCheckbox("", $x + $iCol * $iStep, $y + $iRow * 48 + 12, 17, 17)
 			_GUICtrlSetTip(-1, $sTxtTip)
 			GUICtrlSetOnEvent(-1, "chkUpgradePets")
-		If $g_aiPetIcon[$i] = $eIcnBlank And FileExists(@ScriptDir & "\lib\Pet" & StringReplace($g_asPetNames[$i], " ", "") & ".ico") Then
-			GUICtrlCreateIcon(@ScriptDir & "\lib\Pet" & StringReplace($g_asPetNames[$i], " ", "") & ".ico", -1, $x + $iCol * $iStep + 17, $y + $iRow * 48, 40, 40) ; icon not in MBRBOT.dll (from PH Mod)
+		If $g_aiPetIcon[$i] = $eIcnBlank And FileExists(@ScriptDir & "\images\Icons\Pet" & StringReplace($g_asPetNames[$i], " ", "") & ".ico") Then
+			GUICtrlCreateIcon(@ScriptDir & "\images\Icons\Pet" & StringReplace($g_asPetNames[$i], " ", "") & ".ico", -1, $x + $iCol * $iStep + 17, $y + $iRow * 48, 40, 40) ; icon not in MBRBOT.dll (from PH Mod)
 		Else
 			_GUICtrlCreateIcon($g_sLibIconPath, $g_aiPetIcon[$i], $x + $iCol * $iStep + 17, $y + $iRow * 48, 40, 40)
 		EndIf
