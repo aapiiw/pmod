@@ -31,6 +31,18 @@ Func GetResources($bLog = True) ;Reads resources
 		$g_iSearchDark = getDarkElixirVillageSearch($xRead, $yDE)
 		SetDebugLog("getDarkElixirVillageSearch(" & $xRead & "," & $yDE & ")")
 	EndIf
+
+	; empty reads (the base is still loading): read again, an empty value counts as 0 and the base was skipped (6 of 33, Oct 2026)
+	For $iTry = 1 To 2
+		If $g_iSearchGold <> "" And $g_iSearchElixir <> "" And ($g_iTownHallLevel < 7 Or $g_iSearchDark <> "") Then ExitLoop
+		ResumeAndroid() ; the screen must change while waiting
+		If _Sleep(300) Then Return
+		SuspendAndroid()
+		If $g_iSearchGold = "" Then $g_iSearchGold = getGoldVillageSearch($xRead, $yGold)
+		If $g_iSearchElixir = "" Then $g_iSearchElixir = getElixirVillageSearch($xRead, $yElix)
+		If $g_iTownHallLevel >= 7 And $g_iSearchDark = "" Then $g_iSearchDark = getDarkElixirVillageSearch($xRead, $yDE)
+		SetDebugLog("Search resources read again #" & $iTry)
+	Next
 	
 	If $g_bLeagueAttack Then
 		$g_iSearchTrophy = getTrophyVillageSearch($xRead, $yTrophy)

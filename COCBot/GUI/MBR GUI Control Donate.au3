@@ -168,7 +168,7 @@ Func _DonateControlsSpell($iSpellIndex)
 	Next
  EndFunc   ;==>_DonateControlsSpell
 
-; drop down Troops / Spells / Sieges (Mod PH): show the icons of one category, each already at its slot
+; drop down Troops / Spells / Sieges: show the icons of one category, each already at its slot
 Func cmbDonateCategory()
 	Local $iCat = _GUICtrlComboBox_GetCurSel($g_hCmbDonateCategory)
 	If $iCat < 0 Then $iCat = 0

@@ -355,7 +355,8 @@ EndFunc
 
 
 ; Laboratory upgrade from Build menu, tab 2 "Army Upgrades" (Lab building way is kept in LabUpgradeLegacy/Laboratory)
-Func LabUpgrade($bTest = False)
+; $bKeepOpen: leave the Build menu open when nothing was upgraded (Pet check comes next on tab 4)
+Func LabUpgrade($bTest = False, $bKeepOpen = False)
 	If Not $g_bAutoLabUpgradeEnable Then Return False
 	checkMainScreen(False)
 	If Not CheckIfLabIdle($bTest) Then Return False ; lab counter on main screen
@@ -367,7 +368,7 @@ Func LabUpgrade($bTest = False)
 	; Lab Assistant is checked while the lab is busy (CheckIfLabIdle): an idle lab has no research to speed up
 	If $g_aiBuildMenuCounter[2][0] = 0 And Not $bTest Then
 		LabSaveBusyTime(BuildMenuBusyTime())
-		CloseBuildMenu()
+		If Not $bKeepOpen Then CloseBuildMenu()
 		Return False
 	EndIf
 
@@ -390,7 +391,7 @@ Func LabUpgrade($bTest = False)
 	If $bAnyOnly And LabPickUpgrade($aList, False) < 0 Then $aList = BuildMenuCollect($g_sImgResIcon, $g_iXFindLabUpgrade, -23, "lab", $aStop)
 	If UBound($aList) = 0 Then
 		SetLog("No Laboratory upgrade found in Build menu", $COLOR_INFO)
-		CloseBuildMenu()
+		If Not $bKeepOpen Then CloseBuildMenu()
 		Return False
 	EndIf
 	SetLog("Laboratory Upgrade List:", $COLOR_INFO)
@@ -410,13 +411,13 @@ Func LabUpgrade($bTest = False)
 	EndIf
 	If $iPick < 0 Then
 		SetLog("Nothing to upgrade in Laboratory now", $COLOR_INFO)
-		CloseBuildMenu()
+		If Not $bKeepOpen Then CloseBuildMenu()
 		Return False
 	EndIf
 
 	Local $aCoord = BuildMenuGoToItem(2, $aList[$iPick][3], $aList[$iPick][8], $g_sImgResIcon, $g_iXFindLabUpgrade, -23, "lab", $sFilter)
 	If Not IsArray($aCoord) Then
-		CloseBuildMenu()
+		If Not $bKeepOpen Then CloseBuildMenu()
 		Return False
 	EndIf
 	Local $bRet = LaboratoryUpgrade($aList[$iPick][3], $aCoord, $aList[$iPick][5], $bTest)

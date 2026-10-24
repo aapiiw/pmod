@@ -78,17 +78,15 @@ Func DonateCC($bTest = False, $bSwitch = False, $bClanChatOpened = False)
 	If Not $bDonate Then Return
 
 	;Opens clan tab
-	If $bClanChatOpened Then 
+	If $bClanChatOpened Then ; RequestCC opened the chat and checked "I Understand" already: no wait
 		SetLog("DonateCC while RequestCC", $COLOR_INFO)
 	Else
 		If checkChatTabPixel() Then
 			Click($aChatTabClosed[0], $aChatTabClosed[1]) ;Click ClanChatOpen
 		EndIf
+		If _Sleep(1000) Then Return
+		CheckIUnderstand()
 	EndIf
-
-	If _Sleep(1000) Then Return
-
-	CheckIUnderstand()
 
 	If Not $g_bRunState Then Return
 

@@ -262,9 +262,18 @@ Func GetAttackBar($bRemaining = False, $pMatchMode = $DB, $bDebug = False)
 					If QuickMIS("BFI", $g_sImgAttackBarDir & "\AmountX*", $aArmy[$i][1] - 30, 580, $aArmy[$i][1] + 40, 610) Then ;search x image
 						$xOCR = $g_iQuickMISX
 						$iAmount = getTroopCount($xOCR, 580)
+						; count not read once (zone, Oct 2026: 4 Rage Spells never used): read again, the x is there so at least 1
+						If Number($iAmount) < 1 Then $iAmount = getTroopCount($xOCR, 578)
+						If Number($iAmount) < 1 Then $iAmount = getTroopCount($xOCR - 2, 582)
+						If Number($iAmount) < 1 Then
+							SetDebugLog($aArmy[$i][0] & " amount not read, use 1")
+							$iAmount = 1
+						EndIf
 						$sColor = _GetPixelColor($xOCR - 20, 587, True)
 					Else
-						SetDebugLog($aArmy[$i][0] & " x not found")
+						; no amount x: not a troop slot (image matched something else, e.g. "0 Pumpkin Barbarian")
+						SetDebugLog($aArmy[$i][0] & " x not found" & ($aArmy[$i][0] = "Castle" ? "" : ", not added"))
+						If $aArmy[$i][0] <> "Castle" Then ContinueLoop
 					EndIf
 				EndIf
 				Local $aTemp[1][8] = [[$aArmy[$i][0], $aArmy[$i][1], $aArmy[$i][2], $i, $iAmount, $xOCR, 580, $sColor]]

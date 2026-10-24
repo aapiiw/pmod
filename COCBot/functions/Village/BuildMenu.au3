@@ -339,7 +339,7 @@ Func BuildMenuLogList($sTitle, ByRef $aList)
 	SetLog($sTitle & ":", $COLOR_INFO)
 	If UBound($aList) = 0 Then SetLog(" - (no affordable row)", $COLOR_DEBUG)
 	For $i = 0 To UBound($aList) - 1
-		SetLog(" - " & ($aList[$i][7] ? $aList[$i][3] : "? '" & $aList[$i][3] & "'") & " : " & _NumberFormat($aList[$i][5]) & " " & $aList[$i][0], $COLOR_DEBUG)
+		SetLog(" - " & ($aList[$i][7] ? $aList[$i][3] : "? '" & $aList[$i][3] & "'") & " : " & ($aList[$i][5] = -1 ? "(not enough) " : _NumberFormat($aList[$i][5]) & " ") & $aList[$i][0], $COLOR_DEBUG)
 	Next
 EndFunc   ;==>BuildMenuLogList
 
@@ -528,7 +528,8 @@ EndFunc   ;==>BuildMenuRowsByColor
 
 ; read the visible rows of current tab. A row is found by its resource icon at the right side.
 ; Return [n][8] = [resource ("Gold"/"Elix"/"DE"), icon x, icon y, name, count, cost, 0 (time, see BuildMenuRowTime), matched (True/False)]
-Func BuildMenuReadPage($sIconDir, $iNameX, $iNameDy, $sType)
+; $bRedNames: red rows (not enough resource) are returned too, with cost -1 and their name
+Func BuildMenuReadPage($sIconDir, $iNameX, $iNameDy, $sType, $bRedNames = False)
 	Local $aRet[0][8], $aIcon
 	If BuildMenuIsBBType($sType) Then
 		$aIcon = BuildMenuRowsByColor()
@@ -547,12 +548,13 @@ Func BuildMenuReadPage($sIconDir, $iNameX, $iNameDy, $sType)
 		Local $iCost = BuildMenuReadCost($iX, $iY) ; fast template OCR first
 		If $iCost = -1 Then ; red row (not enough resource): skip it, no name OCR
 			$iFlags = BitOR($iFlags, BitAND($iFlags, 2) ? 5 : 4)
-			ContinueLoop
+			If Not $bRedNames Then ContinueLoop
 		EndIf
 		; in progress / max level / unreadable: skip name OCR. BB rows are found by their resource icon (no row without
-		; cost): white cost not read ("500 000" read as "00 000") is kept with cost 0, the upgrade window checks the cost
-		If $iCost <= 0 And Not ($sType = "bb" And $iCost = 0) Then ContinueLoop
-		$iFlags = BitOR($iFlags, 2)
+		; cost): white cost not read ("500 000" read as "00 000") is kept with cost 0, the upgrade window checks the cost.
+		; Wall search ("building") keeps them too: "10 000 000" was not read and the wall was not found (zone, Oct 2026)
+		If $iCost <= 0 And Not (($sType = "bb" Or $sType = "building") And $iCost = 0) And Not ($bRedNames And $iCost = -1) Then ContinueLoop
+		If $iCost <> -1 Then $iFlags = BitOR($iFlags, 2)
 		Local $iW = $iX - 80 - $iNameX ; like dev: keep upgrade time text out of the name
 		If $iW > 210 Then $iW = 210
 		; name text is a little lower in tab 1 than in tab 2/4 (dev uses y-20 tab 1, y-18 lab), area covers both
@@ -801,14 +803,14 @@ EndFunc   ;==>BBUpgradeBuildMenu
 ; scan the BB list from the top, return [name, resource, cost, x, y] of the first row to upgrade, or 0.
 ; Only page 1 (affordable rows are on top, most expensive first, red rows skipped);
 ; page 2 only when page 1 has no affordable row.
-; Wall (not ignored) is only taken when 1 Master Builder is left or nothing else can be upgraded
-; (wall upgrade is instant: the builder stays free for a building on the next try)
+; Wall (not ignored) is only taken when 1 Master Builder is left, or with more free Master Builders when no other building
+; is left to upgrade (none waiting for resources either: red rows are read for that)
 Func BBFindFirstUpgrade(ByRef $aSkip)
-	Local $aWall = 0, $aOther = 0
+	Local $aWall = 0, $aOther = 0, $bWait = False ; $bWait: a building waits for resources (red cost)
 	For $iPage = 1 To 2
 		If Not $g_bRunState Then Return 0
 		If $iPage > 1 Then BuildMenuScrollDown()
-		Local $aPage = BuildMenuReadPage("", 562, -18, "bb")
+		Local $aPage = BuildMenuReadPage("", 562, -18, "bb", True)
 		Local $bAfford = (BitAND(@extended, 2) = 2)
 		BuildMenuLogList("BB Upgrade List (page " & $iPage & ")", $aPage)
 		For $i = 0 To UBound($aPage) - 1
@@ -824,11 +826,18 @@ Func BBFindFirstUpgrade(ByRef $aSkip)
 				EndIf
 				$aPage[$i][3] = "?"
 			EndIf
-			If _ArraySearch($aSkip, $aPage[$i][3]) >= 0 Then ContinueLoop
 			If $aPage[$i][3] = "Builder Hall" And $g_bChkAutoUpgradeBBIgnoreHall Then ContinueLoop
+			If $aPage[$i][5] = -1 Then ; red cost
+				If $aPage[$i][3] <> "Wall" Then $bWait = True
+				ContinueLoop
+			EndIf
+			If _ArraySearch($aSkip, $aPage[$i][3]) >= 0 Then ContinueLoop
 			If $aPage[$i][3] = "Wall" And ($g_bChkAutoUpgradeBBIgnoreWall Or $aPage[$i][5] = 0) Then ContinueLoop ; wall needs its cost (Upgrade More)
 			Local $iLoot = $aPage[$i][0] = "Elix" ? $g_aiCurrentLootBB[$eLootElixirBB] : $g_aiCurrentLootBB[$eLootGoldBB]
-			If Number($iLoot) < $aPage[$i][5] Then ContinueLoop
+			If Number($iLoot) < $aPage[$i][5] Then
+				If $aPage[$i][3] <> "Wall" Then $bWait = True
+				ContinueLoop
+			EndIf
 			Local $aRet[5] = [$aPage[$i][3], $aPage[$i][0], $aPage[$i][5], $aPage[$i][1], $aPage[$i][2]]
 			If $aPage[$i][3] = "Wall" Then
 				If Not IsArray($aWall) Then $aWall = $aRet
@@ -841,9 +850,15 @@ Func BBFindFirstUpgrade(ByRef $aSkip)
 			Return $aWall
 		EndIf
 		If IsArray($aOther) Then Return $aOther
-		If $bAfford Then ExitLoop ; affordable rows on this page are all ignored / skipped (or Wall): no scroll
-		SetDebugLog("BB list: no affordable row on page " & $iPage)
+		If IsArray($aWall) And $bWait Then ExitLoop
+		If $bAfford And Not IsArray($aWall) Then ExitLoop ; affordable rows on this page are all ignored / skipped: no scroll
+		; only walls (look on page 2 for buildings waiting for resources) or no affordable row
+		SetDebugLog("BB list: page " & $iPage & ($bAfford ? ": only walls" : ": no affordable row"))
 	Next
+	If IsArray($aWall) And $bWait Then
+		SetLog("BB: " & $g_iFreeBuilderCountBB & " Master Builders free, buildings wait for resources: no wall upgrade now", $COLOR_INFO)
+		Return 0
+	EndIf
 	If IsArray($aWall) Then SetDebugLog("BB list: nothing else to upgrade, Wall")
 	Return $aWall
 EndFunc   ;==>BBFindFirstUpgrade

@@ -538,7 +538,8 @@ Global Enum $eIcnArcher = 1, $eIcnDonArcher, $eIcnBalloon, $eIcnDonBalloon, $eIc
 		$eIcnLifeGem, $eIcnHealingTome, $eIcnRageGem, $eIcnRoyalGem, $eIcnSeekingShield, $eIcnGauntlet, $eIcnBlacksmith, $eIcnOverGrowthSpell, $eIcnBBGold, $eIcnBBElix, $eIcnBBTrophy, $g_sIcnMBisland, _
 		$eIcnPetHouseGreen, $eIcnCapitalTrophy, $eIcnFrozenArrow, $eIcnHogPuppet, $eIcnHasteVial, $eIcnFireball, $eIcnAngryJelly, $eIcnSpikyBall, $eIcnRocketSpear, $eIcnDruid, $eIcnMagicMirror, _
 		$eIcnLavaloonPuppet, $eHdV17, $eIcnTH17, $eWall18, $eIcnHelperHut, $eIcnThrower, $eIcnReviveSpell, $eIcnHeroHall, $eIcnHenchmenPuppet, $eIcnDarkOrb, $eIcnPrince, $eIcnPrinceUpgr, _
-		$eIcnSleepingPrince, $eIcnElectroBoots, $eIcnSnakeBracelet, $eIcnMetalPants, $eIcnTroopL, $eIcnFurnace, $eIcnNobleIron, $eIcnPetSneezy, $eIcnActionFigure, $eIcnDuke, $eIcnSkyW, $eIcnCake
+		$eIcnSleepingPrince, $eIcnElectroBoots, $eIcnSnakeBracelet, $eIcnMetalPants, $eIcnTroopL, $eIcnFurnace, $eIcnNobleIron, $eIcnPetSneezy, $eIcnActionFigure, $eIcnDuke, $eIcnSkyW, $eIcnCake, _
+		$eIcnPetGreedyRaven, $eIcnMeteorGolem, $eIcnRuinWitch, $eIcnSuperYeti, $eIcnTotemSpell, $eIcnIBSpell, $eIcnAngrySpell ; 401..407, added at the end of MBRBot.dll (Oct 2026)
 
 Global $eIcnDonBlank = $eIcnDonBlacklist
 Global $eIcnOptions = $eIcnDonBlacklist
@@ -607,7 +608,7 @@ Global Const $g_asExtraSpellShortNames[4] = ["RvSpell", "TSpell", "IBSpell", "AS
 Global Const $g_asExtraSpellNames[4] = ["Revive", "Totem", "Ice Block", "Angry"]
 Global Const $eExtraTroop = $eArmyCount + 1, $eExtraTroopLast = $eExtraTroop + UBound($g_asExtraTroopShortNames) - 1
 Global Const $eExtraSpell = $eExtraTroopLast + 1, $eExtraSpellLast = $eExtraSpell + UBound($g_asExtraSpellShortNames) - 1
-; other image names of troops already in the lists (PH Mod names): [image name, short name]
+; other image names of troops already in the lists: [image name, short name]
 Global Const $g_asAttackBarAlias[5][2] = [["RoyalG", "RGhost"], ["GiantS", "GSkel"], ["IceWiz", "IWiza"], ["PartyWiz", "PWiza"], ["Prince", "MinionP"]]
 
 ; Attack types
@@ -927,12 +928,12 @@ Global $g_aCmbRequestSiege[9][3] = [["WallW", "Wall Wrecker", 1], _
 ; <><><><> Village / Donate - Donate <><><><>
 Global $g_bChkDonate = True
 ; donate only: troops / spells newer than the troop and spell lists (not trained or used in attack yet), found by image
-; short name like Mod PH (imgxml\DonateCC\RequestArmy for the chat request, Troops / Spells for the donate window)
+; short name (imgxml\DonateCC\RequestArmy for the chat request, Troops / Spells for the donate window)
 Global Enum $eDonExThrower, $eDonExMeteorGolem, $eDonExDruid, $eDonExFurnace, $eDonExRuinWitch, $eDonExSuperYeti, $eDonExTroopCount
 Global Const $g_asDonExTroopShortNames[$eDonExTroopCount] = ["Throw", "MeteorG", "Druid", "Furn", "RuinW", "SYeti"]
 Global Const $g_asDonExTroopNames[$eDonExTroopCount] = ["Thrower", "Meteor Golem", "Druid", "Furnace", "Ruin Witch", "Super Yeti"]
 Global Const $g_asDonExTroopNamesPlural[$eDonExTroopCount] = ["Throwers", "Meteor Golems", "Druids", "Furnaces", "Ruin Witches", "Super Yetis"]
-Global Const $g_aiDonExTroopSpace[$eDonExTroopCount] = [16, 40, 16, 18, 26, 35] ; housing space (Mod PH, Oct 2026)
+Global Const $g_aiDonExTroopSpace[$eDonExTroopCount] = [16, 40, 16, 18, 26, 35] ; housing space
 Global Enum $eDonExRevive, $eDonExTotem, $eDonExIceBlock, $eDonExAngry, $eDonExSpellCount
 Global Const $g_asDonExSpellShortNames[$eDonExSpellCount] = ["RvSpell", "TSpell", "IBSpell", "ASpell"]
 Global Const $g_asDonExSpellNames[$eDonExSpellCount] = ["Revive", "Totem", "Ice Block", "Angry"]
@@ -2060,7 +2061,7 @@ Global Const $g_asPetShortNames[$ePetCount] = ["Lassi", "Owl", "Yak", "Unicorn",
 Global Const $g_asPetConfigKey[$ePetCount] = ["Lassi", "ElectroOwl", "MightyYak", "Unicorn", "Frosty", "Diggy", "PoisonLizard", "Phoenix", _
 		"SpiritFox", "AngryJelly", "Sneezy", "GreedyRaven"] ; profile key "UpgradePet<key>"
 Global Const $g_aiPetIcon[$ePetCount] = [$eIcnPetLassi, $eIcnPetElectroOwl, $eIcnPetMightyYak, $eIcnPetUnicorn, $eIcnPetFrosty, $eIcnPetDiggy, _
-		$eIcnPetPoisonLizard, $eIcnPetPhoenix, $eIcnSpiritFox, $eIcnAngryJelly, $eIcnPetSneezy, $eIcnBlank]
+		$eIcnPetPoisonLizard, $eIcnPetPhoenix, $eIcnSpiritFox, $eIcnAngryJelly, $eIcnPetSneezy, $eIcnPetGreedyRaven]
 Global Const $g_aiPetUnlockTH[$ePetCount] = [14, 14, 14, 14, 15, 15, 15, 15, 16, 16, 17, 18] ; Town Hall level that unlocks each pet
 Global $g_bUpgradePetsEnable[$ePetCount] = [False, False, False, False, False, False, False, False, False, False, False, False]
 Global $g_aiPetLevel[$ePetCount] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]

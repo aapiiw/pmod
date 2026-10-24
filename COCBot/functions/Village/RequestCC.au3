@@ -22,13 +22,20 @@ Func RequestCC($sText = "", $bTest = False)
 		Click($aChatTabClosed[0], $aChatTabClosed[1]) ;Click ClanChatOpen
 	EndIf
 	
-	If _Sleep(1000) Then Return
+	; chat slides in: wait 0.5 s, then go on as soon as the request button is there (was a fixed 1 s, every loop)
+	If _Sleep(500) Then Return
 	CheckIUnderstand()
 	
 	SetLog("Requesting Clan Castle reinforcements", $COLOR_INFO)
 	
 	If Not $g_bRunState Then Return
-	Local $aRequestButton = QuickMIS("CNX", $g_sImgRequestCCButton, 280, 600, 360, 670)
+	Local $aRequestButton
+	For $i = 1 To 5
+		$aRequestButton = QuickMIS("CNX", $g_sImgRequestCCButton, 280, 600, 360, 670)
+		If UBound($aRequestButton) > 0 Then ExitLoop
+		If $i = 3 Then CheckIUnderstand() ; popup can come after the first check
+		If _Sleep(250) Then Return
+	Next
 	If UBound($aRequestButton) < 1 Then
 		SetLog("RequestCC: Request button not detected", $COLOR_DEBUG2)
 		checkChatTabPixel()

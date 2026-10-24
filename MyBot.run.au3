@@ -893,7 +893,10 @@ Func __RunFunction($action)
 		Case "RequestCC"
 			RequestCC()
 		Case "Laboratory"
-			LabUpgrade()
+			; Laboratory (tab 2) and Pets (tab 4) in one Build menu visit: the tab is switched, not closed and opened again
+			LabUpgrade(False, True)
+			PetUpgrade()
+			CloseBuildMenu()
 		Case "BlackSmith"
 			BlackSmith()
 		Case "PetHouse"
@@ -909,7 +912,7 @@ Func __RunFunction($action)
 		Case "CollectFreeMagicItems"
 			CollectFreeMagicItems()
 		Case "DailyChallenge"
-			DailyChallenges() ; reward collect fixed by xbebenk (#138, Oct 2026)
+			DailyChallenges()
 		Case "AutoUpgradeCC"
 			AutoUpgradeCC()
 		Case "CollectCCGold"
@@ -1179,11 +1182,11 @@ Func CommonRoutine($RoutineType = Default)
 		Case "FirstCheck"
 			Local $aRndFuncList[12] = ['Collect', 'CollectLootCart', 'TreasuryCollect', 'CleanYard', 'CollectCookie', 'UseFreeMagic', 'ForgeClanCapitalGold', 'CollectCCGold', 'AutoUpgradeCC', 'BlackSmith', 'SellMagicItem', 'UpgradeWall']
 		Case "Switch"
-			Local $aRndFuncList[10] = ['RequestCC', 'DailyChallenge', 'CollectFreeMagicItems', 'BuilderBase', 'Laboratory', 'UpgradeHeroes', 'UpgradeBuilding', 'AutoUpgrade', 'PetHouse', 'UpgradeLow']
+			Local $aRndFuncList[9] = ['RequestCC', 'DailyChallenge', 'CollectFreeMagicItems', 'BuilderBase', 'Laboratory', 'UpgradeHeroes', 'UpgradeBuilding', 'AutoUpgrade', 'UpgradeLow']
 		Case "Idle"
 			Local $aRndFuncList[16] = ['Collect', 'CollectLootCart', 'TreasuryCollect', 'CleanYard', 'CollectCookie', 'UseFreeMagic', 'RequestCC', 'DailyChallenge', 'CollectFreeMagicItems', 'Laboratory', 'UpgradeHeroes', 'UpgradeBuilding', 'AutoUpgrade', 'UpgradeWall', 'UpgradeLow', 'BuilderBase']
 		Case "NoClanGamesEvent"
-			Local $aRndFuncList[11] = ['RequestCC', 'DailyChallenge', 'CollectFreeMagicItems', 'PetHouse', 'Laboratory', 'CollectCCGold', 'UpgradeHeroes', 'UpgradeBuilding', 'AutoUpgrade', 'UpgradeWall', 'UpgradeLow']
+			Local $aRndFuncList[10] = ['RequestCC', 'DailyChallenge', 'CollectFreeMagicItems', 'Laboratory', 'CollectCCGold', 'UpgradeHeroes', 'UpgradeBuilding', 'AutoUpgrade', 'UpgradeWall', 'UpgradeLow']
 	EndSwitch
 	
 	SetLog($RoutineType & " Func List:", $COLOR_SUCCESS)

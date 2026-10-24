@@ -2,7 +2,7 @@
 ; Name ..........: Blacksmith
 ; Description ...: Hero Equipment upgrade from Build menu, tab 3 "Blacksmith" (no Blacksmith location needed)
 ; Author ........:
-; Modified ......: xbebenk (Feb 2024), Build menu tab images and coordinates from xbebenk (Oct 2026)
+; Modified ......: xbebenk (Feb 2024)
 ; Remarks .......: This file is part of MyBot Copyright 2015-2024
 ;                  MyBot is distributed under the terms of the GNU GPL
 ; Related .......: Returns True when at least one equipment was upgraded
@@ -153,7 +153,7 @@ Func BlacksmithFindWanted(ByRef $aWanted)
 	Return 0
 EndFunc   ;==>BlacksmithFindWanted
 
-; click the equipment row, upgrade in the upgrade window (buttons from xbebenk Oct 2026)
+; click the equipment row, upgrade in the upgrade window
 Func BlacksmithUpgradeRow(ByRef $aRow)
 	Click($aRow[2], $aRow[3], 1, 0, "Equipment " & $aRow[0])
 	If _Sleep(1000) Then Return False

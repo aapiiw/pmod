@@ -144,7 +144,7 @@ Func GoldElixirChangeEBO(ByRef $bSpeedUpBattle)
 		
 		$NoResourceOCR = StringLen($Gold2) = 0 And StringLen($Elixir2) = 0 And StringLen($DarkElixir2) = 0
 		If $NoResourceOCR Then
-			SetLog("Exit now, [G]: " & $Gold2 & " [E]: " & $Elixir2 & " [DE]: " & $DarkElixir2 & " [%]: " & $CurDamage, $COLOR_INFO)
+			SetDebugLog("Loot not read, check battle end, [%]: " & $CurDamage) ; often only an animation over the numbers
 			If IsReturnHomeBattlePage() Then ExitLoop
 			If IsReturnHomeChestPage(False) Then ExitLoop
 			If IsProblemAffect() Then ExitLoop

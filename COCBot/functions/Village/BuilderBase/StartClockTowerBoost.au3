@@ -44,9 +44,19 @@ Func StartClockTowerBoost($bSwitchToBB = False, $bSwitchToNV = False, $bUsePotio
 				$aXY[1] = $aClock[$i][2]
 				If Not IsInsideDiamond($aXY) Then ContinueLoop
 				SetLog("Found Clock Tower on " & $aXY[0] & "," & $aXY[1], $COLOR_INFO)
-				ClickP($aXY)
-				If _Sleep(1000) Then Return
-				If ClickB("BoostCT") Then
+				; the image point can be on the top of the tower: lower clicks until the Boost button shows (4 of 7 clicks missed, Oct 2026)
+				Local $bBoostBtn = False
+				For $iDy In StringSplit("0|25|50", "|", $STR_NOCOUNT)
+					Click($aXY[0], $aXY[1] + Number($iDy), 1, 0, "Clock Tower")
+					If _Sleep(1000) Then Return
+					If IsArray(findButton("BoostCT")) Then
+						$bBoostBtn = True
+						ExitLoop
+					EndIf
+					ClickAway()
+					If _Sleep(500) Then Return
+				Next
+				If $bBoostBtn And ClickB("BoostCT") Then
 					If _Sleep(1000) Then Return
 					If ClickB("BOOSTBtn") Then 
 						SetLog("Boosted Clock Tower successfully!", $COLOR_SUCCESS)

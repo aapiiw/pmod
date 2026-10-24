@@ -422,7 +422,7 @@ Func AutoUpgradeListEmpty()
 EndFunc   ;==>AutoUpgradeListEmpty
 
 ; Auto Upgrade by type order ($g_asAutoUpgradeOrder, GUI combo): Build menu Type filter for each type, the first affordable
-; row (white cost) from the top is upgraded, like PH Mod. Name OCR only for the row to upgrade (Upgrades to ignore),
+; row (white cost) from the top is upgraded. Name OCR only for the row to upgrade (Upgrades to ignore),
 ; cost OCR only when a Min Save is set for its resource. Return number of upgrades started
 Func AutoUpgradeByOrder($bTest = False)
 	Local $iStarted = 0, $bNotEmpty = False, $bStop = False, $bNoFilter = False, $iRet, $iExt, $aOrder[0]
@@ -600,7 +600,7 @@ Func AutoUpgradeFindRow($sType, ByRef $aSkip, ByRef $sSig)
 	Return SetExtended($iFlags, 0)
 EndFunc   ;==>AutoUpgradeFindRow
 
-; green name = new building to place (from PH Mod, uses last _CaptureRegion frame)
+; green name = new building to place (uses last _CaptureRegion frame)
 Func AutoUpgradeIsNewRow($iY)
 	Local $iGreen = 0
 	For $x = $g_iXFindUpgrade To $g_iXFindUpgrade + 150 Step 3
@@ -678,7 +678,7 @@ Func AutoUpgradeRow(ByRef $aRow, $bTest = False)
 		Return 0
 	EndIf
 	If StringInStr($sName, "Town Hall") Then AutoUpgradeContinueTH()
-	; from PH Mod: a started upgrade takes a builder
+	; a started upgrade takes a builder
 	For $i = 1 To 4
 		If _Sleep(500) Then Return 0
 		Local $sBuilder = getBuildersOnMenu()
@@ -688,7 +688,7 @@ Func AutoUpgradeRow(ByRef $aRow, $bTest = False)
 	Return -1
 EndFunc   ;==>AutoUpgradeRow
 
-; Town Hall "before you upgrade" warning after the upgrade click (from PH Mod)
+; Town Hall "before you upgrade" warning after the upgrade click
 Func AutoUpgradeContinueTH()
 	If _Sleep(800) Then Return
 	Local $aBtn = findButton("Continue", Default, 1, True)

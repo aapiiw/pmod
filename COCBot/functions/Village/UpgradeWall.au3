@@ -76,7 +76,7 @@ Func UpgradeWallBuildMenu()
 		If $aList[$i][7] And ($aList[$i][3] = "Wall" Or $aList[$i][3] = "Walls") Then
 			; a misread name gives "Wall" to another row (zone, Oct 2026: "Wall 1 200 000 Gold" was an Elixir Collector,
 			; the 1 builder kept for walls was used): the cost must be a wall cost
-			If _ArraySearch($g_aiWallCost, Number($aList[$i][5]), 1) < 1 Then
+			If Number($aList[$i][5]) > 0 And _ArraySearch($g_aiWallCost, Number($aList[$i][5]), 1) < 1 Then
 				SetLog("Wall row cost " & _NumberFormat($aList[$i][5]) & " is not a wall cost, row ignored", $COLOR_WARNING)
 				ContinueLoop
 			EndIf
@@ -126,7 +126,18 @@ Func UpgradeWallBuildMenu()
 		ClickAway()
 		Return False
 	EndIf
-	Return DoUpgradeWall($aList[$iRow][5])
+	Local $iWallCost = Number($aList[$iRow][5])
+	If $iWallCost = 0 Then ; cost not read in the list: cost of the selected wall level
+		Local $iLevel = Number($aInfo[2])
+		If $iLevel < 1 Or $iLevel > UBound($g_aiWallCost) - 1 Then
+			SetLog("Wall: cost and level not read, skip", $COLOR_WARNING)
+			ClickAway()
+			Return False
+		EndIf
+		$iWallCost = $g_aiWallCost[$iLevel]
+		SetLog("Wall level " & $iLevel & ", cost " & _NumberFormat($iWallCost), $COLOR_INFO)
+	EndIf
+	Return DoUpgradeWall($iWallCost)
 EndFunc   ;==>UpgradeWallBuildMenu
 
 Func WallUpgradeCheckBuilder($bTest = False)

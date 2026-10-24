@@ -143,8 +143,10 @@ Func RemoveGembox()
 			_ArrayAdd($aClicked, $aGembox[$i][1] & "|" & $aGembox[$i][2])
 			Click($aGembox[$i][1], $aGembox[$i][2], 1, 0, "Remove GemBox!")
 			If _Sleep(1000) Then Return
-			Local $aGemboxName = BuildingInfo()
-			If $aGemboxName[1] = "Gem box" Then 
+			; one name read: an empty name is nothing selected (BuildingInfo waits 2.5 s and reads again)
+			Local $sGemboxName = getNameBuilding(242, 477)
+			SetDebugLog("GemBox candidate: '" & $sGemboxName & "'")
+			If StringInStr($sGemboxName, "Gem box") Then
 				ClickRemoveObstacle()
 				SetLog("Removing GemBox", $COLOR_SUCCESS)
 				$bRemoved = True

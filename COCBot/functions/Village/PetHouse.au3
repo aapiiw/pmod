@@ -23,7 +23,7 @@ Func PetUpgrade($bTest = False)
 		Return False
 	EndIf
 
-	checkMainScreen(False)
+	If Not IsBuildMenuOpen() Then checkMainScreen(False) ; menu left open by the Laboratory check: only the tab changes
 	SetLog("Checking for Pet upgrade", $COLOR_INFO)
 	If Not OpenBuildMenu(4) Then Return False
 	BuildMenuReadLoot()
