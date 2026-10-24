@@ -70,7 +70,7 @@ Func CreateVillageUpgrade()
 	
 	GUISwitch($g_hGUI_UPGRADE)
 	$g_hGUI_UPGRADE_TAB = GUICtrlCreateTab(0, 0, $g_iSizeWGrpTab2, $g_iSizeHGrpTab2, BitOR($TCS_MULTILINE, $TCS_RIGHTJUSTIFY))
-	$g_hGUI_UPGRADE_TAB_ITEM1 = GUICtrlCreateTabItem(GetTranslatedFileIni("MBR Main GUI", "Tab_02_STab_03_STab_01b", "Lab. && Pets"))
+	$g_hGUI_UPGRADE_TAB_ITEM1 = GUICtrlCreateTabItem(GetTranslatedFileIni("MBR Main GUI", "Tab_02_STab_03_STab_01b", "Lab && Pets"))
 		SetDebugLog("==> CreateLaboratorySubTab()")
 		CreateLaboratorySubTab()
 		CreatePetsGroup()

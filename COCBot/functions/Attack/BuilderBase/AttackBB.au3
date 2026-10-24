@@ -47,8 +47,9 @@ Func DoAttackBB($g_iBBAttackCount = $g_iBBAttackCount)
 			If $g_bIsBBevent Then
 				If CheckCGCompleted() Then ExitLoop
 				If isGoldFullBB() Or isElixirFullBB() Then 
-					AutoUpgradeBB()
-					StarLabUpgrade()
+					; same Build menu upgrades as the BB routine (old Builder menu / Star Lab window code fails on the new UI)
+					BBUpgradeBuildMenu()
+					StarLabUpgradeBuildMenu()
 				EndIf
 				If $count > 4 Then
 					SetLog("IsBBevent = " & String($g_bIsBBevent), $COLOR_INFO)

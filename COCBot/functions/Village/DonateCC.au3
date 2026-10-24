@@ -707,20 +707,31 @@ Func getRemainingCCcapacity($DonateButton = -1)
 	SetDebugLog("getRemainingCCcapacity(" & _ArrayToString($aiDonateButton) & ")", $COLOR_DEBUG)
 	Local $xTroop = 6
 
-	Local $aDonateType = QuickMIS("CNX", $g_sImgDonateType, 25, $aiDonateButton[1] - 20, $aiDonateButton[0] - 50, $aiDonateButton[1] + 20)
-	If IsArray($aDonateType) And UBound($aDonateType) > 0 Then
-		If UBound($aDonateType) < 3 Then $xTroop = 30 ;cc cannot accept sieges
-		If UBound($aDonateType) < 2 Then $xTroop = 35 ;cc cannot accept spell and sieges
-		For $i = 0 To UBound($aDonateType) - 1
-			If $aDonateType[$i][0] = "Troop" Then
-				$sCapTroops = getOcrSpaceCastleDonate($aDonateType[$i][1] + $xTroop, $aiDonateButton[1] - 7)
-			ElseIf $aDonateType[$i][0] = "Spell" Then
-				$sCapSpells = getOcrSpaceCastleDonate($aDonateType[$i][1] + 10, $aiDonateButton[1] - 7)
-			ElseIf $aDonateType[$i][0] = "Siege" Then
-				$sCapSiegeMachine = getOcrSpaceCastleDonate($aDonateType[$i][1], $aiDonateButton[1] - 7)
-			EndIf
-		Next
-	EndIf
+	; ~12% of the reads were empty on every account (Oct 2026), the same request read fine on the next loop
+	; (request was skipped as "CC full" until then): read once more after a short wait
+	For $iTry = 1 To 2
+		Local $aDonateType = QuickMIS("CNX", $g_sImgDonateType, 25, $aiDonateButton[1] - 20, $aiDonateButton[0] - 50, $aiDonateButton[1] + 20)
+		If IsArray($aDonateType) And UBound($aDonateType) > 0 Then
+			If UBound($aDonateType) < 3 Then $xTroop = 30 ;cc cannot accept sieges
+			If UBound($aDonateType) < 2 Then $xTroop = 35 ;cc cannot accept spell and sieges
+			For $i = 0 To UBound($aDonateType) - 1
+				If $aDonateType[$i][0] = "Troop" Then
+					$sCapTroops = getOcrSpaceCastleDonate($aDonateType[$i][1] + $xTroop, $aiDonateButton[1] - 7)
+				ElseIf $aDonateType[$i][0] = "Spell" Then
+					$sCapSpells = getOcrSpaceCastleDonate($aDonateType[$i][1] + 10, $aiDonateButton[1] - 7)
+				ElseIf $aDonateType[$i][0] = "Siege" Then
+					$sCapSiegeMachine = getOcrSpaceCastleDonate($aDonateType[$i][1], $aiDonateButton[1] - 7)
+				EndIf
+			Next
+		EndIf
+		If StringInStr($sCapTroops, "#") Or $iTry = 2 Then ExitLoop
+		SetDebugLog("CC capacity not read ('" & $sCapTroops & "'), read again")
+		$xTroop = 6
+		$sCapTroops = ""
+		$sCapSpells = -1
+		$sCapSiegeMachine = -1
+		If _Sleep(500) Then Return
+	Next
 
 	If $g_bDebugSetLog Then
 		SetDebugLog("$sCapTroops :" & $sCapTroops, $COLOR_DEBUG)

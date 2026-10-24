@@ -126,11 +126,21 @@ Func RemoveGembox()
 	SetLog("Check for Remove Gem Box", $COLOR_INFO)
 	Local $aGembox = QuickMIS("CNX", $g_sImgGemBox, $g_OuterDiamondLeft, $g_OuterDiamondTop, $g_OuterDiamondRight, $g_OuterDiamondBottom)
 	If IsArray($aGembox) And UBound($aGembox) > 0 Then
+		; images match many buildings/obstacles (Oct 2026: 7 wrong clicks per check on average, ~2 s each, one real
+		; Gem Box in 125 checks, first candidate): same spot once only, at most 4 clicks
+		Local $aClicked[0][2], $bNear
 		For $i = 0 To UBound($aGembox) - 1
-			If Not isInsideDiamondXY($aGembox[$i][1], $aGembox[$i][2], True) Then 
+			If Not isInsideDiamondXY($aGembox[$i][1], $aGembox[$i][2], True) Then
 				SetDebugLog("Found GemBox, but Outside Diamond", $COLOR_INFO)
 				ContinueLoop
 			EndIf
+			$bNear = False
+			For $j = 0 To UBound($aClicked) - 1
+				If Abs($aClicked[$j][0] - $aGembox[$i][1]) < 25 And Abs($aClicked[$j][1] - $aGembox[$i][2]) < 25 Then $bNear = True
+			Next
+			If $bNear Then ContinueLoop
+			If UBound($aClicked) >= 4 Then ExitLoop
+			_ArrayAdd($aClicked, $aGembox[$i][1] & "|" & $aGembox[$i][2])
 			Click($aGembox[$i][1], $aGembox[$i][2], 1, 0, "Remove GemBox!")
 			If _Sleep(1000) Then Return
 			Local $aGemboxName = BuildingInfo()

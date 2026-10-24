@@ -37,12 +37,21 @@ Func TreasuryCollect()
 		EndIf
 	EndIf
 	
-	If $TryCCAutoLocate Then 
+	If $TryCCAutoLocate Then
+		; TH17+ Clan Castle is not found by the images: ~12 s and 4-5 clicks on other buildings every cycle (Oct 2026), try every 6 h
+		Local $hFail = $g_ahCCLocateFailTimer[CurAccountIndex()]
+		If $hFail <> 0 And __TimerDiff($hFail) < 6 * 3600000 Then
+			SetLog("Clan Castle auto locate failed before, skip Treasury (locate it manually)", $COLOR_DEBUG2)
+			ClickAway()
+			Return
+		EndIf
 		$CCFound = AutoLocateCC()
 		If $CCFound Then
+			$g_ahCCLocateFailTimer[CurAccountIndex()] = 0
 			applyConfig()
 			saveConfig()
 		Else
+			$g_ahCCLocateFailTimer[CurAccountIndex()] = __TimerInit()
 			SetLog("TryCCAutoLocate Failed, please locate manually", $COLOR_DEBUG2)
 			Return
 		EndIf
@@ -98,6 +107,7 @@ Func AutoLocateCC()
 	If IsArray($ClanCastleCoord) And UBound($ClanCastleCoord) > 0 Then
 		_ArraySort($ClanCastleCoord, 1, 0, 0, 3)
 		For $i = 0 To UBound($ClanCastleCoord) - 1
+			SetDebugLog("CC candidate " & $ClanCastleCoord[$i][0] & "_" & $ClanCastleCoord[$i][3] & " at " & $ClanCastleCoord[$i][1] & "," & $ClanCastleCoord[$i][2])
 			If Not isInsideDiamondXY($ClanCastleCoord[$i][1], $ClanCastleCoord[$i][2]) Then ContinueLoop
 			If StringInStr($ClanCastleCoord[$i][0], "Full") Then 
 				Click($ClanCastleCoord[$i][1], $ClanCastleCoord[$i][2] + 30)

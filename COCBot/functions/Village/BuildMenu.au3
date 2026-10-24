@@ -72,14 +72,24 @@ Func BuildMenuFilterBtnOn($i)
 EndFunc   ;==>BuildMenuFilterBtnOn
 
 ; set the list filter of the open tab $iTab: only type button $sType on ("" = no filter), resource off, sorting off unless
-; $sType ends with "|CostMin" (e.g. "Army|CostMin", "|CostMin": cheapest first, used by the wall reserve builder low cost mode).
+; $sType ends with "|CostMin" (e.g. "Army|CostMin", "|CostMin": cheapest first, used by the wall reserve builder low cost mode)
+; or "|Elixir" / "|Dark" (resource button with the type, Lab tab: "Troops|Dark" = dark troops only).
 ; Lab tab names Troops / Spells / Siege are the Army / Defense / Hero buttons. Opens the menu (tab $iTab) when it is closed,
 ; the menu stays open. Return True when the wanted state is verified
 Func BuildMenuSetFilter($sType = "", $iTab = 1)
 	If Not IsBuildMenuOpen() Then Return OpenBuildMenu($iTab, False, $sType)
 	Local $aPart = StringSplit($sType, "|", $STR_NOCOUNT)
-	Local $sSort = UBound($aPart) > 1 ? $aPart[1] : ""
+	Local $sSort = UBound($aPart) > 1 ? $aPart[1] : "" ; sorting or resource button ("Troops|Elixir")
 	Local $sBtn = $aPart[0]
+	; Lab tab has 2 resource buttons only: Elixir and Dark on the Gold and Elixir places of tab 1 (emulator, Oct 2026)
+	If $iTab = 2 Then
+		Switch $sSort
+			Case "Elixir"
+				$sSort = "Gold"
+			Case "Dark"
+				$sSort = "Elixir"
+		EndSwitch
+	EndIf
 	Switch $sBtn
 		Case "Troops"
 			$sBtn = "Army"
@@ -803,7 +813,17 @@ Func BBFindFirstUpgrade(ByRef $aSkip)
 		BuildMenuLogList("BB Upgrade List (page " & $iPage & ")", $aPage)
 		For $i = 0 To UBound($aPage) - 1
 			; name not read (a lone "Mine" always gives empty OCR): still a building to upgrade, so Wall is not taken first
-			If Not $aPage[$i][7] Then $aPage[$i][3] = "?"
+			If Not $aPage[$i][7] Then
+				; a main village name (quiver, Oct 2026: 'Pet House' 12 000 000 Elix, an ad was over the screen): not the BB list
+				If $aPage[$i][3] <> "" Then
+					OcrMatchBuildingName($aPage[$i][3])
+					If @extended = 1 Then
+						SetLog("BB list: main village row '" & $aPage[$i][3] & "', not the BB Build menu, stop", $COLOR_WARNING)
+						Return 0
+					EndIf
+				EndIf
+				$aPage[$i][3] = "?"
+			EndIf
 			If _ArraySearch($aSkip, $aPage[$i][3]) >= 0 Then ContinueLoop
 			If $aPage[$i][3] = "Builder Hall" And $g_bChkAutoUpgradeBBIgnoreHall Then ContinueLoop
 			If $aPage[$i][3] = "Wall" And ($g_bChkAutoUpgradeBBIgnoreWall Or $aPage[$i][5] = 0) Then ContinueLoop ; wall needs its cost (Upgrade More)

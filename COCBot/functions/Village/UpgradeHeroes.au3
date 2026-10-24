@@ -26,8 +26,14 @@ Func UpgradeHeroes($bTest = False)
 	checkMainScreen(False)
 	If $g_bRestart Then Return False
 	Local $iUpgraded = 0, $aDone[0]
+	; Hero filter: Guardians + heroes only (short list, no scroll through every building). Guardian rows do not match a hero name
+	Local $sFilter = "Hero"
 	While $g_bRunState
-		If Not OpenBuildMenu(1) Then ExitLoop
+		If Not OpenBuildMenu(1, False, $sFilter) Then
+			If $sFilter = "" Or @error <> 1 Then ExitLoop
+			$sFilter = "" ; filter failed (no filter button while the Town Hall is upgrading): whole list
+			If Not OpenBuildMenu(1) Then ExitLoop
+		EndIf
 		BuildMenuReadLoot($iUpgraded = 0) ; resources and builders without closing the menu
 		If $g_iFreeBuilderCount - WallReservedBuilder() < 1 And Not $bTest Then
 			SetLog("No builder available for hero upgrade (Free:" & $g_iFreeBuilderCount & ", Wall reserve:" & WallReservedBuilder() & ")", $COLOR_INFO)
@@ -60,7 +66,7 @@ Func UpgradeHeroes($bTest = False)
 			ExitLoop
 		EndIf
 
-		Local $aCoord = BuildMenuGoToItem(1, $sHero, $aList[$iRow][8], $g_sImgResourceIcon, $g_iXFindUpgrade, -22, "hero")
+		Local $aCoord = BuildMenuGoToItem(1, $sHero, $aList[$iRow][8], $g_sImgResourceIcon, $g_iXFindUpgrade, -22, "hero", $sFilter)
 		_ArrayAdd($aDone, $sHero)
 		If Not IsArray($aCoord) Then ContinueLoop
 		SetLog("Upgrade " & $sHero & ", cost: " & _NumberFormat($aList[$iRow][5]) & " " & $aList[$iRow][0], $COLOR_ACTION)

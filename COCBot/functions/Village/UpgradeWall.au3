@@ -74,6 +74,12 @@ Func UpgradeWallBuildMenu()
 	Local $iRow = -1
 	For $i = 0 To UBound($aList) - 1
 		If $aList[$i][7] And ($aList[$i][3] = "Wall" Or $aList[$i][3] = "Walls") Then
+			; a misread name gives "Wall" to another row (zone, Oct 2026: "Wall 1 200 000 Gold" was an Elixir Collector,
+			; the 1 builder kept for walls was used): the cost must be a wall cost
+			If _ArraySearch($g_aiWallCost, Number($aList[$i][5]), 1) < 1 Then
+				SetLog("Wall row cost " & _NumberFormat($aList[$i][5]) & " is not a wall cost, row ignored", $COLOR_WARNING)
+				ContinueLoop
+			EndIf
 			$iRow = $i
 			ExitLoop
 		EndIf
@@ -113,6 +119,13 @@ Func UpgradeWallBuildMenu()
 	EndIf
 	ClickP($aCoord) ; camera moves to one wall and selects it
 	If _Sleep(1500) Then Return False
+	; the upgrade button is the same for every building: never upgrade what is not a wall
+	Local $aInfo = BuildingInfo()
+	If $aInfo[1] <> "Wall" Then
+		SetLog("Wall: selected building is '" & $aInfo[1] & "', not a wall, skip", $COLOR_WARNING)
+		ClickAway()
+		Return False
+	EndIf
 	Return DoUpgradeWall($aList[$iRow][5])
 EndFunc   ;==>UpgradeWallBuildMenu
 

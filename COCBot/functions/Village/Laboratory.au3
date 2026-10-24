@@ -426,9 +426,10 @@ Func LabUpgrade($bTest = False)
 EndFunc   ;==>LabUpgrade
 
 ; Build menu filter of the Lab tab for the selected upgrades (order or single selection): all of one kind gives
-; Troops / Spells / Siege, "" for "Any", no selection or mixed kinds
+; Troops / Spells / Siege, "" for "Any", no selection or mixed kinds.
+; All of one resource too: "|Elixir" / "|Dark" added (resource button, shorter list). Siege is Elixir only: no resource button
 Func LabFilterType()
-	Local $aIdx[0], $sKind = "", $sThis
+	Local $aIdx[0], $sKind = "", $sThis, $sRes = "", $sThisRes
 	If $g_bLabUpgradeOrderEnable Then
 		For $z = 0 To UBound($g_aCmbLabUpgradeOrder) - 1
 			If $g_aCmbLabUpgradeOrder[$z] >= 0 Then _ArrayAdd($aIdx, $g_aCmbLabUpgradeOrder[$z] + 1)
@@ -452,8 +453,17 @@ Func LabFilterType()
 		EndIf
 		If $sKind = "" Then $sKind = $sThis
 		If $sKind <> $sThis Then Return ""
+		; dark troops / spells as listed with the Dark resource button in game (emulator, Oct 2026)
+		$sThisRes = "Elixir"
+		If $i = $g_iLabAnySpell Or $sThis = "Siege" Then
+			$sThisRes = "-"
+		ElseIf StringInStr("|Mini|Hogs|Valk|Gole|Witc|Lava|Bowl|IceG|Hunt|AppWard|Druid|Furnace|RuinW|PSpell|ESpell|HaSpell|SkSpell|BtSpell|OgSpell|IbSpell|AgSpell|", "|" & $g_avLabTroops[$i][2] & "|") Then
+			$sThisRes = "Dark"
+		EndIf
+		If $sRes = "" Then $sRes = $sThisRes
+		If $sRes <> $sThisRes Then $sRes = "-"
 	Next
-	Return $sKind
+	Return $sKind & (($sRes = "Elixir" Or $sRes = "Dark") ? "|" & $sRes : "")
 EndFunc   ;==>LabFilterType
 
 ; remember when lab should be free again ($iMin = lower bound read in Build menu, 0 = unknown)

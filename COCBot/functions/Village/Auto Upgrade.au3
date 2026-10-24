@@ -492,7 +492,9 @@ Func AutoUpgradeTypePass($sType, $bTest = False)
 	SetLog("Auto Upgrade: " & ($sType = "TH" ? "Town Hall (Rush TH)" : ($sType = "" ? "rest of the list (no filter)" : $sType & " (filter)")), $COLOR_INFO)
 	If Not OpenBuildMenu(1, False, $sFilter) Then ; tab 1 (the menu opens on the last used tab) with the filter
 		SetLog("Build menu " & ($sType = "" ? "" : "filter " & $sType & " ") & "failed, skip", $COLOR_WARNING)
-		Return SetExtended(5, 0) ; 4 = filter not usable (no filter button while the Town Hall is upgrading)
+		; 4 = filter not usable (no filter button while the Town Hall is upgrading). Not 1 (row to wait for): the "" pass reads
+		; the whole list after this, an empty list there pauses Auto Upgrade (macia, Oct 2026: tried every loop while TH upgraded)
+		Return SetExtended(4, 0)
 	EndIf
 	BuildMenuReadLoot(False)
 	Local $iStarted = 0, $iExt = 0, $aSkip[0], $bAffordSeen = False, $bCheckNext = False, $iScroll = 0, $sSig = "", $sLastSig = ""
@@ -561,6 +563,12 @@ Func AutoUpgradeFindRow($sType, ByRef $aSkip, ByRef $sSig)
 		If StringInStr($sName, "Wall") Then $sName = "Wall"
 		If _ArraySearch($aSkip, $sName & "|" & $sRes) >= 0 Then ContinueLoop
 		If $sType = "TH" And Not StringInStr($sName, "Town Hall") Then ContinueLoop
+		; Hero filter also lists the TH18 Guardians (Longshot, Smasher, Logger, on top): Hero pass is for the 6 heroes,
+		; Guardians (Defense group of "Upgrades to ignore") come with the rest of the list
+		If $sType = "Hero" Then
+			OcrMatchName($sName, $g_asHeroHallNames)
+			If @extended <> 1 Then ContinueLoop
+		EndIf
 		; storages first: drills, collectors and mines come with the rest of the list
 		If $sType = "Resource" And (StringInStr($sName, "Drill") Or StringInStr($sName, "Collector") Or StringInStr($sName, "Mine")) Then ContinueLoop
 		If CheckIgnoreUpgrade($sName) Then ContinueLoop
