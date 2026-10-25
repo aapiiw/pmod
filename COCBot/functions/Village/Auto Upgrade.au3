@@ -400,6 +400,18 @@ Func AutoUpgradeFilterPasses($bNoFilter = False)
 EndFunc   ;==>AutoUpgradeFilterPasses
 
 ; current switch account index for the per account arrays (16 rows), 0 without switch account
+; True (and timer restarted) when routine $iRoutine of $g_ahRoutineTimer did not run on this account for $iMinutes.
+; Oct 2026 logs, every cycle: CleanYard ~15 s (0 Gem Box / obstacle in 74 runs), TreasuryCollect ~5 s (empty 45/68)
+Func RoutineIntervalDue($iRoutine, $iMinutes)
+	Local $iAcc = CurAccountIndex(), $h = $g_ahRoutineTimer[$iAcc][$iRoutine]
+	If $h <> 0 And __TimerDiff($h) < $iMinutes * 60000 Then
+		SetDebugLog("Routine " & $iRoutine & " ran " & Round(__TimerDiff($h) / 60000) & " min ago on this account, skip")
+		Return False
+	EndIf
+	$g_ahRoutineTimer[$iAcc][$iRoutine] = __TimerInit()
+	Return True
+EndFunc   ;==>RoutineIntervalDue
+
 Func CurAccountIndex()
 	Local $i = Number($g_iCurAccount)
 	If $i < 0 Or $i > 15 Then $i = 0

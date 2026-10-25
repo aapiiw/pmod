@@ -70,8 +70,7 @@ Func UpgradeWallBuildMenu()
 		Return -1
 	EndIf
 	Local $aStop[1] = ["Wall"] ; stop scrolling when the wall row is seen
-	Local $aList = BuildMenuCollect($g_sImgResourceIcon, $g_iXFindUpgrade, -22, "building", $aStop)
-	BuildMenuLogList("Build menu list (wall search)", $aList)
+	Local $aList = BuildMenuCollect($g_sImgResourceIcon, $g_iXFindUpgrade, -22, "building", $aStop, 12, "Build menu list (wall search)")
 	Local $iRow = -1
 	For $i = 0 To UBound($aList) - 1
 		If $aList[$i][7] And ($aList[$i][3] = "Wall" Or $aList[$i][3] = "Walls") Then
@@ -92,7 +91,10 @@ Func UpgradeWallBuildMenu()
 		SetLog("No affordable wall in Build menu, skip", $COLOR_INFO)
 		Return False
 	EndIf
-	If Number($aList[$iRow][5]) > 0 Then $g_iLastWallCost = Number($aList[$iRow][5])
+	If Number($aList[$iRow][5]) > 0 And Number($aList[$iRow][5]) <> $g_iLastWallCost Then
+		$g_iLastWallCost = Number($aList[$iRow][5])
+		WallAutoAdjustMinSave() ; Elixir Min Save uses the wall cost
+	EndIf
 	SetLog("Wall from Build menu: x" & $aList[$iRow][4] & ", cost " & _NumberFormat($aList[$iRow][5]) & " " & $aList[$iRow][0], $COLOR_INFO)
 	; resource check before the wall is selected (camera move + wall window cost ~10 s): same rule as DoUpgradeWall,
 	; loot minus wall Min Save, resource type of the GUI (0 Gold, 1 Elixir, 2 Elixir then Gold).
@@ -169,7 +171,8 @@ Func WallLootEnough()
 EndFunc   ;==>WallLootEnough
 
 ; Auto Adjust Min Save for walls, capacity of one storage at this TH ($g_aiMaxStorage, max storage level = TH + 1), 4 storages:
-; TH 9+: keep 2 storages of Gold and 3.9 storages of Elixir (Elixir walls only with almost full storages)
+; TH 9+: keep 2 storages of Gold, Elixir 3.9 storages minus the wall cost (Elixir wall when Elixir reaches 3.9 storages:
+; a Min Save of 3.9 storages + wall cost was above the full capacity, Elixir was never used, qath TH16 Oct 2026)
 ; TH 7-8 rushing: Gold 2 storages, Elixir Hero Hall cost + 1 storage; TH 1-6 rushing: Gold 2, Elixir 3 storages
 Func WallAutoAdjustMinSave()
 	If Not $g_bAutoAdjustSaveWall Then Return
@@ -178,7 +181,7 @@ Func WallAutoAdjustMinSave()
 	Local $iCap = $g_aiMaxStorage[$iTH], $iGold = 0, $iElix = 0
 	If $iTH >= 9 Then
 		$iGold = Int($iCap * 2)
-		$iElix = Int($iCap * 3.9)
+		$iElix = Int($iCap * 3.9) - ($g_iLastWallCost > 0 ? $g_iLastWallCost : 0)
 	ElseIf IsTHLevelAchieved() Then
 		Return
 	ElseIf $iTH >= 7 Then
@@ -186,7 +189,7 @@ Func WallAutoAdjustMinSave()
 		$iElix = $g_aiHeroHallCost[$iTH - 7] + $iCap
 	Else
 		$iGold = $iCap * 2
-		$iElix = $iCap * 3
+		$iElix = $iCap * 2.8
 	EndIf
 	If $iGold = $g_iUpgradeWallMinGold And $iElix = $g_iUpgradeWallMinElixir Then Return
 	$g_iUpgradeWallMinGold = $iGold
@@ -307,8 +310,8 @@ Func DoUpgradeWall($iSelectedWallCost = 0)
 		If $iWallCanUpgradeElix < 1 Then $bCanUseElix = False
 		SetLog("CanUseGold = " & String($bCanUseGold), $COLOR_DEBUG)
 		SetLog("CanUseElix = " & String($bCanUseElix), $COLOR_DEBUG)
-		If $bCanUseGold Then SetLog("Can upgrade = " & $iWallCanUpgradeGold & " wall Level " & $aWallLevel[2] & " with Gold", $COLOR_INFO)
-		If $bCanUseElix Then SetLog("Can upgrade = " & $iWallCanUpgradeElix & " wall Level " & $aWallLevel[2] & " with Elix", $COLOR_INFO)
+		If $bCanUseGold Then SetLog("Can upgrade = " & $iWallCanUpgradeGold & " wall Level " & $aWallLevel[2] & " (cost " & _NumberFormat($iWallCost) & ") with Gold", $COLOR_INFO)
+		If $bCanUseElix Then SetLog("Can upgrade = " & $iWallCanUpgradeElix & " wall Level " & $aWallLevel[2] & " (cost " & _NumberFormat($iWallCost) & ") with Elix", $COLOR_INFO)
 		
 		If Not $bCanUseGold And $g_iUpgradeWallLootType = 0 Then 
 			SetLog("Cannot use Gold for upgrade wall", $COLOR_DEBUG2)

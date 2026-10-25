@@ -42,8 +42,7 @@ Func UpgradeHeroes($bTest = False)
 
 		If $iUpgraded = 0 Then SetLog("Checking for Hero upgrade", $COLOR_INFO)
 		; heroes are usually on top of the list (suggested upgrades): stop scrolling when all checked heroes are seen
-		Local $aList = BuildMenuCollect($g_sImgResourceIcon, $g_iXFindUpgrade, -22, "hero", $aWanted)
-		BuildMenuLogList("Hero Upgrade List", $aList)
+		Local $aList = BuildMenuCollect($g_sImgResourceIcon, $g_iXFindUpgrade, -22, "hero", $aWanted, 12, "Hero Upgrade List")
 		Local $iRow = -1, $sHero = ""
 		For $h = 0 To UBound($aWanted) - 1
 			If _ArraySearch($aDone, $aWanted[$h]) >= 0 Then ContinueLoop

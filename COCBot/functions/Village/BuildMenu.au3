@@ -387,9 +387,13 @@ Func BuildMenuLogList($sTitle, ByRef $aList)
 	SetLog($sTitle & ":", $COLOR_INFO)
 	If UBound($aList) = 0 Then SetLog(" - (no affordable row)", $COLOR_DEBUG)
 	For $i = 0 To UBound($aList) - 1
-		SetLog(" - " & ($aList[$i][7] ? $aList[$i][3] : "? '" & $aList[$i][3] & "'") & " : " & ($aList[$i][5] = -1 ? "(not enough) " : _NumberFormat($aList[$i][5]) & " ") & $aList[$i][0], $COLOR_DEBUG)
+		BuildMenuLogRow($aList, $i)
 	Next
 EndFunc   ;==>BuildMenuLogList
+
+Func BuildMenuLogRow(ByRef $aList, $i)
+	SetLog(" - " & ($aList[$i][7] ? $aList[$i][3] : "? '" & $aList[$i][3] & "'") & " : " & ($aList[$i][5] = -1 ? "(not enough) " : _NumberFormat($aList[$i][5]) & " ") & $aList[$i][0], $COLOR_DEBUG)
+EndFunc   ;==>BuildMenuLogRow
 
 ; True when the counters ($g_aiBuildMenuCounter) were read less than $iSec ago on this village and account
 ; (counters are shown on every tab: a routine can use them without opening the menu again)
@@ -583,7 +587,24 @@ Func BuildMenuReadPage($sIconDir, $iNameX, $iNameDy, $sType, $bRedNames = False)
 		$aIcon = BuildMenuRowsByColor()
 	Else
 		$aIcon = QuickMIS("CNX", $sIconDir, 828, 60, 852, 595)
-		If Not IsArray($aIcon) Or UBound($aIcon) = 0 Then Return $aRet
+		If Not IsArray($aIcon) Then
+			Local $aNoIcon[0][4]
+			$aIcon = $aNoIcon
+		EndIf
+		; Gold / Elixir icons found by color too: QuickMIS missed the last rows of the list (qath, Oct 2026: Wall and Bomb
+		; at the bottom of the last page were never read, the wall was not upgraded)
+		Local $aColor = BuildMenuRowsByColor(60, 595)
+		For $j = 0 To UBound($aColor) - 1
+			Local $bNear = False
+			For $k = 0 To UBound($aIcon) - 1
+				If Abs(Number($aIcon[$k][2]) - $aColor[$j][2]) < 15 Then $bNear = True
+			Next
+			If $bNear Then ContinueLoop
+			SetDebugLog("BuildMenu row found by color only: " & $aColor[$j][0] & " at y " & $aColor[$j][2])
+			Local $aAddIcon[1][4] = [[$aColor[$j][0], 840, $aColor[$j][2], ""]]
+			_ArrayAdd($aIcon, $aAddIcon)
+		Next
+		If UBound($aIcon) = 0 Then Return $aRet
 		RemoveDupCNX($aIcon, 2, 5)
 	EndIf
 	If UBound($aIcon) = 0 Then Return $aRet
@@ -603,6 +624,8 @@ Func BuildMenuReadPage($sIconDir, $iNameX, $iNameDy, $sType, $bRedNames = False)
 		; Wall search ("building") keeps them too: "10 000 000" was not read and the wall was not found (zone, Oct 2026)
 		If $iCost <= 0 And Not (($sType = "bb" Or $sType = "building") And $iCost = 0) And Not ($bRedNames And $iCost = -1) Then ContinueLoop
 		If $iCost <> -1 Then $iFlags = BitOR($iFlags, 2)
+		; new building to place (green name, the white text OCR reads it as ''): not an upgrade, no name OCR
+		If ($sType = "building" Or $sType = "hero") And AutoUpgradeIsNewRow($iY) Then ContinueLoop
 		Local $iW = $iX - 80 - $iNameX ; like dev: keep upgrade time text out of the name
 		If $iW > 210 Then $iW = 210
 		; name text is a little lower in tab 1 than in tab 2/4 (dev uses y-20 tab 1, y-18 lab), area covers both
@@ -664,9 +687,11 @@ EndFunc   ;==>BuildMenuScrollUp
 
 ; read rows of current tab, scrolling down until the list does not move anymore,
 ; or (when $aStopNames is an array) as soon as all names of $aStopNames were seen.
+; $sLogTitle: rows are logged page by page while reading (not all at the end)
 ; Return [n][9] = BuildMenuReadPage columns + [8] = page number
-Func BuildMenuCollect($sIconDir, $iNameX, $iNameDy, $sType, $aStopNames = Default, $iMaxPage = 8)
+Func BuildMenuCollect($sIconDir, $iNameX, $iNameDy, $sType, $aStopNames = Default, $iMaxPage = 12, $sLogTitle = "")
 	Local $aAll[0][9], $sLastSig = "", $sSig, $iFlags, $bAffordSeen = False, $bCheckNext = False
+	If $sLogTitle <> "" Then SetLog($sLogTitle & ":", $COLOR_INFO)
 	For $iPage = 1 To $iMaxPage
 		If Not $g_bRunState Then ExitLoop
 		If $iPage > 1 Then BuildMenuScrollDown()
@@ -684,11 +709,13 @@ Func BuildMenuCollect($sIconDir, $iNameX, $iNameDy, $sType, $aStopNames = Defaul
 		For $i = 0 To UBound($aPage) - 1
 			Local $bDup = False
 			For $j = 0 To UBound($aAll) - 1
-				If $aAll[$j][3] = $aPage[$i][3] And $aAll[$j][5] = $aPage[$i][5] Then $bDup = True
+				; resource too: "Crafting Station 7 000 000" exists for Gold and Elixir
+				If $aAll[$j][3] = $aPage[$i][3] And $aAll[$j][5] = $aPage[$i][5] And $aAll[$j][0] = $aPage[$i][0] Then $bDup = True
 			Next
 			If $bDup Then ContinueLoop
 			Local $aAdd[1][9] = [[$aPage[$i][0], $aPage[$i][1], $aPage[$i][2], $aPage[$i][3], $aPage[$i][4], $aPage[$i][5], 0, $aPage[$i][7], $g_iBuildMenuPage]]
 			_ArrayAdd($aAll, $aAdd)
+			If $sLogTitle <> "" Then BuildMenuLogRow($aAll, UBound($aAll) - 1)
 			SetDebugLog("[BuildMenu p" & $g_iBuildMenuPage & "] " & $aPage[$i][3] & " x" & $aPage[$i][4] & ", cost " & $aPage[$i][5] & " " & $aPage[$i][0])
 		Next
 		If BuildMenuStopScroll($iFlags, $bAffordSeen, $bCheckNext) Then
@@ -703,6 +730,7 @@ Func BuildMenuCollect($sIconDir, $iNameX, $iNameDy, $sType, $aStopNames = Defaul
 			If $bAllSeen Then ExitLoop ; no need to read the rest of the list
 		EndIf
 	Next
+	If $sLogTitle <> "" And UBound($aAll) = 0 Then SetLog(" - (no affordable row)", $COLOR_DEBUG)
 	Return $aAll
 EndFunc   ;==>BuildMenuCollect
 
@@ -1134,8 +1162,7 @@ Func StarLabUpgradeBuildMenu($bTest = False)
 		CloseBuildMenu()
 		Return False
 	EndIf
-	Local $aList = BuildMenuCollect("", 562, -18, "slab")
-	BuildMenuLogList("Star Laboratory Upgrade List", $aList)
+	Local $aList = BuildMenuCollect("", 562, -18, "slab", Default, 12, "Star Laboratory Upgrade List")
 	Local $iElix = Number($g_aiCurrentLootBB[$eLootElixirBB]), $iPick = -1
 	Local $aWanted[0]
 	If $g_bSLabUpgradeOrderEnable Then
