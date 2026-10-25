@@ -221,10 +221,18 @@ Func UpdateStats($bForceUpdate = False)
 		$iOldCurrentLoot[$eLootElixir] = $g_aiCurrentLoot[$eLootElixir]
 	EndIf
 
-	If $iOldCurrentLoot[$eLootDarkElixir] <> $g_aiCurrentLoot[$eLootDarkElixir] And $g_iStatsStartedWith[$eLootDarkElixir] <> "" Then
+	; DE: not only when the first account of the run had DE (switch accounts: the first report often has no DE yet)
+	If $iOldCurrentLoot[$eLootDarkElixir] <> $g_aiCurrentLoot[$eLootDarkElixir] Then
 		$bStatsUpdated = True
 		GUICtrlSetData($g_hLblResultDeNow, _NumberFormat($g_aiCurrentLoot[$eLootDarkElixir], False)) ; set $NullToZero = False for not displaying DE = 0 for accounts don't have DE.
 		$iOldCurrentLoot[$eLootDarkElixir] = $g_aiCurrentLoot[$eLootDarkElixir]
+	EndIf
+	; village values page shown (not the hourly stats page): DE and Gems labels visible too
+	If BitAND(GUICtrlGetState($g_hLblResultGoldNow), $GUI_SHOW) = $GUI_SHOW Then
+		GUICtrlSetState($g_hLblResultGemNow, $GUI_SHOW)
+		GUICtrlSetState($g_hPicResultGemNow, $GUI_SHOW)
+		GUICtrlSetState($g_hLblResultDeNow, $g_aiCurrentLoot[$eLootDarkElixir] <> "" ? $GUI_SHOW : $GUI_HIDE)
+		GUICtrlSetState($g_hPicResultDeNow, $g_aiCurrentLoot[$eLootDarkElixir] <> "" ? $GUI_SHOW : $GUI_HIDE)
 	EndIf
 
 	If $iOldCurrentLoot[$eLootTrophy] <> $g_aiCurrentLoot[$eLootTrophy] Then

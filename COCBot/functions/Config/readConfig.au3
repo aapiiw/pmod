@@ -76,6 +76,7 @@ Func ReadBuildingConfig()
 	EndIf
 
 	IniReadS($g_iTownHallLevel, $g_sProfileBuildingPath, "other", "LevelTownHall", 0, "int")
+	IniReadS($g_iLastWallCost, $g_sProfileBuildingPath, "other", "LastWallCost", 0, "int")
 
 	If $locationsInvalid = False Then
 		IniReadS($g_aiTownHallPos[0], $g_sProfileBuildingPath, "other", "xTownHall", -1, "int")
@@ -749,6 +750,7 @@ Func ReadConfig_600_14()
 	IniReadS($g_iLaboratoryDElixirCost, $g_sProfileBuildingPath, "upgrade", "upgradelabdelexircost", 0, "int")
 	IniReadS($g_bAutoStarLabUpgradeEnable, $g_sProfileBuildingPath, "upgrade", "upgradestartroops", False, "Bool")
 	IniReadS($g_iCmbStarLaboratory, $g_sProfileBuildingPath, "upgrade", "upgradestartroopname", 0, "int")
+	IniReadS($g_bUseLabPotion, $g_sProfileBuildingPath, "upgrade", "uselabpotion", False, "Bool")
 
 	;mod
 	IniReadS($g_bLabUpgradeOrderEnable, $g_sProfileBuildingPath, "upgrade", "upgradeorder", False, "Bool")
@@ -815,6 +817,7 @@ Func ReadConfig_auto()
 	IniReadS($g_bAutoUpgradeEnabled, $g_sProfileConfigPath, "Auto Upgrade", "AutoUpgradeEnabled", False, "Bool")
 	IniReadS($g_bChkRushTH, $g_sProfileConfigPath, "Auto Upgrade", "ChkRushTH", True, "Bool")
 	IniReadS($g_bUseWallReserveBuilder, $g_sProfileConfigPath, "Auto Upgrade", "UseWallReserveBuilder", True, "Bool")
+	IniReadS($g_bUseBuilderPotion, $g_sProfileConfigPath, "Auto Upgrade", "UseBuilderPotion", False, "Bool")
 
 	Local $str = ""
 	$str = StringSplit(IniRead($g_sProfileConfigPath, "Auto Upgrade", "RushTHOption", "5|13|7|4|3"), "|", $STR_NOCOUNT)

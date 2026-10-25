@@ -91,6 +91,7 @@ Func SaveBuildingConfig()
 
 	_Ini_Add("other", "xCCPos", $g_aiClanCastlePos[0])
 	_Ini_Add("other", "yCCPos", $g_aiClanCastlePos[1])
+	_Ini_Add("other", "LastWallCost", $g_iLastWallCost)
 
 	_Ini_Add("other", "totalcamp", $g_iTotalCampSpace)
 
@@ -112,6 +113,7 @@ Func SaveBuildingConfig()
 	_Ini_Add("upgrade", "upgradelabdelexircost", $g_iLaboratoryDElixirCost)
 	_Ini_Add("upgrade", "upgradestartroops", $g_bAutoStarLabUpgradeEnable ? 1 : 0)
 	_Ini_Add("upgrade", "upgradestartroopname", $g_iCmbStarLaboratory)
+	_Ini_Add("upgrade", "uselabpotion", $g_bUseLabPotion)
 
 	;mod
 	_Ini_Add("upgrade", "upgradeorder", $g_bLabUpgradeOrderEnable ? 1 : 0)
@@ -669,6 +671,7 @@ Func SaveConfig_auto()
 	_Ini_Add("Auto Upgrade", "AutoUpgradeEnabled", $g_bAutoUpgradeEnabled)
 	_Ini_Add("Auto Upgrade", "ChkRushTH", $g_bChkRushTH)
 	_Ini_Add("Auto Upgrade", "UseWallReserveBuilder", $g_bUseWallReserveBuilder)
+	_Ini_Add("Auto Upgrade", "UseBuilderPotion", $g_bUseBuilderPotion)
 
 	Local $string = ""
 	For $i = 0 To UBound($g_aiCmbRushTHOption) - 1

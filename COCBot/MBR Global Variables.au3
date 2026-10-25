@@ -992,6 +992,7 @@ Global $g_bUpgradeSpesificWall = False, $g_iTargetWallLevel = 0, $g_iSearchWallS
 
 ; Upgrading - Wall
 Global Const $g_aiWallCost[19] = [0, 1000, 5000, 10000, 20000, 30000, 50000, 75000, 100000, 200000, 500000, 1000000, 1500000, 2000000, 3000000, 4000000, 5000000, 7000000, 10000000]
+Global $g_iLastWallCost = 0 ; cost of the last wall upgrade seen for this profile (building.ini), 0 = unknown
 Global Const $g_aiMaxStorage[19] = [1500, 3000, 6000, 12000, 25000, 45000, 100000, 225000, 450000, 850000, 1750000, 2000000, 3000000, 4000000, 4500000, 5000000, 5500000, 6000000, 6500000]
 Global Const $g_aiHeroHallCost[11] = [800000, 1600000, 2300000, 3000000, 5000000, 6000000, 9000000, 10000000, 12000000, 14000000, 21000000] ; 0 = 7
 
@@ -1001,6 +1002,7 @@ Global $g_bChkRushTH = False, $g_bHeroPriority = False
 ; walls, Town Hall...). "Resource" pass takes storages only (drills, collectors and mines are in the last pass)
 Global Const $g_asAutoUpgradeOrder[5] = ["Army", "Hero", "Resource", "Defense", ""]
 Global $g_bAutoUpgradeEnabled = False, $g_bUseWallReserveBuilder = False, $g_bUseHeroBooks = False, $g_iHeroMinUpgradeTime = 0
+Global $g_bUseBuilderPotion = False, $g_bUseLabPotion = False, $g_ahPotionTimer[16][2] ; [account][0 research, 1 builder]: last use
 Global $g_bSkipWallReserve = False, $g_bUpgradeLowCost = False, $g_bUpgradeOtherDefenses = False, $g_bGearUpDone = False
 Global $g_iTxtSmartMinGold = 150000, $g_iTxtSmartMinElixir = 150000, $g_iTxtSmartMinDark = 1500
 ; Auto Upgrade "Upgrades to ignore": [GUI label, names as written in game separated by |, Rush TH preset (1 = ignore), group]

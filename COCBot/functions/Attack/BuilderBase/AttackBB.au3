@@ -976,7 +976,7 @@ Func BBAttackReport($sDamage = "")
 	EndIf
 	
 	SetLog("Attack Result :", $COLOR_INFO)
-	SetLog("Gain Stars: [" & $sStars & "], Trophy: [" & $sTrophy & "], Gold: [" & $sGold & "], Destruction: [" & $sDamage & "%]", $COLOR_SUCCESS)
+	SetLog("Gain Stars: [" & $sStars & "], Gold: [" & $sGold & "], Destruction: [" & $sDamage & "%]", $COLOR_SUCCESS)
 	
 	$AtkLogTxt =  StringFormat("%2s", $g_iCurAccount + 1) & "|" & _NowTime(4) & "|"
 	$AtkLogTxt &= StringFormat("%3d", $sSearch) & "|"

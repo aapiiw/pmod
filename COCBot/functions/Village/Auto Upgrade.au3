@@ -88,7 +88,7 @@ Func AutoUpgradeCheckBuilder($bTest = False)
 
 	Local $iWallReserve = WallReservedBuilder()
 	If $g_iFreeBuilderCount - $iWallReserve - ReservedBuildersForHeroes() < 1 Then ;check builder reserve on wall and hero upgrade
-		SetLog("FreeBuilder=" & $g_iFreeBuilderCount & ", Reserved (ForHero=" & $g_iHeroReservedBuilder & " ForWall=" & $iWallReserve & ")", $COLOR_INFO)
+		SetLog("FreeBuilder=" & $g_iFreeBuilderCount & ", kept for wall " & $iWallReserve, $COLOR_INFO)
 		If Not $g_bSkipWallReserve And Not $g_bUpgradeLowCost Then
 			SetLog("No builder available. Skipping Auto Upgrade!", $COLOR_DEBUG2)
 			$bRet = False
@@ -133,8 +133,16 @@ Func SearchUpgrade($bTest = False, $bUpgradeLowCost = False)
 	; free builders minus the ones kept for wall / hero (same rule as AutoUpgradeCheckBuilder, which ran after the menu was
 	; opened: 74 menu opens for nothing in one night). Low cost / wall reserve builder use comes with $bUpgradeLowCost
 	If Not $bTest And Not $bUpgradeLowCost And $g_iTotalBuilderCount > 0 And $g_iFreeBuilderCount - WallReservedBuilder() - ReservedBuildersForHeroes() < 1 Then
-		SetLog("No free builder (free " & $g_iFreeBuilderCount & ", kept for wall " & WallReservedBuilder() & ", hero " & ReservedBuildersForHeroes() & "), skip Auto Upgrade", $COLOR_INFO)
+		SetLog("No free builder (free " & $g_iFreeBuilderCount & ", kept for wall " & WallReservedBuilder() & "), skip Auto Upgrade", $COLOR_INFO)
 		If CheckBuilderApprentice() Or IsBuildMenuOpen() Then CloseBuildMenu() ; apprentice speeds up an ongoing upgrade
+		; all builders busy: Builder Potion when the first running upgrade has 1 day or more left
+		If $g_bUseBuilderPotion And $g_iFreeBuilderCount = 0 And Not $bTest Then
+			Local $h = $g_ahPotionTimer[CurAccountIndex()][1]
+			If ($h = 0 Or __TimerDiff($h) >= 3600000) And OpenBuildMenu(1) Then
+				BuildMenuUsePotion(1)
+				CloseBuildMenu()
+			EndIf
+		EndIf
 		Return False
 	EndIf
 	PlaceUnplacedBuilding()

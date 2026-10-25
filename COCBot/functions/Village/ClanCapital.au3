@@ -176,7 +176,7 @@ Func ForgeClanCapitalGold($bTest = False)
 	If $bTest Then $g_iFreeBuilderCount = $iBuilderToUse
 	Local $iWallReserve = WallReservedBuilder()
 	If $g_iFreeBuilderCount - $iWallReserve - ReservedBuildersForHeroes() < 1 Then ;check builder reserve on wall and hero upgrade
-		SetLog("FreeBuilder=" & $g_iFreeBuilderCount & ", Reserved (ForHero=" & $g_iHeroReservedBuilder & " ForWall=" & $iWallReserve & ")", $COLOR_INFO)
+		SetLog("FreeBuilder=" & $g_iFreeBuilderCount & ", kept for wall " & $iWallReserve, $COLOR_INFO)
 		SetLog("Not Have builder, exiting", $COLOR_DEBUG2)
 		Return
 	EndIf

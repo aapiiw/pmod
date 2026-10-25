@@ -279,6 +279,54 @@ Func BuildMenuHelperDue($iHelper)
 	Return $h = 0 Or __TimerDiff($h) >= 3600000
 EndFunc   ;==>BuildMenuHelperDue
 
+; Research / Builder Potion from the Magic Item button of the open Build menu (tab 2 lab / tab 1 builders) when the first
+; running upgrade has 1 day or more left ("d" in its time, row 1). $iKind: 0 research, 1 builder. One try per hour per
+; account (a potion lasts 1 hour). Returns True when used.
+Func BuildMenuUsePotion($iKind)
+	Local $sDir = $iKind = 0 ? $g_sImgResearchPotion : $g_sImgBuilderPotion
+	Local $sName = $iKind = 0 ? "Research" : "Builder"
+	Local $iAcc = CurAccountIndex(), $h = $g_ahPotionTimer[$iAcc][$iKind]
+	If $h <> 0 And __TimerDiff($h) < 3600000 Then Return False
+	If Not IsBuildMenuOpen() Then Return False
+	$g_ahPotionTimer[$iAcc][$iKind] = __TimerInit()
+	If Not QuickMIS("BFI", $g_sImgAUpgradeHour & "Day*", 776, 65, 830, 80) Then
+		SetLog($sName & " Potion: running upgrade ends in less than 1 day, not used", $COLOR_DEBUG2)
+		Return False
+	EndIf
+	If Not QuickMIS("BC1", $sDir, 440, 620, 460, 640) Then
+		SetLog($sName & " Potion: Magic Item button not found", $COLOR_DEBUG2)
+		Return False
+	EndIf
+	Click($g_iQuickMISX, $g_iQuickMISY, 1, 0, "Magic Item")
+	If _Sleep(1000) Then Return False
+	Local $bRet = False
+	If IsMagicItemWindowOpen() Then
+		If QuickMIS("BC1", $sDir, 180, 225, 670, 380) Then
+			Click($g_iQuickMISX, $g_iQuickMISY, 1, 0, $sName & " Potion")
+			If WaitforPixel(650, 510, 651, 510, "8BD43B", 20, 2) Then
+				Click(650, 510, 1, 0, "Use " & $sName & " Potion")
+				If WaitforPixel(430, 430, 431, 430, "2E93D0", 20, 2) Then
+					Click(430, 430, 1, 0, "Confirm " & $sName & " Potion")
+					SetLog($sName & " Potion used (1 day or more left)", $COLOR_SUCCESS)
+					$bRet = True
+				Else
+					SetLog($sName & " Potion: confirm button not found", $COLOR_DEBUG2)
+				EndIf
+			Else
+				SetLog($sName & " Potion: Use button not found", $COLOR_DEBUG2)
+			EndIf
+		Else
+			SetLog("No " & $sName & " Potion in Magic Items", $COLOR_INFO)
+		EndIf
+		If _Sleep(500) Then Return $bRet
+		ClickAway("Left") ; close the Magic Items window
+		If _Sleep(500) Then Return $bRet
+	Else
+		SetLog($sName & " Potion: Magic Items window not opened", $COLOR_DEBUG2)
+	EndIf
+	Return $bRet
+EndFunc   ;==>BuildMenuUsePotion
+
 Func CloseBuildMenu()
 	If IsBuildMenuOpen() Then
 		Click(836, 24, 1, 0, "Close Build menu")
@@ -949,8 +997,8 @@ EndFunc   ;==>BBWallTopButtonPixels
 ; bottom row keeps the Gold / Elixir upgrade buttons, their cost becomes the total cost.
 ; Return 1 = upgraded, 0 = no Upgrade More button (nothing clicked), -1 = failed after Upgrade More (wall unselected)
 Func BBWallUpgradeMore($sResource, $iCount)
-	Static $bDisabled = False ; +1 or resource button not found after Upgrade More once: single wall upgrade until bot restart
-	If $bDisabled Then Return 0
+	Static $iFail = 0 ; resource button not found after Upgrade More 3 times in a row: single wall upgrade until bot restart
+	If $iFail >= 3 Then Return 0
 	_CaptureRegion()
 	If BBWallTopButtonPixels(340, "beige") < 300 Or BBWallTopButtonPixels(340, "green") > 5 Then
 		SetDebugLog("Wall: no Upgrade More button")
@@ -997,9 +1045,9 @@ Func BBWallUpgradeMore($sResource, $iCount)
 	Local $iRowY = 0
 	Local $iIconX = BBWallButtonIconXRow($sResource, $iRowY)
 	If $iIconX = 0 Then
-		SetLog("Wall: " & $sResource & " button not found after Upgrade More, Upgrade More disabled until restart", $COLOR_WARNING)
+		$iFail += 1
+		SetLog("Wall: " & $sResource & " button not found after Upgrade More (" & $iFail & "/3" & ($iFail >= 3 ? ", disabled until restart" : "") & ")", $COLOR_WARNING)
 		If $g_bDebugImageSave Then SaveDebugImage("BBWallUpgradeMore")
-		$bDisabled = True
 		ClickAway("Left")
 		Return -1
 	EndIf
@@ -1031,6 +1079,7 @@ Func BBWallUpgradeMore($sResource, $iCount)
 		ClickAway("Left")
 		Return -1
 	EndIf
+	$iFail = 0
 	SetLog("Wall upgrade started (" & $sResource & " x" & $iWalls & ")", $COLOR_SUCCESS)
 	Return 1
 EndFunc   ;==>BBWallUpgradeMore

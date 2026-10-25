@@ -22,7 +22,7 @@ Global $g_hChkAutoLabUpgrades = 0, $g_hCmbLaboratory = 0, $g_hLblNextUpgrade = 0
 ; Heroes
 Global $g_hChkUpgradeKing = 0, $g_hChkUpgradeQueen = 0, $g_hChkUpgradeWarden = 0, $g_hPicChkKingSleepWait = 0, $g_hPicChkQueenSleepWait = 0, $g_hPicChkWardenSleepWait = 0
 Global $g_hCmbHeroReservedBuilder = 0, $g_hLblHeroReservedBuilderTop = 0, $g_hLblHeroReservedBuilderBottom = 0
-Global $g_hChkUpgradeChampion = 0, $g_hPicChkChampionSleepWait = 0, $g_hBtnHeroEquipment = 0
+Global $g_hChkUpgradeChampion = 0, $g_hPicChkChampionSleepWait = 0, $g_hBtnHeroEquipment = 0, $g_hUseLabPotion = 0
 Global $g_hChkUpgradePrince = 0, $g_hChkUpgradeDuke = 0
 Global $g_hGUI_HeroEquipment = 0, $g_hBtnHeroEquipmentClose = 0
 Global $g_hChkUpgradePets[$ePetCount], $g_hChkSortPetUpgrade = 0, $g_hCmbSortPetUpgrade = 0, $g_hChkSyncSaveDE = 0
@@ -49,7 +49,7 @@ Global $g_hChkAutoUpgrade = 0, $g_hLblAutoUpgrade = 0, $g_hTxtAutoUpgradeLog = 0
 Global $g_hTxtSmartMinGold = 0, $g_hTxtSmartMinElixir = 0, $g_hTxtSmartMinDark = 0
 Global $g_hChkResourcesToIgnore[3] = [0, 0, 0]
 Global $g_hChkUpgradesToIgnore = $g_iChkUpgradesToIgnore, $g_hLvUpgradesToIgnore = 0, $g_hLvUpgradesToIgnore2 = 0
-Global $g_hChkRushTH = 0, $g_hBtnRushTHOption = 0, $g_hUseWallReserveBuilder = 0, $g_hUpgradeOtherDefenses = 0
+Global $g_hChkRushTH = 0, $g_hBtnRushTHOption = 0, $g_hUseWallReserveBuilder = 0, $g_hUseBuilderPotion = 0, $g_hUpgradeOtherDefenses = 0
 Global $g_hGUI_RushTHOption = 0, $g_hBtnRushTHOptionClose = 0, $g_ahCmbRushTHOption[5] = [0, 0, 0, 0, 0]
 Global $RushTHOption[5] = ["TownHall", "Barracks", "Dark Barracks", "Spell Factory", "Dark Spell Factory"]
 Global $g_hchkEssentialUpgrade[8] = [0, 0, 0, 0, 0, 0, 0, 0]
@@ -165,6 +165,8 @@ Func CreateLaboratorySubTab()
 		$y += 25 ; Hero Equipment (Blacksmith) dialog, was on the removed Heroes sub tab
 		$g_hBtnHeroEquipment = GUICtrlCreateButton("Hero Equipment", $x - 6, $y, 96, 20)
 			GUICtrlSetOnEvent(-1, "BtnHeroEquipment")
+		$g_hUseLabPotion = GUICtrlCreateCheckbox(GetTranslatedFileIni("MBR GUI Design Child Village - Upgrade_Laboratory", "ChkUseResearchPotion", "Use Research Potion"), $x - 6, $y + 24, -1, -1)
+			_GUICtrlSetTip(-1, GetTranslatedFileIni("MBR GUI Design Child Village - Upgrade_Laboratory", "ChkUseResearchPotion_Info", "Use a Research Potion (Magic Items) when the running research has 1 day or more left"))
 		$y += 55
 		$x = 25
 		$g_hUpgradeAnyTroops = GUICtrlCreateCheckbox(GetTranslatedFileIni("MBR GUI Design Child Village - Upgrade_Laboratory", "ChkUpgradeAny", "Upgrade Any Troops/Spells/Sieges If All in Order Cannot be Upgraded"), $x, $y, -1, -1)
@@ -426,6 +428,8 @@ Func CreateAutoUpgradeSubTab()
 	$g_hUseWallReserveBuilder = GUICtrlCreateCheckbox(GetTranslatedFileIni("MBR Global GUI Design Names Traps", "UseWallReserveBuilder", "Use Wall Reserve Builder"), $x, $y, -1, -1)
 		GUICtrlSetOnEvent(-1, "chkUseWallReserveBuilder")
 		_GUICtrlSetTip(-1, "Use the builder saved for walls (Walls tab) when it is the only free builder:" & @CRLF & "first upgrade in progress ends in 12h or less = any upgrade, later = cheap upgrades only (Gold / Elixir <= 500 000, DE <= 50 000)")
+	$g_hUseBuilderPotion = GUICtrlCreateCheckbox(GetTranslatedFileIni("MBR GUI Design - AutoUpgrade", "ChkUseBuilderPotion", "Use Builder Potion"), $x + 145, $y, 105, -1)
+		_GUICtrlSetTip(-1, "Use a Builder Potion (Magic Items) when no builder is free and the first upgrade in progress has 1 day or more left")
 	
 	$x = 5
 		$g_hTxtAutoUpgradeLog = GUICtrlCreateEdit("", $x, 340, $g_iSizeWGrpTab3, 62, BitOR($GUI_SS_DEFAULT_EDIT, $ES_READONLY))

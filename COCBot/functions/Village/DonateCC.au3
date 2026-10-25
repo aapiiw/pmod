@@ -577,7 +577,8 @@ Func DonateWindowCap(ByRef $g_bSkipDonTroops, ByRef $g_bSkipDonSpells)
 	Local $xTroop = $g_iDonationWindowX + 85, $xSpell = $g_iDonationWindowX + 78
 	;read troops capacity
 	If Not $g_bSkipDonTroops Then
-		Local $sReadCCTroopsCap = getCastleDonateCap($xTroop, $g_iDonationWindowY + 15) ; use OCR to get donated/total capacity
+		; 45 px: "41/55" did not fit in the default 35 px (reads failed only with 2 digit donated counts, Oct 2026)
+		Local $sReadCCTroopsCap = getCastleDonateCap($xTroop, $g_iDonationWindowY + 15, 45) ; use OCR to get donated/total capacity
 		SetDebugLog("$sReadCCTroopsCap: " & $sReadCCTroopsCap, $COLOR_DEBUG)
 
 		Local $aTempReadCCTroopsCap = StringSplit($sReadCCTroopsCap, "#")

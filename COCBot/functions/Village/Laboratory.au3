@@ -326,8 +326,13 @@ Func CheckIfLabIdle($bDebug = False)
 	
 	; lab busy: the Lab Assistant can speed up the research (Build menu tab 2, checked once per hour per account)
 	If Not $bRet Then
-		If BuildMenuHelperDue(1) And OpenBuildMenu(2) Then
-			CheckLabAssistant()
+		Local $bHelper = BuildMenuHelperDue(1), $bPotion = $g_bUseLabPotion And LabPotionDue()
+		; remaining research time unknown (GUI shows it, like the Pet House): read it once from row 1 of tab 2
+		Local $bTime = Not _DateIsValid($g_sLabUpgradeTime) Or _DateDiff("n", _NowCalc(), $g_sLabUpgradeTime) <= 0
+		If ($bHelper Or $bPotion Or $bTime) And OpenBuildMenu(2) Then
+			If $bHelper Then CheckLabAssistant()
+			LabSaveBusyTime(BuildMenuBusyTime()) ; after the assistant (it shortens the research)
+			If $bPotion And BuildMenuUsePotion(0) Then $g_sLabUpgradeTime = "" ; potion: read the shorter time next check
 			CloseBuildMenu()
 		EndIf
 	EndIf
@@ -368,6 +373,7 @@ Func LabUpgrade($bTest = False, $bKeepOpen = False)
 	; Lab Assistant is checked while the lab is busy (CheckIfLabIdle): an idle lab has no research to speed up
 	If $g_aiBuildMenuCounter[2][0] = 0 And Not $bTest Then
 		LabSaveBusyTime(BuildMenuBusyTime())
+		If $g_bUseLabPotion And BuildMenuUsePotion(0) Then $g_sLabUpgradeTime = ""
 		If Not $bKeepOpen Then CloseBuildMenu()
 		Return False
 	EndIf
@@ -422,6 +428,10 @@ Func LabUpgrade($bTest = False, $bKeepOpen = False)
 	EndIf
 	Local $bRet = LaboratoryUpgrade($aList[$iPick][3], $aCoord, $aList[$iPick][5], $bTest)
 	If $bRet And Not $bTest Then LabSaveBusyTime($aCoord[2])
+	; new research of 1 day or more: potion right away (row 1 of tab 2 shows the running research)
+	If $bRet And Not $bTest And $g_bUseLabPotion And $aCoord[2] >= 1440 And OpenBuildMenu(2) Then
+		If BuildMenuUsePotion(0) Then $g_sLabUpgradeTime = ""
+	EndIf
 	CloseBuildMenu()
 	Return $bRet
 EndFunc   ;==>LabUpgrade
@@ -466,6 +476,12 @@ Func LabFilterType()
 	Next
 	Return $sKind & (($sRes = "Elixir" Or $sRes = "Dark") ? "|" & $sRes : "")
 EndFunc   ;==>LabFilterType
+
+; Research Potion try due on this account (not tried in the last hour)
+Func LabPotionDue()
+	Local $h = $g_ahPotionTimer[CurAccountIndex()][0]
+	Return $h = 0 Or __TimerDiff($h) >= 3600000
+EndFunc   ;==>LabPotionDue
 
 ; remember when lab should be free again ($iMin = lower bound read in Build menu, 0 = unknown)
 Func LabSaveBusyTime($iMin)
