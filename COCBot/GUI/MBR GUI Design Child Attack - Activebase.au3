@@ -20,7 +20,6 @@ Global $g_hGUI_ACTIVEBASE = 0
 #include "MBR GUI Design Child Attack - Activebase Attack Scripted.au3"
 #include "MBR GUI Design Child Attack - Activebase-Search.au3"
 #include "MBR GUI Design Child Attack - Activebase-Attack.au3"
-#include "MBR GUI Design Child Attack - Activebase-EndBattle.au3"
 
 Global $g_hGUI_ACTIVEBASE_TAB = 0, $g_hGUI_ACTIVEBASE_TAB_ITEM1 = 0, $g_hGUI_ACTIVEBASE_TAB_ITEM2 = 0, $g_hGUI_ACTIVEBASE_TAB_ITEM3 = 0
 
@@ -39,8 +38,6 @@ Func CreateAttackSearchActiveBase()
 		CreateAttackSearchActiveBaseSearch()
 	$g_hGUI_ACTIVEBASE_TAB_ITEM2 = GUICtrlCreateTabItem(GetTranslatedFileIni("MBR Main GUI", "Tab_03_STab_02_STab_0X_STab_02", -1))
 		CreateAttackSearchActiveBaseAttack()
-	$g_hGUI_ACTIVEBASE_TAB_ITEM3 = GUICtrlCreateTabItem(GetTranslatedFileIni("MBR Main GUI", "Tab_03_STab_02_STab_0X_STab_03", -1))
-		CreateAttackSearchActiveBaseEndBattle()
 	GUICtrlCreateTabItem("")
 
 EndFunc   ;==>CreateAttackSearchActiveBase

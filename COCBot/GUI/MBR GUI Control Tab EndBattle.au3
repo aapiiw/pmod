@@ -14,131 +14,38 @@
 ; ===============================================================================================================================
 #include-once
 
-Func chkStopAtkDBNoLoot1()
-	If GUICtrlRead($g_hChkStopAtkDBNoLoot1) = $GUI_CHECKED Then
-		$g_abStopAtkNoLoot1Enable[$DB] = True
-		GUICtrlSetState($g_hTxtStopAtkDBNoLoot1, $GUI_ENABLE)
-		GUICtrlSetState($g_hLblStopAtkDBNoLoot1b, $GUI_ENABLE)
-	Else
-		$g_abStopAtkNoLoot1Enable[$DB] = False
-		GUICtrlSetState($g_hTxtStopAtkDBNoLoot1, $GUI_DISABLE)
-		GUICtrlSetState($g_hLblStopAtkDBNoLoot1b, $GUI_DISABLE)
-	EndIf
-EndFunc   ;==>chkStopAtkDBNoLoot1
+; one Exit Battle setting for Dead Base and Active Base: ApplyConfig_600_30 copies the values to both modes
+Func chkStopAtkNoLoot1()
+	Local $iState = GUICtrlRead($g_hChkStopAtkNoLoot1) = $GUI_CHECKED ? $GUI_ENABLE : $GUI_DISABLE
+	GUICtrlSetState($g_hTxtStopAtkNoLoot1, $iState)
+	GUICtrlSetState($g_hLblTimeStopAtk, $iState)
+EndFunc   ;==>chkStopAtkNoLoot1
 
-Func chkStopAtkDBNoLoot2()
-	If GUICtrlRead($g_hChkStopAtkDBNoLoot2) = $GUI_CHECKED Then
-		$g_abStopAtkNoLoot2Enable[$DB] = True
-		GUICtrlSetState($g_hTxtStopAtkDBNoLoot2, $GUI_ENABLE)
-		GUICtrlSetState($g_hLblStopAtkDBNoLoot2b, $GUI_ENABLE)
-		GUICtrlSetState($g_hTxtDBMinGoldStopAtk2, $GUI_ENABLE)
-		GUICtrlSetState($g_hTxtDBMinElixirStopAtk2, $GUI_ENABLE)
-		GUICtrlSetState($g_hTxtDBMinDarkElixirStopAtk2, $GUI_ENABLE)
-		GUICtrlSetState($g_hLblDBMinRerourcesAtk2, $GUI_ENABLE)
-	Else
-		$g_abStopAtkNoLoot2Enable[$DB] = False
-		GUICtrlSetState($g_hTxtStopAtkDBNoLoot2, $GUI_DISABLE)
-		GUICtrlSetState($g_hLblStopAtkDBNoLoot2b, $GUI_DISABLE)
-		GUICtrlSetState($g_hTxtDBMinGoldStopAtk2, $GUI_DISABLE)
-		GUICtrlSetState($g_hTxtDBMinElixirStopAtk2, $GUI_DISABLE)
-		GUICtrlSetState($g_hTxtDBMinDarkElixirStopAtk2, $GUI_DISABLE)
-		GUICtrlSetState($g_hLblDBMinRerourcesAtk2, $GUI_DISABLE)
+Func chkStopAtkNoLoot2()
+	Local $iState = GUICtrlRead($g_hChkStopAtkNoLoot2) = $GUI_CHECKED ? $GUI_ENABLE : $GUI_DISABLE
+	Local $aControls[] = [$g_hLblStopAtkNoLoot2, $g_hTxtStopAtkNoLoot2, $g_hLblTimeStopAtk2, _
+			$g_hLblMinRerourcesAtk2, $g_hTxtMinGoldStopAtk2, $g_hPicMinGoldStopAtk2, _
+			$g_hTxtMinElixirStopAtk2, $g_hPicMinElixirStopAtk2, $g_hTxtMinDarkElixirStopAtk2, $g_hPicMinDarkElixirStopAtk2]
+	For $hControl In $aControls
+		GUICtrlSetState($hControl, $iState)
+	Next
+EndFunc   ;==>chkStopAtkNoLoot2
 
-	EndIf
-EndFunc   ;==>chkStopAtkDBNoLoot2
+Func chkEndPercentHigher()
+	Local $iState = GUICtrlRead($g_hChkEndPercentHigher) = $GUI_CHECKED ? $GUI_ENABLE : $GUI_DISABLE
+	GUICtrlSetState($g_hTxtPercentHigher, $iState)
+	GUICtrlSetState($g_hLblPercentHigherSec, $iState)
+EndFunc   ;==>chkEndPercentHigher
 
-Func chkStopAtkABNoLoot1()
-	If GUICtrlRead($g_hChkStopAtkABNoLoot1) = $GUI_CHECKED Then
-		$g_abStopAtkNoLoot1Enable[$LB] = True
-		GUICtrlSetState($g_hTxtStopAtkABNoLoot1, $GUI_ENABLE)
-		GUICtrlSetState($g_hLblABTimeStopAtk, $GUI_ENABLE)
-	Else
-		$g_abStopAtkNoLoot1Enable[$LB] = False
-		GUICtrlSetState($g_hTxtStopAtkABNoLoot1, $GUI_DISABLE)
-		GUICtrlSetState($g_hLblABTimeStopAtk, $GUI_DISABLE)
-	EndIf
-EndFunc   ;==>chkStopAtkABNoLoot1
+Func chkEndPercentChange()
+	Local $iState = GUICtrlRead($g_hChkEndPercentChange) = $GUI_CHECKED ? $GUI_ENABLE : $GUI_DISABLE
+	GUICtrlSetState($g_hTxtPercentChange, $iState)
+	GUICtrlSetState($g_hLblPercentChangeSec, $iState)
+EndFunc   ;==>chkEndPercentChange
 
-Func chkStopAtkABNoLoot2()
-	If GUICtrlRead($g_hChkStopAtkABNoLoot2) = $GUI_CHECKED Then
-		$g_abStopAtkNoLoot2Enable[$LB] = True
-		GUICtrlSetState($g_hTxtStopAtkABNoLoot2, $GUI_ENABLE)
-		GUICtrlSetState($g_hLblABTimeStopAtk2, $GUI_ENABLE)
-		GUICtrlSetState($g_hTxtABMinGoldStopAtk2, $GUI_ENABLE)
-		GUICtrlSetState($g_hTxtABMinElixirStopAtk2, $GUI_ENABLE)
-		GUICtrlSetState($g_hTxtABMinDarkElixirStopAtk2, $GUI_ENABLE)
-		GUICtrlSetState($g_hLblABMinRerourcesAtk2, $GUI_ENABLE)
-	Else
-		$g_abStopAtkNoLoot2Enable[$LB] = False
-		GUICtrlSetState($g_hTxtStopAtkABNoLoot2, $GUI_DISABLE)
-		GUICtrlSetState($g_hLblABTimeStopAtk2, $GUI_DISABLE)
-		GUICtrlSetState($g_hTxtABMinGoldStopAtk2, $GUI_DISABLE)
-		GUICtrlSetState($g_hTxtABMinElixirStopAtk2, $GUI_DISABLE)
-		GUICtrlSetState($g_hTxtABMinDarkElixirStopAtk2, $GUI_DISABLE)
-		GUICtrlSetState($g_hLblABMinRerourcesAtk2, $GUI_DISABLE)
-
-	EndIf
-EndFunc   ;==>chkStopAtkABNoLoot2
-
-Func chkDBEndPercentHigher()
-	If GUICtrlRead($g_hChkDBEndPercentHigher) = $GUI_CHECKED Then
-		$g_abStopAtkPctHigherEnable[$DB] = True
-		GUICtrlSetState($g_hTxtDBPercentHigher, $GUI_ENABLE)
-		GUICtrlSetState($g_hLblDBPercentHigherSec, $GUI_ENABLE)
-	Else
-		$g_abStopAtkPctHigherEnable[$DB] = False
-		GUICtrlSetState($g_hTxtDBPercentHigher, $GUI_DISABLE)
-		GUICtrlSetState($g_hLblDBPercentHigherSec, $GUI_DISABLE)
-	EndIf
-EndFunc   ;==>chkDBEndPercentHigher
-
-Func chkDBEndPercentChange()
-	If GUICtrlRead($g_hChkDBEndPercentChange) = $GUI_CHECKED Then
-		$g_abStopAtkPctNoChangeEnable[$DB] = True
-		GUICtrlSetState($g_hTxtDBPercentChange, $GUI_ENABLE)
-		GUICtrlSetState($g_hLblDBPercentChangeSec, $GUI_ENABLE)
-	Else
-		$g_abStopAtkPctNoChangeEnable[$DB] = False
-		GUICtrlSetState($g_hTxtDBPercentChange, $GUI_DISABLE)
-		GUICtrlSetState($g_hLblDBPercentChangeSec, $GUI_DISABLE)
-	EndIf
-EndFunc   ;==>chkDBEndPercentChange
-
-Func chkABEndPercentHigher()
-	If GUICtrlRead($g_hChkABEndPercentHigher) = $GUI_CHECKED Then
-		$g_abStopAtkPctHigherEnable[$LB] = True
-		GUICtrlSetState($g_hTxtABPercentHigher, $GUI_ENABLE)
-		GUICtrlSetState($g_hLblABPercentHigherSec, $GUI_ENABLE)
-	Else
-		$g_abStopAtkPctHigherEnable[$LB] = False
-		GUICtrlSetState($g_hTxtABPercentHigher, $GUI_DISABLE)
-		GUICtrlSetState($g_hLblABPercentHigherSec, $GUI_DISABLE)
-	EndIf
-EndFunc   ;==>chkABEndPercentHigher
-
-Func chkABEndPercentChange()
-	If GUICtrlRead($g_hChkABEndPercentChange) = $GUI_CHECKED Then
-		$g_abStopAtkPctNoChangeEnable[$LB] = True
-		GUICtrlSetState($g_hTxtABPercentChange, $GUI_ENABLE)
-		GUICtrlSetState($g_hLblABPercentChangeSec, $GUI_ENABLE)
-	Else
-		$g_abStopAtkPctNoChangeEnable[$LB] = False
-		GUICtrlSetState($g_hTxtABPercentChange, $GUI_DISABLE)
-		GUICtrlSetState($g_hLblABPercentChangeSec, $GUI_DISABLE)
-	EndIf
-EndFunc   ;==>chkABEndPercentChange
-
-Func chkDESideEB()
-	If GUICtrlRead($g_hChkDESideEB) = $GUI_CHECKED Then
-		For $i = $g_hTxtDELowEndMin To $g_hLblDEEndAq
-			GUICtrlSetState($i, $GUI_ENABLE)
-		Next
-	Else
-		For $i = $g_hTxtDELowEndMin To $g_hLblDEEndAq
-			GUICtrlSetState($i, $GUI_DISABLE)
-		Next
-	EndIf
-EndFunc   ;==>chkDESideEB
+Func cmbEndBattleStars()
+	; value read by ApplyConfig_600_30 (Off / 1 Star / 2 Stars)
+EndFunc   ;==>cmbEndBattleStars
 
 Func chkTakeLootSS()
 	GUICtrlSetState($g_hChkScreenshotLootInfo, GUICtrlRead($g_hChkTakeLootSS) = $GUI_CHECKED ? $GUI_ENABLE : $GUI_DISABLE)

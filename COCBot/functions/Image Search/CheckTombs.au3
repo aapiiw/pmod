@@ -128,10 +128,10 @@ Func RemoveGembox()
 	If IsArray($aGembox) And UBound($aGembox) > 0 Then
 		; images match many buildings/obstacles (Oct 2026: 7 wrong clicks per check on average, ~2 s each, one real
 		; Gem Box in 125 checks, first candidate): same spot once only, at most 4 clicks
-		Local $aClicked[0][2], $bNear
+		Local $aClicked[0][2], $bNear, $iOutside = 0
 		For $i = 0 To UBound($aGembox) - 1
 			If Not isInsideDiamondXY($aGembox[$i][1], $aGembox[$i][2], True) Then
-				SetDebugLog("Found GemBox, but Outside Diamond", $COLOR_INFO)
+				$iOutside += 1
 				ContinueLoop
 			EndIf
 			$bNear = False
@@ -157,6 +157,7 @@ Func RemoveGembox()
 				If _Sleep(500) Then Return
 			EndIf
 		Next
+		SetDebugLog("GemBox candidates: " & UBound($aGembox) & ", outside diamond: " & $iOutside)
 	EndIf
 	If Not $bRemoved Then SetLog("No GemBox Found!", $COLOR_DEBUG2)
 	Return $bRemoved

@@ -20,7 +20,6 @@ Global $g_hGUI_DEADBASE = 0
 #include "MBR GUI Design Child Attack - Deadbase Attack Smart Farm.au3"
 #include "MBR GUI Design Child Attack - Deadbase-Search.au3"
 #include "MBR GUI Design Child Attack - Deadbase-Attack.au3"
-#include "MBR GUI Design Child Attack - Deadbase-EndBattle.au3"
 #include "MBR GUI Design Child Attack - Deadbase-Collectors.au3"
 
 Global $g_hGUI_DEADBASE_TAB = 0, $g_hGUI_DEADBASE_TAB_ITEM1 = 0, $g_hGUI_DEADBASE_TAB_ITEM2 = 0, $g_hGUI_DEADBASE_TAB_ITEM3 = 0, $g_hGUI_DEADBASE_TAB_ITEM4 = 0
@@ -40,8 +39,6 @@ Func CreateAttackSearchDeadBase()
 		CreateAttackSearchDeadBaseSearch()
 	$g_hGUI_DEADBASE_TAB_ITEM2 = GUICtrlCreateTabItem(GetTranslatedFileIni("MBR Main GUI", "Tab_03_STab_02_STab_0X_STab_02", "Attack"))
 		CreateAttackSearchDeadBaseAttack()
-	$g_hGUI_DEADBASE_TAB_ITEM3 = GUICtrlCreateTabItem(GetTranslatedFileIni("MBR Main GUI", "Tab_03_STab_02_STab_0X_STab_03", "End Battle"))
-		CreateAttackSearchDeadBaseEndBattle()
 	$g_hGUI_DEADBASE_TAB_ITEM4 = GUICtrlCreateTabItem(GetTranslatedFileIni("MBR Main GUI", "Tab_03_STab_02_STab_01_STab_01", "Collectors"))
 		CreateAttackSearchDeadBaseCollectors()
 	GUICtrlCreateTabItem("")

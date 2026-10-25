@@ -1788,26 +1788,10 @@ Func tabARMY()
 	Select
 		Case $tabidx = 0 ; Army tab
 			GUISetState(@SW_SHOWNOACTIVATE, $g_hGUI_TRAINARMY_ARMY)
-			GUISetState(@SW_HIDE, $g_hGUI_TRAINARMY_BOOST)
-			GUISetState(@SW_HIDE, $g_hGUI_TRAINARMY_TRAINORDER)
 			GUISetState(@SW_HIDE, $g_hGUI_TRAINARMY_OPTIONS)
 
-		Case $tabidx = 1 ; Boost tab
+		Case $tabidx = 1 ; Options tab
 			GUISetState(@SW_HIDE, $g_hGUI_TRAINARMY_ARMY)
-			GUISetState(@SW_SHOWNOACTIVATE, $g_hGUI_TRAINARMY_BOOST)
-			GUISetState(@SW_HIDE, $g_hGUI_TRAINARMY_TRAINORDER)
-			GUISetState(@SW_HIDE, $g_hGUI_TRAINARMY_OPTIONS)
-
-		Case $tabidx = 2 ; Train Order tab
-			GUISetState(@SW_HIDE, $g_hGUI_TRAINARMY_ARMY)
-			GUISetState(@SW_HIDE, $g_hGUI_TRAINARMY_BOOST)
-			GUISetState(@SW_SHOWNOACTIVATE, $g_hGUI_TRAINARMY_TRAINORDER)
-			GUISetState(@SW_HIDE, $g_hGUI_TRAINARMY_OPTIONS)
-
-		Case $tabidx = 3 ; Options tab
-			GUISetState(@SW_HIDE, $g_hGUI_TRAINARMY_ARMY)
-			GUISetState(@SW_HIDE, $g_hGUI_TRAINARMY_BOOST)
-			GUISetState(@SW_HIDE, $g_hGUI_TRAINARMY_TRAINORDER)
 			GUISetState(@SW_SHOWNOACTIVATE, $g_hGUI_TRAINARMY_OPTIONS)
 
 	EndSelect
@@ -1819,11 +1803,9 @@ Func tabSEARCH()
 	Local $tabidx = GUICtrlRead($g_hGUI_SEARCH_TAB)
 	Local $tabdbx = _GUICtrlTab_GetItemRect($g_hGUI_SEARCH_TAB, 0) ;get array of deadbase Tabitem rectangle coordinates, index 2,3 will be lower right X,Y coordinates (not needed: 0,1 = top left x,y)
 	Local $tababx = _GUICtrlTab_GetItemRect($g_hGUI_SEARCH_TAB, 1) ;idem for activebase
-	Local $tabblx = _GUICtrlTab_GetItemRect($g_hGUI_SEARCH_TAB, 2) ;idem for bully
 	Select
 		Case $tabidx = 0 ; Deadbase tab
 			GUISetState(@SW_HIDE, $g_hGUI_ACTIVEBASE)
-			GUISetState(@SW_HIDE, $g_hGUI_BULLY)
 			GUISetState(@SW_HIDE, $g_hGUI_ATTACKOPTION)
 
 			If GUICtrlRead($g_hChkDeadbase) = $GUI_CHECKED Then
@@ -1835,13 +1817,10 @@ Func tabSEARCH()
 			EndIf
 
 			GUICtrlSetPos($g_hChkActivebase, $tababx[2] - 15, $tababx[3] - 15) ; use x,y coordinate of tabitem rectangle bottom right corner to dynamically reposition the checkbox control (for translated tabnames)
-			GUICtrlSetPos($g_hChkBully, $tabblx[2] - 15, $tabblx[3] - 15)
-
 			GUICtrlSetPos($g_hChkDeadbase, $tabdbx[2] - 15, $tabdbx[3] - 17)
 			tabDeadbase()
 		Case $tabidx = 1 ; Activebase tab
 			GUISetState(@SW_HIDE, $g_hGUI_DEADBASE)
-			GUISetState(@SW_HIDE, $g_hGUI_BULLY)
 			GUISetState(@SW_HIDE, $g_hGUI_ATTACKOPTION)
 
 			If GUICtrlRead($g_hChkActivebase) = $GUI_CHECKED Then
@@ -1853,38 +1832,16 @@ Func tabSEARCH()
 			EndIf
 
 			GUICtrlSetPos($g_hChkDeadbase, $tabdbx[2] - 15, $tabdbx[3] - 15)
-			GUICtrlSetPos($g_hChkBully, $tabblx[2] - 15, $tabblx[3] - 15)
-
 			GUICtrlSetPos($g_hChkActivebase, $tababx[2] - 15, $tababx[3] - 17)
 			tabActivebase()
-		Case $tabidx = 2 ; Bully tab
+		Case $tabidx = 2 ; Options
 			GUISetState(@SW_HIDE, $g_hGUI_DEADBASE)
 			GUISetState(@SW_HIDE, $g_hGUI_ACTIVEBASE)
-			GUISetState(@SW_HIDE, $g_hGUI_ATTACKOPTION)
-
-			If GUICtrlRead($g_hChkBully) = $GUI_CHECKED Then
-				GUISetState(@SW_SHOWNOACTIVATE, $g_hGUI_BULLY)
-				GUICtrlSetState($g_hLblBullyDisabled, $GUI_HIDE)
-			Else
-				GUISetState(@SW_HIDE, $g_hGUI_BULLY)
-				GUICtrlSetState($g_hLblBullyDisabled, $GUI_SHOW)
-			EndIf
-
-			GUICtrlSetPos($g_hChkDeadbase, $tabdbx[2] - 15, $tabdbx[3] - 15)
-			GUICtrlSetPos($g_hChkActivebase, $tababx[2] - 15, $tababx[3] - 15)
-
-			GUICtrlSetPos($g_hChkBully, $tabblx[2] - 15, $tabblx[3] - 17)
-			; Bully has no tabs
-		Case $tabidx = 3 ; Options
-			GUISetState(@SW_HIDE, $g_hGUI_DEADBASE)
-			GUISetState(@SW_HIDE, $g_hGUI_ACTIVEBASE)
-			GUISetState(@SW_HIDE, $g_hGUI_BULLY)
 
 			GUISetState(@SW_SHOWNOACTIVATE, $g_hGUI_ATTACKOPTION)
 
 			GUICtrlSetPos($g_hChkDeadbase, $tabdbx[2] - 15, $tabdbx[3] - 15)
 			GUICtrlSetPos($g_hChkActivebase, $tababx[2] - 15, $tababx[3] - 15)
-			GUICtrlSetPos($g_hChkBully, $tabblx[2] - 15, $tabblx[3] - 15)
 	EndSelect
 
 EndFunc   ;==>tabSEARCH
@@ -2012,7 +1969,7 @@ Func Bind_ImageList($nCtrl, ByRef $hImageList)
 
 		Case $g_hGUI_TRAINARMY_TAB
 			; the icons for army tab
-			Local $aIconIndex = [$eIcnTrain, $eIcnGem, $eIcnReOrder, $eIcnOptions]
+			Local $aIconIndex = [$eIcnTrain, $eIcnOptions]
 
 		Case $g_hGUI_MISC_TAB
 			Local $aIconIndex = [$eIcnTH10, $eIcnStrongMan, $eIcnClanCapital, $eIcnGoldStar]
@@ -2035,19 +1992,19 @@ Func Bind_ImageList($nCtrl, ByRef $hImageList)
 
 		Case $g_hGUI_SEARCH_TAB
 			; the icons for SEARCH tab
-			Local $aIconIndex = [$eIcnCollector, $eIcnCC, $eIcnTH10, $eIcnTH1, $eIcnOptions]
+			Local $aIconIndex = [$eIcnCollector, $eIcnCC, $eIcnOptions]
 
 		Case $g_hGUI_DEADBASE_TAB
 			; the icons for deadbase tab
-			Local $aIconIndex = [$eIcnMagnifier, $eIcnCamp, $eIcnSilverStar, $eIcnCollector]
+			Local $aIconIndex = [$eIcnMagnifier, $eIcnCamp, $eIcnCollector]
 
 		Case $g_hGUI_ACTIVEBASE_TAB
 			; the icons for activebase tab
-			Local $aIconIndex = [$eIcnMagnifier, $eIcnCamp, $eIcnSilverStar]
+			Local $aIconIndex = [$eIcnMagnifier, $eIcnCamp]
 
 		Case $g_hGUI_ATTACKOPTION_TAB
 			; the icons for Attack Options tab
-			Local $aIconIndex = [$eIcnMagnifier, $eIcnCamp, $eIcnLightSpell, $eIcnSilverStar, $eIcnTrophy]
+			Local $aIconIndex = [$eIcnMagnifier, $eIcnCamp, $eIcnSilverStar]
 
 		Case $g_hGUI_BB_TAB
 			; the icons for BuilderBase tab

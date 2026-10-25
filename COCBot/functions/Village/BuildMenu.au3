@@ -911,11 +911,12 @@ Func BBUpgradeWallSelected($sResource, $bTest = False, $iWallCost = 0)
 	Return True
 EndFunc   ;==>BBUpgradeWallSelected
 
-; red cost text on a wall upgrade button (bottom row, button center $iBtnX), uses the last _CaptureRegion frame
-Func BBWallCostRed($iBtnX)
+; red cost text on a wall upgrade button (button center $iBtnX, cost line top $iY: 566 bottom row, 482 top row),
+; uses the last _CaptureRegion frame
+Func BBWallCostRed($iBtnX, $iY = 566)
 	Local $iRed = 0, $iPix
 	For $x = $iBtnX - 30 To $iBtnX + 22 Step 3
-		For $y = 566 To 576 Step 2
+		For $y = $iY To $iY + 10 Step 2
 			$iPix = Dec(_GetPixelColor($x, $y, False))
 			If BitAND(BitShift($iPix, 16), 0xFF) > 230 And BitAND(BitShift($iPix, 8), 0xFF) < 160 And BitAND($iPix, 0xFF) < 160 Then $iRed += 1
 		Next
@@ -956,12 +957,18 @@ Func BBWallUpgradeMore($sResource, $iCount)
 		Return 0
 	EndIf
 	Click(340, 510, 1, 50, "Wall Upgrade More")
-	Local $bPlus = False
+	Local $bPlus = False, $iPlusX = 340
 	For $i = 1 To 6 ; buttons change with an animation (one check after 700 ms missed it, 21 Oct 2026)
 		If _Sleep(350) Then Return -1
 		_CaptureRegion()
 		If BBWallTopButtonPixels(340, "green") >= 15 Then
 			$bPlus = True
+			ExitLoop
+		EndIf
+		; fewer than 10 walls left of this level (qassa, Oct 2026): no +10, top row Remove Wall | +1 | Gold upgrade
+		If BBWallTopButtonPixels(248, "green") >= 15 Then
+			$bPlus = True
+			$iPlusX = 248
 			ExitLoop
 		EndIf
 	Next
@@ -972,7 +979,7 @@ Func BBWallUpgradeMore($sResource, $iCount)
 		SetLog("Wall: +1 not available (no other wall of this level), upgrade 1 wall", $COLOR_INFO)
 		$iCount = 1
 	EndIf
-	If $iCount >= 11 And BBWallTopButtonPixels(248, "green") >= 40 Then
+	If $iCount >= 11 And $iPlusX = 340 And BBWallTopButtonPixels(248, "green") >= 40 Then
 		While $iWalls + 10 <= $iCount
 			Click(248, 510, 1, 50, "Wall +10")
 			If _Sleep(400) Then Return -1
@@ -980,14 +987,15 @@ Func BBWallUpgradeMore($sResource, $iCount)
 		WEnd
 	EndIf
 	While $iWalls < $iCount
-		Click(340, 510, 1, 50, "Wall +1")
+		Click($iPlusX, 510, 1, 50, "Wall +1")
 		If _Sleep(300) Then Return -1
 		$iWalls += 1
 	WEnd
 	If _Sleep(300) Then Return -1
 	; total cost text is longer now: resource icon is searched again on the cost line
 	_CaptureRegion()
-	Local $iIconX = BBWallButtonIconX($sResource)
+	Local $iRowY = 0
+	Local $iIconX = BBWallButtonIconXRow($sResource, $iRowY)
 	If $iIconX = 0 Then
 		SetLog("Wall: " & $sResource & " button not found after Upgrade More, Upgrade More disabled until restart", $COLOR_WARNING)
 		If $g_bDebugImageSave Then SaveDebugImage("BBWallUpgradeMore")
@@ -996,20 +1004,20 @@ Func BBWallUpgradeMore($sResource, $iCount)
 		Return -1
 	EndIf
 	; total cost red (cost OCR off): Remove Wall (-1) until the cost is not red
-	While BBWallCostRed($iIconX - 30) And $iWalls > 1
+	While BBWallCostRed($iIconX - 30, $iRowY) And $iWalls > 1
 		Click(155, 510, 1, 50, "Wall -1")
 		If _Sleep(300) Then Return -1
 		$iWalls -= 1
 		_CaptureRegion()
-		$iIconX = BBWallButtonIconX($sResource)
+		$iIconX = BBWallButtonIconXRow($sResource, $iRowY)
 		If $iIconX = 0 Then ExitLoop
 	WEnd
-	If $iIconX = 0 Or BBWallCostRed($iIconX - 30) Then
+	If $iIconX = 0 Or BBWallCostRed($iIconX - 30, $iRowY) Then
 		SetLog("Wall: not enough " & $sResource & " (red cost), skip", $COLOR_INFO)
 		ClickAway("Left")
 		Return -1
 	EndIf
-	Click($iIconX - 30, 605, 1, 0, "Wall upgrade x" & $iWalls & " " & $sResource)
+	Click($iIconX - 30, $iRowY + 39, 1, 0, "Wall upgrade x" & $iWalls & " " & $sResource)
 	If _Sleep(1000) Then Return -1
 	_CaptureRegion()
 	If BBIsGreen(_GetPixelColor(433, 565, False)) Or BBIsGreen(_GetPixelColor(718, 600, False)) Then
@@ -1030,11 +1038,11 @@ EndFunc   ;==>BBWallUpgradeMore
 ; resource icon on the cost line of the wall upgrade buttons (bottom left), uses the last _CaptureRegion frame.
 ; The icon moves with the cost text length and the button layout, so the whole line is scanned (x 110..305, y 566..574)
 ; Return icon x, 0 = not found
-Func BBWallButtonIconX($sResource)
+Func BBWallButtonIconX($sResource, $iY = 566, $iX0 = 110, $iX1 = 305)
 	Local $iPix, $r, $g, $b, $iHits
-	For $x = 110 To 305 Step 2
+	For $x = $iX0 To $iX1 Step 2
 		$iHits = 0
-		For $y = 566 To 574 Step 2
+		For $y = $iY To $iY + 8 Step 2
 			$iPix = Dec(_GetPixelColor($x, $y, False))
 			$r = BitAND(BitShift($iPix, 16), 0xFF)
 			$g = BitAND(BitShift($iPix, 8), 0xFF)
@@ -1049,6 +1057,17 @@ Func BBWallButtonIconX($sResource)
 	Next
 	Return 0
 EndFunc   ;==>BBWallButtonIconX
+
+; after Upgrade More with fewer than 10 walls of the level the Gold button moves to the top row (x ~340, qassa Oct 2026:
+; Gold icon 366,486, Elixir icon 232,570). Bottom row first: the top row scan finds a wrong icon when +10 is there.
+; $iRowY = cost line top of the row found (566 bottom, 482 top), button click y = $iRowY + 39
+Func BBWallButtonIconXRow($sResource, ByRef $iRowY)
+	$iRowY = 566
+	Local $iX = BBWallButtonIconX($sResource)
+	If $iX > 0 Then Return $iX
+	$iRowY = 482
+	Return BBWallButtonIconX($sResource, 482, 300, 420)
+EndFunc   ;==>BBWallButtonIconXRow
 
 ; Star Laboratory upgrade from Build menu tab 2
 Func StarLabUpgradeBuildMenu($bTest = False)

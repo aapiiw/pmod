@@ -151,6 +151,9 @@ Func PrepareSearchCheckArmy($bTournament = False, $bTest = False)
 			SetArmyCompo($bTournament)
 			If _Sleep(500) Then Return
 			If FillArmyCamp() Then SaveArmyCompo($bTournament)
+			; upgrading hero -> ready hero, every attack (was only with Ignore Incorrect Troop/Spell Combo on, off on all profiles)
+			; not saved to the army compo: the hero comes back when the upgrade is done
+			CheckHeroOnUpgrade()
 			If _Sleep(500) Then Return
 			If $bTest Then Return $bRet
 			Click(695, 500, 1, 0, "ArmyOverview Attack Button")
@@ -230,82 +233,111 @@ Func FillArmyCamp()
 			If _Sleep(500) Then Return
 		EndIf
 		
-		If _Sleep(500) Then Return
-		If Not $bRet Then ;need to check again for hero switch, but only set if Fill Troop/Spell not used before
-			$bRet = CheckHeroOnUpgrade()
-		Else
-			CheckHeroOnUpgrade()
-		EndIf
 	EndIf
 	Return $bRet
 EndFunc
 
 Func CheckHeroOnUpgrade()
+	; Army window (quartz, 25 Oct 2026): hero slots x 58-367, an upgrading hero is a gray card with a hammer at its top right
+	; and a red "!" next to the hero count. Tap on the hammer opens "Select Hero": top row = current hero / pet / equipment,
+	; bottom row (y ~268-330) = heroes not in the army, gray with a hammer badge when upgrading. Tap on the hammer again closes it.
 	Local $bRet = False
-	Local $aHammer, $x, $y, $aHero
-	Local $bCheck = False, $bWardenFound = False
+	Local $aHammer, $x, $y, $aHero, $iPick, $sPick
 	Local $iWardenMode = $g_aiAttackUseWardenMode[$DB]
-	If QuickMIS("BC1", $g_sImgArmyOverviewExclam, 86, 200, 120, 230) Then $bCheck = True
-	If Not $bCheck Then Return
-	
+	If Not QuickMIS("BC1", $g_sImgArmyOverviewExclam, 86, 200, 120, 230) Then Return False
+
 	$aHammer = QuickMIS("CNX", $g_sImgArmyOverviewHeroesHammer, 90, 233, 380, 260)
-	If IsArray($aHammer) And UBound($aHammer) > 0 Then
-		_ArraySort($aHammer, 0, 0, 0, 1) ;sort left to right
-		RemoveDupCNX($aHammer, 1, 20)
-		For $i = 0 To UBound($aHammer) - 1
-			$x = $aHammer[$i][1]
-			$y = $aHammer[$i][2]
-			SetLog("Found Hammer on " & $x & "," & $y, $COLOR_DEBUG)
-			Click($x, $y, 1, 0, "Hammer")
-			If _Sleep(1000) Then Return
-			$aHero = QuickMIS("CNX", $g_sImgArmyOverviewHeroChange, 86, 200, $x + 350, $y + 85)
-			If IsArray($aHero) And UBound($aHero) > 0 Then
-				For $i = 0 To UBound($aHero) - 1
-					SetLog("Hero " & $aHero[$i][0] & " is Available", $COLOR_INFO)
-					If StringInStr($aHero[$i][0], "Warden") Then
-						$bWardenFound = True
-						If $iWardenMode = 0 Or $iWardenMode = 2 Then ;0 or 2 = ground or default = pick ground
-							If $aHero[$i][0] = "WardenGround" Then 
-								Click($aHero[$i][1], $aHero[$i][2], 1, 0, "Click " & $aHero[$i][0])
-								If _Sleep(1000) Then Return
-								Click($x, $y, 1, 0, "Hammer")
-								SetLog("Switch upgraded hero to " & $aHero[$i][0], $COLOR_SUCCESS)
-								ExitLoop
-							Else
-								ContinueLoop
-							EndIf
-						Else ;iWardenMode = 1
-							If $aHero[$i][0] = "WardenAir" Then 
-								Click($aHero[$i][1], $aHero[$i][2], 1, 0, "Click " & $aHero[$i][0])
-								If _Sleep(1000) Then Return
-								Click($x, $y, 1, 0, "Hammer")
-								SetLog("Switch upgraded hero to " & $aHero[$i][0], $COLOR_SUCCESS)
-								ExitLoop
-							EndIf
-						EndIf
-					Else
-						Click($aHero[$i][1], $aHero[$i][2], 1, 0, "Click " & $aHero[$i][0])
-						If _Sleep(1000) Then Return
-						Click($x, $y, 1, 0, "Hammer")
-						If _Sleep(1000) Then Return
-						SetLog("Switch upgraded hero to " & $aHero[$i][0], $COLOR_SUCCESS)
+	If Not IsArray($aHammer) Or UBound($aHammer) = 0 Then Return False
+	_ArraySort($aHammer, 0, 0, 0, 1) ;sort left to right
+	RemoveDupCNX($aHammer, 1, 20)
+	For $i = 0 To UBound($aHammer) - 1
+		$x = $aHammer[$i][1]
+		$y = $aHammer[$i][2]
+		SetLog("Hero on upgrade in army slot (hammer at " & $x & "," & $y & ")", $COLOR_INFO)
+		Click($x, $y, 1, 0, "Hammer")
+		If _Sleep(1000) Then Return $bRet
+		If Not IsSelectHeroOpen() Then
+			SetLog("Select Hero window not opened", $COLOR_DEBUG2)
+			ContinueLoop
+		EndIf
+		_CaptureRegion()
+		; current (upgrading) hero, top row of the window
+		Local $aCur = QuickMIS("CNX", $g_sImgArmyOverviewHeroChange, 86, 160, 720, $y + 5)
+		If IsArray($aCur) And UBound($aCur) > 0 Then HeroShieldSet($aCur[0][0], "red")
+		$aHero = QuickMIS("CNX", $g_sImgArmyOverviewHeroChange, 86, $y + 15, 720, $y + 95)
+		$iPick = -1
+		$sPick = ""
+		If IsArray($aHero) And UBound($aHero) > 0 Then
+			_ArraySort($aHero, 0, 0, 0, 1)
+			For $j = 0 To UBound($aHero) - 1
+				If Not HeroPortraitColored($aHero[$j][1], $aHero[$j][2]) Then
+					HeroShieldSet($aHero[$j][0], "red")
+					ContinueLoop
+				EndIf
+				HeroShieldSet($aHero[$j][0], "green")
+				If StringInStr($aHero[$j][0], "Warden") Then ; Warden Air / Ground: the one of the attack setting first
+					If ($iWardenMode = 1 And $aHero[$j][0] <> "WardenAir") Or ($iWardenMode <> 1 And $aHero[$j][0] <> "WardenGround") Then
+						If $iPick < 0 Then $sPick = "Warden"
+						ContinueLoop
+					EndIf
+				EndIf
+				If $iPick < 0 Then $iPick = $j
+			Next
+			; only the Warden of the other mode is ready: use it rather than an empty slot
+			If $iPick < 0 And $sPick = "Warden" Then
+				For $j = 0 To UBound($aHero) - 1
+					If StringInStr($aHero[$j][0], "Warden") And HeroPortraitColored($aHero[$j][1], $aHero[$j][2]) Then
+						$iPick = $j
 						ExitLoop
 					EndIf
 				Next
-				$bRet = True
-				If Ubound($aHero) = 1 Then ExitLoop ;if only found 1 image then exit
-				If $bWardenFound And Ubound($aHero) = 2 Then ExitLoop ;warden always found 2 image, so if 2 images then only warden, exit
-			Else
-				Click($x, $y, 1, 0, "Hammer Close")
-				SetLog("No availabe Hero to switch", $COLOR_DEBUG2)
-				ExitLoop
 			EndIf
-		Next
-		If _Sleep(1000) Then Return
-		Return $bRet
-	EndIf
+		EndIf
+		If $iPick >= 0 Then
+			Click($aHero[$iPick][1], $aHero[$iPick][2], 1, 0, "Select " & $aHero[$iPick][0])
+			If _Sleep(1000) Then Return $bRet
+			SetLog("Switch upgrading hero to " & $aHero[$iPick][0], $COLOR_SUCCESS)
+			$bRet = True
+		Else
+			SetLog("No available Hero to switch", $COLOR_DEBUG2)
+		EndIf
+		If IsSelectHeroOpen() Then
+			Click($x, $y, 1, 0, "Close Select Hero") ; outside the window: closes it
+			If _Sleep(800) Then Return $bRet
+		EndIf
+	Next
 	Return $bRet
-EndFunc
+EndFunc   ;==>CheckHeroOnUpgrade
+
+; "Select Hero" / "Select Pet" window: its light header color along y 160 (army window header is dark brown there)
+Func IsSelectHeroOpen()
+	_CaptureRegion()
+	Local $iHits = 0, $iPix
+	For $x = 100 To 760 Step 10
+		$iPix = Dec(_GetPixelColor($x, 160, False))
+		If Abs(BitAND(BitShift($iPix, 16), 0xFF) - 134) < 12 And Abs(BitAND(BitShift($iPix, 8), 0xFF) - 125) < 12 And Abs(BitAND($iPix, 0xFF) - 113) < 12 Then $iHits += 1
+	Next
+	Return $iHits >= 10
+EndFunc   ;==>IsSelectHeroOpen
+
+; hero portrait in color (ready) or gray (upgrading): mean RGB spread around the match, colored ~50-110, gray 0-20
+; (checked on quartz Select Hero screen: King 97, Prince 91, upgrading Wardens 0 and 3), uses the last _CaptureRegion frame
+Func HeroPortraitColored($iX, $iY)
+	Local $iSum = 0, $iN = 0, $iPix, $r, $g, $b, $iMax, $iMin
+	For $dx = -12 To 12 Step 4
+		For $dy = -12 To 12 Step 4
+			$iPix = Dec(_GetPixelColor($iX + $dx, $iY + $dy, False))
+			$r = BitAND(BitShift($iPix, 16), 0xFF)
+			$g = BitAND(BitShift($iPix, 8), 0xFF)
+			$b = BitAND($iPix, 0xFF)
+			$iMax = $r > $g ? ($r > $b ? $r : $b) : ($g > $b ? $g : $b)
+			$iMin = $r < $g ? ($r < $b ? $r : $b) : ($g < $b ? $g : $b)
+			$iSum += $iMax - $iMin
+			$iN += 1
+		Next
+	Next
+	Return $iSum / $iN > 30
+EndFunc   ;==>HeroPortraitColored
 
 Func SetArmyCompo($bTournament = False)
 	Local $x = 510, $Color = Hex(0xB69881, 6)

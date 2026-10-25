@@ -279,32 +279,56 @@ Func ArmyHeroStatus($i)
 		Return $sResult
 	EndIf
 	
-	;return 'none' if there was a problem with the search ; or no Hero slot
-	Switch $i
-		Case 0
-			GUICtrlSetState($g_hPicKingGreen, $GUI_HIDE)
-			GUICtrlSetState($g_hPicKingRed, $GUI_HIDE)
-			GUICtrlSetState($g_hPicKingBlue, $GUI_HIDE)
-			GUICtrlSetState($g_hPicKingGray, $GUI_SHOW)
-			Return "none"
-		Case 1
-			GUICtrlSetState($g_hPicQueenGreen, $GUI_HIDE)
-			GUICtrlSetState($g_hPicQueenRed, $GUI_HIDE)
-			GUICtrlSetState($g_hPicQueenBlue, $GUI_HIDE)
-			GUICtrlSetState($g_hPicQueenGray, $GUI_SHOW)
-			Return "none"
-		Case 2
-			GUICtrlSetState($g_hPicWardenGreen, $GUI_HIDE)
-			GUICtrlSetState($g_hPicWardenRed, $GUI_HIDE)
-			GUICtrlSetState($g_hPicWardenBlue, $GUI_HIDE)
-			GUICtrlSetState($g_hPicWardenGray, $GUI_SHOW)
-			Return "none"
-		Case 3
-			GUICtrlSetState($g_hPicChampionGreen, $GUI_HIDE)
-			GUICtrlSetState($g_hPicChampionRed, $GUI_HIDE)
-			GUICtrlSetState($g_hPicChampionBlue, $GUI_HIDE)
-			GUICtrlSetState($g_hPicChampionGray, $GUI_SHOW)
-			Return "none"
-	EndSwitch
+	;return 'none' if there was a problem with the search ; or no Hero slot (bottom shields are set by HeroShieldSet)
+	Return "none"
 
 EndFunc   ;==>ArmyHeroStatus
+
+; Bottom panel hero shields K Q P W C D: 0 gray (unknown), 1 green (ready), 2 red (upgrading), 3 blue (healing)
+; set from the attack bar (heroes in it are ready) and from the Select Hero window (gray portrait = upgrading)
+Global $g_aiHeroShieldAcc[16][6]
+
+Func HeroShieldIndex($sHero)
+	Select
+		Case StringInStr($sHero, "King")
+			Return 0
+		Case StringInStr($sHero, "Queen")
+			Return 1
+		Case StringInStr($sHero, "Prince") Or StringInStr($sHero, "MinionP")
+			Return 2
+		Case StringInStr($sHero, "Warden")
+			Return 3
+		Case StringInStr($sHero, "Champion")
+			Return 4
+		Case StringInStr($sHero, "Duke")
+			Return 5
+	EndSelect
+	Return -1
+EndFunc   ;==>HeroShieldIndex
+
+Func HeroShieldSet($sHero, $sState)
+	Local $iHero = HeroShieldIndex($sHero)
+	If $iHero < 0 Then Return
+	HeroShieldShow($iHero, $sState = "green" ? 1 : ($sState = "red" ? 2 : ($sState = "blue" ? 3 : 0)))
+EndFunc   ;==>HeroShieldSet
+
+Func HeroShieldShow($iHero, $iState, $bStore = True)
+	Local $aCtrl[6][4] = [[$g_hPicKingGray, $g_hPicKingGreen, $g_hPicKingRed, $g_hPicKingBlue], _
+			[$g_hPicQueenGray, $g_hPicQueenGreen, $g_hPicQueenRed, $g_hPicQueenBlue], _
+			[$g_hPicPrinceGray, $g_hPicPrinceGreen, $g_hPicPrinceRed, $g_hPicPrinceBlue], _
+			[$g_hPicWardenGray, $g_hPicWardenGreen, $g_hPicWardenRed, $g_hPicWardenBlue], _
+			[$g_hPicChampionGray, $g_hPicChampionGreen, $g_hPicChampionRed, $g_hPicChampionBlue], _
+			[$g_hPicDukeGray, $g_hPicDukeGreen, $g_hPicDukeRed, $g_hPicDukeBlue]]
+	For $i = 0 To 3
+		GUICtrlSetState($aCtrl[$iHero][$i], $i = $iState ? $GUI_SHOW : $GUI_HIDE)
+	Next
+	If $bStore And $g_iCurAccount >= 0 And $g_iCurAccount < 16 Then $g_aiHeroShieldAcc[$g_iCurAccount][$iHero] = $iState
+EndFunc   ;==>HeroShieldShow
+
+; account switch: show the shields saved for this account
+Func HeroShieldLoad($iAccount)
+	If $iAccount < 0 Or $iAccount > 15 Then Return
+	For $i = 0 To 5
+		HeroShieldShow($i, $g_aiHeroShieldAcc[$iAccount][$i], False)
+	Next
+EndFunc   ;==>HeroShieldLoad

@@ -165,10 +165,8 @@ Func GoldElixirChangeEBO(ByRef $bSpeedUpBattle)
 			$DarkElixirChange = $DarkElixir2
 		EndIf
 		
-		;check speedup Battle
-		If $g_iPercentageDamage > 70 Then 
-			If Not $bSpeedUpBattle Then CheckSpeedUpBattle($bSpeedUpBattle)
-		EndIf
+		;check speedup Battle: button shown in the last minute, click it as soon as it is there (no damage limit)
+		If Not $bSpeedUpBattle Then CheckSpeedUpBattle($bSpeedUpBattle)
 		
 		;EXIT IF RESOURCES = 0
 		If $g_abStopAtkNoResources[$g_iMatchMode] And Number($Gold2) = 0 And Number($Elixir2) = 0 And Number($DarkElixir2) = 0 Then

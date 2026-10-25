@@ -30,7 +30,7 @@ Func TreasuryCollect()
 		Click($g_aiClanCastlePos[0], $g_aiClanCastlePos[1])
 		If _Sleep(1000) Then Return
 		Local $BuildingInfo = BuildingInfo(290, 477)
-		If $BuildingInfo[1] = "Clan Castle" Then 
+		If $BuildingInfo[1] = "Clan Castle" Then
 			$TryCCAutoLocate = False
 		Else
 			$TryCCAutoLocate = True
@@ -45,7 +45,8 @@ Func TreasuryCollect()
 			ClickAway()
 			Return
 		EndIf
-		$CCFound = AutoLocateCC()
+		If Int($g_aiClanCastlePos[0]) > 0 And Int($g_aiClanCastlePos[1]) > 0 Then $CCFound = NearCCLocate()
+		If Not $CCFound Then $CCFound = AutoLocateCC()
 		If $CCFound Then
 			$g_ahCCLocateFailTimer[CurAccountIndex()] = 0
 			applyConfig()
@@ -98,6 +99,31 @@ Func TreasuryCollect()
 	If _Sleep(500) Then Return
 EndFunc   ;==>TreasuryCollect
 
+; saved CC position hits a building next to it (Oct 2026: qurlk saved 426,307 = Wall, CC at 455,340; TH17+ CC is
+; not found by the images): try around the saved position, the Clan Castle stays selected when found
+Func NearCCLocate()
+	Local $aOffset[8][2] = [[30, 30], [-30, -30], [30, -30], [-30, 30], [0, 35], [0, -35], [35, 0], [-35, 0]]
+	Local $x, $y, $aInfo
+	For $i = 0 To UBound($aOffset) - 1
+		$x = $g_aiClanCastlePos[0] + $aOffset[$i][0]
+		$y = $g_aiClanCastlePos[1] + $aOffset[$i][1]
+		If Not isInsideDiamondXY($x, $y) Then ContinueLoop
+		ClickAway()
+		If _Sleep(500) Then Return False
+		Click($x, $y)
+		If _Sleep(1000) Then Return False
+		$aInfo = BuildingInfo(290, 477)
+		If $aInfo[1] = "Clan Castle" Then
+			SetLog("Clan Castle found near saved position, new CC Coords : " & $x & "," & $y, $COLOR_INFO)
+			$g_aiClanCastlePos[0] = $x
+			$g_aiClanCastlePos[1] = $y
+			Return True
+		EndIf
+	Next
+	ClickAway()
+	Return False
+EndFunc   ;==>NearCCLocate
+
 Func AutoLocateCC()
 	Local $CCFound = False
 	SetLog("Try to Auto Locate Clan Castle", $COLOR_INFO)
@@ -141,7 +167,7 @@ Func SetCCSleep()
 		ClickP($aCCDefense)
 	Else
 		Local $aCCSleep = findButton("CCSleep")
-		If IsArray($aCCDefense) And UBound($aCCDefense, 1) = 2 Then
+		If IsArray($aCCSleep) And UBound($aCCSleep, 1) = 2 Then
 			SetLog("Clan Castle already on Sleep Mode", $COLOR_INFO)
 		EndIf
 	EndIf

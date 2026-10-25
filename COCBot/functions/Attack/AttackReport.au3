@@ -164,14 +164,12 @@ Func AttackReport()
 	;---
 	Local $AtkLogTxt
 	$AtkLogTxt =  StringFormat("%2s", $g_iCurAccount + 1) & "|" & _NowTime(4) & "|"
-	$AtkLogTxt &= StringFormat("%4d", $g_aiCurrentLoot[$eLootTrophy]) & "|"
 	$AtkLogTxt &= StringFormat("%3d", $g_iSearchCount) & "|"
 	$AtkLogTxt &= StringFormat("%2s", $g_iSearchTH) & "|"
 	$AtkLogTxt &= StringFormat("%2s", $sMatchMode) & "|"
 	$AtkLogTxt &= StringFormat("%4d", ($g_iStatsLastAttack[$eLootGold]/1000)) & "K|"
 	$AtkLogTxt &= StringFormat("%4d", ($g_iStatsLastAttack[$eLootElixir]/1000)) & "K|"
 	$AtkLogTxt &= StringFormat("%5d", $g_iStatsLastAttack[$eLootDarkElixir]) & "|"
-	$AtkLogTxt &= StringFormat("%3d", $g_iStatsLastAttack[$eLootTrophy]) & "|"
 	$AtkLogTxt &= StringFormat("%1d", $starsearned) & "|"
 	$AtkLogTxt &= StringFormat("%3d", $g_iPercentageDamage) & "|"
 	If $g_sCGCurrentEventName <> "" And Not $g_bIsBBevent Then 

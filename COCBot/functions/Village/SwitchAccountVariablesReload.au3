@@ -295,6 +295,7 @@ Func SwitchAccountVariablesReload($sType = "Load", $iAccount = $g_iCurAccount)
 				If $aiLabStatus[$iAccount] = $Counter Then GUICtrlSetState($i, $GUI_SHOW)
 				$Counter += 1
 			Next
+			HeroShieldLoad($iAccount)
 			$g_sStarLabUpgradeTime = $asStarLabUpgradeTime[$iAccount]
 
 			; Hero State

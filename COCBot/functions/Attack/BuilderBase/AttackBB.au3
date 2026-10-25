@@ -216,19 +216,22 @@ Func EndBattleBB() ; Find if battle has ended and click okay
 		If $bBattleMachine Then $bBattleMachine = CheckBMLoop()
 		If $bWallBreaker Then $bWallBreaker = CheckWBLoop()
 		$sDamage = getOcrOverAllDamage(776, 529)
-		SetLog("[" & $i & "] EndBattleBB LoopCheck, [" & $bCountSameDamage & "] Overall Damage : " & $sDamage & "%", $COLOR_DEBUG2)
 		If Number($sDamage) > 0 Then $realDamage = Number($sDamage)
 		If Number($sDamage) = Number($sTmpDamage) Then
 			$bCountSameDamage += 1
 		Else
 			$bCountSameDamage = 1
 		EndIf
+		; GUI log only when damage changes, the 1 s loop repeats the same value
+		If $bCountSameDamage = 1 Then
+			SetLog("[" & $i & "] EndBattleBB, Overall Damage : " & $sDamage & "%", $COLOR_DEBUG2)
+		Else
+			SetDebugLog("[" & $i & "] EndBattleBB LoopCheck, [" & $bCountSameDamage & "] Overall Damage : " & $sDamage & "%")
+		EndIf
 		$sTmpDamage = Number($sDamage)
 		
-		;check speedup battle timer
-		If $sTmpDamage > 70 Then
-			If Not $bSpeedUpBattle Then CheckSpeedUpBattle($bSpeedUpBattle)
-		EndIf
+		;check speedup battle timer: button shown in the last minute, click it as soon as it is there (no damage limit)
+		If Not $bSpeedUpBattle Then CheckSpeedUpBattle($bSpeedUpBattle)
 		
 		;check if battle finished
 		If BBBarbarianHead("EndBattleBB") Then ExitLoop
@@ -976,14 +979,12 @@ Func BBAttackReport($sDamage = "")
 	SetLog("Gain Stars: [" & $sStars & "], Trophy: [" & $sTrophy & "], Gold: [" & $sGold & "], Destruction: [" & $sDamage & "%]", $COLOR_SUCCESS)
 	
 	$AtkLogTxt =  StringFormat("%2s", $g_iCurAccount + 1) & "|" & _NowTime(4) & "|"
-	$AtkLogTxt &= StringFormat("%4d", $sCurrentTrophy) & "|"
 	$AtkLogTxt &= StringFormat("%3d", $sSearch) & "|"
 	$AtkLogTxt &= StringFormat("%2s", $sTH) & "|"
 	$AtkLogTxt &= StringFormat("%2s", $sType) & "|"
 	$AtkLogTxt &= StringFormat("%4d", $sGold/1000) & "K|"
 	$AtkLogTxt &= StringFormat("%4d", $sElix/1000) & "K|"
 	$AtkLogTxt &= StringFormat("%5d", $sDE) & "|"
-	$AtkLogTxt &= StringFormat("%3d", $sTrophy) & "|"
 	$AtkLogTxt &= StringFormat("%1d", $sStars) & "|"
 	$AtkLogTxt &= StringFormat("%3d", $sDamage) & "|"
 	If $g_bIsBBevent Then $AtkLogTxt &= StringRegExpReplace($g_sCGCurrentEventName, "^[^-]*-", "")

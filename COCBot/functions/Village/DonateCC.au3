@@ -554,7 +554,8 @@ Func DonateWindow($DonateButton = -1, $bOpen = True)
 	$g_iDonationWindowX = 0
 	$g_iDonationWindowY = 0
 
-	For $i = 1 To 5
+	; Oct 2026: window not found within 1 s on ~17% of opens, capacity then read at 0,0 (empty / "mm") with wrong clicks
+	For $i = 1 To 10
 		If $g_bDebugSetLog Then SetLog("Waiting DonateWindow open #" & $i, $COLOR_ACTION)
 		If _Sleep(200) Then Return
 		Local $aDonate = QuickMIS("CNX", $g_sImgDonateWindow, 325, 0, 380, 400)
@@ -567,7 +568,7 @@ Func DonateWindow($DonateButton = -1, $bOpen = True)
 			ExitLoop
 		EndIf
 	Next
-	Return True
+	Return $g_iDonationWindowX > 0
 EndFunc   ;==>DonateWindow
 
 ;DonateWindowCap(False, False)
@@ -591,6 +592,7 @@ Func DonateWindowCap(ByRef $g_bSkipDonTroops, ByRef $g_bSkipDonSpells)
 			EndIf
 		Else
 			SetLog("Error reading the Castle Troop Capacity", $COLOR_ERROR) ; log if there is read error
+			SetDebugLog("Troop cap OCR at " & $xTroop & "," & $g_iDonationWindowY + 15 & " (window " & $g_iDonationWindowX & "," & $g_iDonationWindowY & ")")
 			$g_iDonTroopsAv = 0
 			$g_iDonTroopsLimit = 0
 		EndIf

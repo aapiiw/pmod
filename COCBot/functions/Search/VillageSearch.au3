@@ -285,7 +285,13 @@ Func _VillageSearch($bTest = False, $bDoClanGames = False) ;Control for searchin
 			
 			; Coba ukur village-nya
 			Local $bMeasured = CheckZoomOut()
-			
+			; Oct 2026: 19 matched bases a night skipped (stone not found right after clouds), measure once more
+			If Not $bMeasured Then
+				If _Sleep(1000) Then Return
+				$bMeasured = CheckZoomOut()
+				If Not $bMeasured Then VillageSearchSaveImage(True)
+			EndIf
+
 			If $bMeasured Then
 				; Jika berhasil diukur (scenery dikenali) -> Tulis log Sukses & Serang!
 				SetLog($GetResourcesTXT, $COLOR_SUCCESS, "Lucida Console", 7.5)

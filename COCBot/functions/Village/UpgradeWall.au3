@@ -13,6 +13,9 @@
 ; Example .......: No
 ; ===============================================================================================================================
 
+; cost of the last wall row read in the Build menu, per account (0 = not read yet)
+Global $g_aiLastWallCost[16]
+
 Func UpgradeWall($bTest = False)
 
 	If Not $g_bAutoUpgradeWallsEnable Then Return
@@ -37,6 +40,7 @@ Func UpgradeWall($bTest = False)
 	EndIf
 	If _Sleep(50) Then Return
 	If Not $g_bRunState Then Return
+	If $GoUpgrade And Not $bTest And Not WallLootEnough() Then Return
 
 	If $GoUpgrade Then 
 		Local $iLoop = 1
@@ -91,6 +95,7 @@ Func UpgradeWallBuildMenu()
 		SetLog("No affordable wall in Build menu, skip", $COLOR_INFO)
 		Return False
 	EndIf
+	$g_aiLastWallCost[CurAccountIndex()] = Number($aList[$iRow][5])
 	SetLog("Wall from Build menu: x" & $aList[$iRow][4] & ", cost " & _NumberFormat($aList[$iRow][5]) & " " & $aList[$iRow][0], $COLOR_INFO)
 	; resource check before the wall is selected (camera move + wall window cost ~10 s): same rule as DoUpgradeWall,
 	; loot minus wall Min Save, resource type of the GUI (0 Gold, 1 Elixir, 2 Elixir then Gold).
@@ -120,7 +125,10 @@ Func UpgradeWallBuildMenu()
 	ClickP($aCoord) ; camera moves to one wall and selects it
 	If _Sleep(1500) Then Return False
 	; the upgrade button is the same for every building: never upgrade what is not a wall
-	Local $aInfo = BuildingInfo()
+	; Build menu stays open on the right: name and buttons move left, the wall name sits above 2 button rows
+	; (Oct 2026 screen: "Wall (Level 16)" at x 160-340, y 438-461, the default read at 242,477 was always empty)
+	Local $aInfo = BuildingInfo(60, 435)
+	If $aInfo[1] = "" Then $aInfo = BuildingInfo(60, 477)
 	If $aInfo[1] <> "Wall" Then
 		SetLog("Wall: selected building is '" & $aInfo[1] & "', not a wall, skip", $COLOR_WARNING)
 		ClickAway()
@@ -139,6 +147,24 @@ Func UpgradeWallBuildMenu()
 	EndIf
 	Return DoUpgradeWall($iWallCost)
 EndFunc   ;==>UpgradeWallBuildMenu
+
+; loot (village report) minus wall Min Save, before the Build menu is opened (Oct 2026: menu opened with loot under
+; Min Save when the last builder was kept for walls). Auto Adjust changes Min Save in DoUpgradeWall: no early check then.
+Func WallLootEnough()
+	If $g_bAutoAdjustSaveWall Then Return True
+	Local $iGold = Number($g_aiCurrentLoot[$eLootGold]), $iElix = Number($g_aiCurrentLoot[$eLootElixir])
+	If $iGold <= 0 And $iElix <= 0 Then Return True ; loot not read: let the Build menu check decide
+	Local $iCanGold = $g_iUpgradeWallLootType <> 1 ? $iGold - $g_iUpgradeWallMinGold : 0
+	Local $iCanElix = $g_iUpgradeWallLootType <> 0 ? $iElix - $g_iUpgradeWallMinElixir : 0
+	Local $iCost = $g_aiLastWallCost[CurAccountIndex()]
+	If $iCost < 1 Then $iCost = 1
+	If $iCanGold < $iCost And $iCanElix < $iCost Then
+		SetLog("Wall: loot after Min Save (Gold " & _NumberFormat($iCanGold) & ", Elixir " & _NumberFormat($iCanElix) & ") below wall cost " & _
+				_NumberFormat($iCost) & ", skip", $COLOR_INFO)
+		Return False
+	EndIf
+	Return True
+EndFunc   ;==>WallLootEnough
 
 Func WallUpgradeCheckBuilder($bTest = False)
 	Local $bRet = False
@@ -166,6 +192,13 @@ Func DoUpgradeWall($iSelectedWallCost = 0)
 	If Not $g_bRunState Then Return
 	Local $bCanUseElix = False, $bCanUseGold = False
 	Local $aBtnCoord[4] = [150, 500, 750, 600]
+	; selected from Build menu: buttons shifted left (Gold icon ~186,571, Upgrade More plus ~366,500)
+	If $iSelectedWallCost > 0 Then
+		$aBtnCoord[0] = 100
+		$aBtnCoord[1] = 470
+		$aBtnCoord[2] = 500
+		$aBtnCoord[3] = 640
+	EndIf
 	Local $bRet = True
 	Local $iGoldAdjust = 0, $iElixAdjust = 0
 
@@ -266,6 +299,7 @@ Func DoUpgradeWall($iSelectedWallCost = 0)
 
 		If _Sleep(50) Then Return
 		Local $iWallCost = $iSelectedWallCost > 0 ? $iSelectedWallCost : $g_aiWallCost[$aWallLevel[2]]
+		If $iWallCost < $g_aiWallCost[4] Then $bCanUseElix = False ; to level 2-4 Gold only, Elixir from level 5
 		Local $iWallCanUpgradeGold = ($bCanUseGold ? Floor($iCanUseGold / $iWallCost) : 0)
 		Local $iWallCanUpgradeElix = ($bCanUseElix ? Floor($iCanUseElix/ $iWallCost) : 0)
 		SetDebugLog("iWallCanUpgradeGold: " & $iWallCanUpgradeGold & ", iWallCanUpgradeElix : " & $iWallCanUpgradeElix)
@@ -425,7 +459,7 @@ EndFunc
 
 Func UpWallElixir($iWallCost, $iCountPlus, $UpType, $aButton)
 	Local $sDir = "", $bPlusButtonFound = False, $iCount = 1, $iCostUpgrade = 0
-	Local $aBtnCoord = [150, 500, 750, 600], $iPlusWall = 1
+	Local $aBtnCoord = [150, 470, 750, 600], $iPlusWall = 1 ; +10/+1 at y ~495-520 when the Build menu is open
 	
 	Switch $UpType 
 		Case "+10"
@@ -433,7 +467,7 @@ Func UpWallElixir($iWallCost, $iCountPlus, $UpType, $aButton)
 			$iPlusWall = 10
 		Case "+1"
 			$sDir = $g_sImgCheckWallDirUpgradeButton & "\Plus1"
-			$aBtnCoord[0] = $aButton[0] - 230
+			$aBtnCoord[0] = WallPlus1X()
 	EndSwitch
 	
 	SetLog("Try " & $UpType & " for Elix upgrade", $COLOR_ACTION)
@@ -447,7 +481,7 @@ Func UpWallElixir($iWallCost, $iCountPlus, $UpType, $aButton)
 		Else
 			If $UpType = "+10" Then ;not found +10 button, fallback to +1
 				$sDir = $g_sImgCheckWallDirUpgradeButton & "\Plus1"
-				$aBtnCoord[0] = $aButton[0] - 230
+				$aBtnCoord[0] = WallPlus1X()
 				$iPlusWall = 1
 				$iCountPlus = 10
 				SetLog("Searching +1 Button instead", $COLOR_DEBUG1)
@@ -477,7 +511,7 @@ EndFunc
 
 Func UpWallGold($iWallCost, $iCountPlus, $UpType, $aButton)
 	Local $sDir = "", $bPlusButtonFound = False, $iCount = 1, $iCostUpgrade = 0
-	Local $aBtnCoord = [150, 500, 750, 600], $iPlusWall = 1
+	Local $aBtnCoord = [150, 470, 750, 600], $iPlusWall = 1 ; +10/+1 at y ~495-520 when the Build menu is open
 	
 	Switch $UpType 
 		Case "+10"
@@ -485,7 +519,7 @@ Func UpWallGold($iWallCost, $iCountPlus, $UpType, $aButton)
 			$iPlusWall = 10
 		Case "+1"
 			$sDir = $g_sImgCheckWallDirUpgradeButton & "\Plus1"
-			$aBtnCoord[0] = $aButton[0] - 140
+			$aBtnCoord[0] = WallPlus1X()
 	EndSwitch
 	
 	If $UpType = "+10" Then
@@ -679,3 +713,9 @@ Func imglocFindWalls($walllevel, $searcharea = "DCD", $redline = "", $maxreturn 
 	EndIf
 	Return $FoundWalls
 EndFunc   ;==>imglocFindWalls
+; left edge of the +1 search: right of +10 when it is there (Plus1 can match the "+1" of "+10" and add 10 walls),
+; else x 150 (fewer than 10 walls of the level: Remove Wall | +1 | Gold upgrade on the top row, +1 at x ~248)
+Func WallPlus1X()
+	If QuickMIS("BC1", $g_sImgCheckWallDirUpgradeButton & "\Plus10", 150, 470, 750, 600) Then Return $g_iQuickMISX + 45
+	Return 150
+EndFunc   ;==>WallPlus1X

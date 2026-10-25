@@ -30,6 +30,8 @@ Global $g_hlblKing = 0, $g_hPicKingGray = 0, $g_hPicKingBlue = 0, $g_hPicKingRed
 Global $g_hlblQueen = 0, $g_hPicQueenGray = 0, $g_hPicQueenBlue = 0, $g_hPicQueenRed = 0, $g_hPicQueenGreen = 0
 Global $g_hlblWarden = 0, $g_hPicWardenGray = 0, $g_hPicWardenBlue = 0, $g_hPicWardenRed = 0, $g_hPicWardenGreen = 0
 Global $g_hlblChampion = 0, $g_hPicChampionGray = 0, $g_hPicChampionBlue = 0, $g_hPicChampionRed = 0, $g_hPicChampionGreen = 0
+Global $g_hlblPrince = 0, $g_hPicPrinceGray = 0, $g_hPicPrinceBlue = 0, $g_hPicPrinceRed = 0, $g_hPicPrinceGreen = 0
+Global $g_hlblDuke = 0, $g_hPicDukeGray = 0, $g_hPicDukeBlue = 0, $g_hPicDukeRed = 0, $g_hPicDukeGreen = 0
 Global $g_hlblLab = 0, $g_hPicLabGray = 0, $g_hPicLabRed = 0, $g_hPicLabGreen = 0, $g_hLbLLabTime = 0
 
 ; Pet House
@@ -44,37 +46,37 @@ Func CreateBottomPanel()
 	;~ Buttons
 	Local $y_bottom = 0 ; 515
 	Local $x = 10, $y = $y_bottom + 10
-	GUICtrlCreateGroup("https://mybot.run " & GetTranslatedFileIni("MBR GUI Design Bottom", "Group_01", "- freeware bot -"), $x - 5, $y - 10, 190, 100)
-		$g_hBtnStart = GUICtrlCreateButton(GetTranslatedFileIni("MBR GUI Design Bottom", "BtnStart", "Start Bot"), $x, $y + 2 +5, 90, 30)
+	GUICtrlCreateGroup("https://mybot.run", $x - 5, $y - 10, 160, 100)
+		$g_hBtnStart = GUICtrlCreateButton(GetTranslatedFileIni("MBR GUI Design Bottom", "BtnStart", "Start Bot"), $x, $y + 2 +5, 75, 30)
 			_GUICtrlSetTip(-1, GetTranslatedFileIni("MBR GUI Design Bottom", "BtnStart_Info_01", "Use this to START the bot."))
 			If $g_bBtnColor then GUICtrlSetBkColor(-1, 0x5CAD85)
 			GUICtrlSetState(-1, $GUI_DISABLE)
-		$g_hBtnStop = GUICtrlCreateButton(GetTranslatedFileIni("MBR GUI Design Bottom", "BtnStop", "Stop Bot"), -1, -1, 90, 30)
+		$g_hBtnStop = GUICtrlCreateButton(GetTranslatedFileIni("MBR GUI Design Bottom", "BtnStop", "Stop Bot"), -1, -1, 75, 30)
 			_GUICtrlSetTip(-1, GetTranslatedFileIni("MBR GUI Design Bottom", "BtnStop_Info_01", "Use this to STOP the bot (or ESC key)."))
 			If $g_bBtnColor then GUICtrlSetBkColor(-1, 0xDB4D4D)
 			GUICtrlSetState(-1, $GUI_HIDE)
-		$g_hBtnPause = GUICtrlCreateButton(GetTranslatedFileIni("MBR GUI Design Bottom", "BtnPause", "Pause"), $x + 90, -1, 90, 30)
+		$g_hBtnPause = GUICtrlCreateButton(GetTranslatedFileIni("MBR GUI Design Bottom", "BtnPause", "Pause"), $x + 75, -1, 75, 30)
 			_GUICtrlSetTip(-1, GetTranslatedFileIni("MBR GUI Design Bottom", "BtnPause_Info_01", "Use this to PAUSE all actions of the bot until you Resume (or Pause/Break key)."))
 			If $g_bBtnColor then GUICtrlSetBkColor(-1,  0xFFA500)
 			GUICtrlSetState(-1, $GUI_HIDE)
-		$g_hBtnResume = GUICtrlCreateButton(GetTranslatedFileIni("MBR GUI Design Bottom", "BtnResume", "Resume"), -1, -1, 90, 30)
+		$g_hBtnResume = GUICtrlCreateButton(GetTranslatedFileIni("MBR GUI Design Bottom", "BtnResume", "Resume"), -1, -1, 75, 30)
 			_GUICtrlSetTip(-1, GetTranslatedFileIni("MBR GUI Design Bottom", "BtnResume_Info_01", "Use this to RESUME a paused Bot (or Pause/Break key)."))
 			If $g_bBtnColor then GUICtrlSetBkColor(-1,  0xFFA500)
 			GUICtrlSetState(-1, $GUI_HIDE)
-		$g_hBtnSearchMode = GUICtrlCreateButton(GetTranslatedFileIni("MBR GUI Design Bottom", "BtnSearchMode", "Search Mode"), -1, -1, 90, 30)
+		$g_hBtnSearchMode = GUICtrlCreateButton(GetTranslatedFileIni("MBR GUI Design Bottom", "BtnSearchMode", "Search Mode"), -1, -1, 75, 30)
 			_GUICtrlSetTip(-1, GetTranslatedFileIni("MBR GUI Design Bottom", "BtnSearchMode_Info_01", "Does not attack. Searches for a Village that meets conditions."))
 			GUICtrlSetOnEvent(-1, "btnSearchMode")
 			If $g_bBtnColor then GUICtrlSetBkColor(-1,  0xFFA500)
 			GUICtrlSetState(-1, $GUI_DISABLE)
-		$g_hBtnMakeScreenshot = GUICtrlCreateButton(GetTranslatedFileIni("MBR GUI Design Bottom", "BtnMakeScreenshot", "Photo"), $x , $y + 40, 40, -1)
+		$g_hBtnMakeScreenshot = GUICtrlCreateButton(GetTranslatedFileIni("MBR GUI Design Bottom", "BtnMakeScreenshot", "Photo"), $x , $y + 40, 35, -1)
 			_GUICtrlSetTip(-1, GetTranslatedFileIni("MBR GUI Design Bottom", "BtnMakeScreenshot_Info_01", "Click here to take a snaphot of your village and save it to a file."))
 			If $g_bBtnColor then GUICtrlSetBkColor(-1, 0x5CAD85)
-		$g_hBtnHide = GUICtrlCreateButton(GetTranslatedFileIni("MBR GUI Design Bottom", "BtnHide", "Hide"), $x + 40, $y + 40, 50, -1)
+		$g_hBtnHide = GUICtrlCreateButton(GetTranslatedFileIni("MBR GUI Design Bottom", "BtnHide", "Hide"), $x + 35, $y + 40, 40, -1)
 			_GUICtrlSetTip(-1, GetTranslatedFileIni("MBR GUI Design Bottom", "BtnHide_Info_01", "Use this to move the Android Window out of sight.") & @CRLF & _
 							   GetTranslatedFileIni("MBR GUI Design Bottom", "BtnHide_Info_02", "(Not minimized, but hidden)"))
 			If $g_bBtnColor Then GUICtrlSetBkColor(-1, 0x22C4F5)
 			GUICtrlSetState(-1, $GUI_DISABLE)
-		$g_hBtnEmbed = GUICtrlCreateButton(GetTranslatedFileIni("MBR GUI Design Bottom", "BtnEmbed", "Dock"), $x + 90, $y + 40, 90, -1)
+		$g_hBtnEmbed = GUICtrlCreateButton(GetTranslatedFileIni("MBR GUI Design Bottom", "BtnEmbed", "Dock"), $x + 75, $y + 40, 75, -1)
 			_GUICtrlSetTip(-1, GetTranslatedFileIni("MBR GUI Design Bottom", "BtnEmbed_Info_01", "Use this to embed the Android Window into Bot."))
 			If $g_bBtnColor Then GUICtrlSetBkColor(-1, 0x22C4F5)
 			GUICtrlSetState(-1, $GUI_DISABLE)
@@ -94,7 +96,7 @@ Func CreateBottomPanel()
 
 	If $g_bAndroidAdbScreencap Then chkBackground() ; update background mode GUI
 
-    $g_hPicArrowLeft = _GUICtrlCreateIcon($g_sLibIconPath, $eIcnArrowLeft, $x + 269, $y + 40, 16, 16)
+    $g_hPicArrowLeft = _GUICtrlCreateIcon($g_sLibIconPath, $eIcnArrowLeft, $x + 273, $y + 40, 16, 16)
 	  $sTxtTip = GetTranslatedFileIni("MBR GUI Design Bottom", "GrpVillage_Info_01", "Switch between village info and stats")
 	  _GUICtrlSetTip(-1, $sTxtTip)
     $g_hPicArrowRight = _GUICtrlCreateIcon($g_sLibIconPath, $eIcnArrowRight, $x + 247 + 198, $y + 40, 16, 16)
@@ -103,100 +105,50 @@ Func CreateBottomPanel()
 
 
 
-;New section for royal and lab status
-	Local $x = 199, $y = $y_bottom
+;New section for royal and lab status: K Q P W C D shields, Lab and Pet House icons with remaining time (Mod PH layout)
+	Local $x = 174, $y = $y_bottom + 5
 		$sTxtTip = GetTranslatedFileIni("MBR GUI Design Bottom", "GrpStatus_Info_01", "Gray - N/A" & @CRLF & "Green - Ready" & @CRLF & "Blue - Healing" & @CRLF & "Red - Upgrading")
-		$g_hPicKingGray = _GUICtrlCreateIcon($g_sLibIconPath, $eIcnGrayShield, $x, $y, 16, 16)
-			_GUICtrlSetTip(-1, $sTxtTip)
-		$g_hPicKingBlue = _GUICtrlCreateIcon($g_sLibIconPath, $eIcnBlueShield, $x, $y, 16, 16)
-			_GUICtrlSetTip(-1, $sTxtTip)
-			GUICtrlSetState(-1, $GUI_HIDE)
-		$g_hPicKingGreen = _GUICtrlCreateIcon($g_sLibIconPath, $eIcnGreenShield, $x, $y, 16, 16)
-			_GUICtrlSetTip(-1, $sTxtTip)
-			GUICtrlSetState(-1, $GUI_HIDE)
-		$g_hPicKingRed = _GUICtrlCreateIcon($g_sLibIconPath, $eIcnRedShield, $x, $y, 16, 16)
-			_GUICtrlSetTip(-1, $sTxtTip)
-			GUICtrlSetState(-1, $GUI_HIDE)
-		$g_hlblKing = GUICtrlCreateLabel(GetTranslatedFileIni("MBR Global GUI Design Names Troops", "King_K", "K"), $x + 4, $y + 21, 10, 16, $SS_LEFT)
-			_GUICtrlSetTip(-1, $sTxtTip)
-
+		BottomHeroShield($g_hPicKingGray, $g_hPicKingBlue, $g_hPicKingGreen, $g_hPicKingRed, $g_hlblKing, GetTranslatedFileIni("MBR Global GUI Design Names Troops", "King_K", "K"), $x, $y, $sTxtTip)
 	$x += 19
-		$g_hPicQueenGray = _GUICtrlCreateIcon($g_sLibIconPath, $eIcnGrayShield, $x, $y, 16, 16 )
-	  		_GUICtrlSetTip(-1, $sTxtTip)
-		$g_hPicQueenBlue = _GUICtrlCreateIcon($g_sLibIconPath, $eIcnBlueShield, $x, $y, 16, 16 )
-	  		_GUICtrlSetTip(-1, $sTxtTip)
-			GUICtrlSetState(-1, $GUI_HIDE)
-		$g_hPicQueenGreen = _GUICtrlCreateIcon($g_sLibIconPath, $eIcnGreenShield, $x, $y, 16, 16 )
-	  		_GUICtrlSetTip(-1, $sTxtTip)
-			GUICtrlSetState(-1, $GUI_HIDE)
-		$g_hPicQueenRed = _GUICtrlCreateIcon($g_sLibIconPath, $eIcnRedShield, $x, $y, 16, 16 )
-	  		_GUICtrlSetTip(-1, $sTxtTip)
-			GUICtrlSetState(-1, $GUI_HIDE)
-		$g_hlblQueen = GUICtrlCreateLabel(GetTranslatedFileIni("MBR Global GUI Design Names Troops", "Queen_Q", "Q"), $x + 4, $y + 21, 10, 16, $SS_LEFT)
-	  		_GUICtrlSetTip(-1, $sTxtTip)
-
+		BottomHeroShield($g_hPicQueenGray, $g_hPicQueenBlue, $g_hPicQueenGreen, $g_hPicQueenRed, $g_hlblQueen, GetTranslatedFileIni("MBR Global GUI Design Names Troops", "Queen_Q", "Q"), $x, $y, $sTxtTip)
 	$x += 19
-		$g_hPicWardenGray = _GUICtrlCreateIcon($g_sLibIconPath, $eIcnGrayShield, $x, $y, 16, 16 )
-	  		_GUICtrlSetTip(-1, $sTxtTip)
-		$g_hPicWardenBlue = _GUICtrlCreateIcon($g_sLibIconPath, $eIcnBlueShield, $x, $y, 16, 16 )
-	  		_GUICtrlSetTip(-1, $sTxtTip)
-			GUICtrlSetState(-1, $GUI_HIDE)
-		$g_hPicWardenGreen = _GUICtrlCreateIcon($g_sLibIconPath, $eIcnGreenShield, $x, $y, 16, 16 )
-	  		_GUICtrlSetTip(-1, $sTxtTip)
-			GUICtrlSetState(-1, $GUI_HIDE)
-		$g_hPicWardenRed = _GUICtrlCreateIcon($g_sLibIconPath, $eIcnRedShield, $x, $y, 16, 16 )
-	  		_GUICtrlSetTip(-1, $sTxtTip)
-			GUICtrlSetState(-1, $GUI_HIDE)
-		$g_hlblWarden = GUICtrlCreateLabel(GetTranslatedFileIni("MBR Global GUI Design Names Troops", "Warden_W", "W"), $x + 4, $y + 21, 10, 16, $SS_LEFT)
-	  		_GUICtrlSetTip(-1, $sTxtTip)
-
+		BottomHeroShield($g_hPicPrinceGray, $g_hPicPrinceBlue, $g_hPicPrinceGreen, $g_hPicPrinceRed, $g_hlblPrince, GetTranslatedFileIni("MBR Global GUI Design Names Troops", "Prince_P", "P"), $x, $y, $sTxtTip)
 	$x += 19
-		$g_hPicChampionGray = _GUICtrlCreateIcon($g_sLibIconPath, $eIcnGrayShield, $x, $y, 16, 16 )
-	  		_GUICtrlSetTip(-1, $sTxtTip)
-		$g_hPicChampionBlue = _GUICtrlCreateIcon($g_sLibIconPath, $eIcnBlueShield, $x, $y, 16, 16 )
-	  		_GUICtrlSetTip(-1, $sTxtTip)
-			GUICtrlSetState(-1, $GUI_HIDE)
-		$g_hPicChampionGreen = _GUICtrlCreateIcon($g_sLibIconPath, $eIcnGreenShield, $x, $y, 16, 16 )
-	  		_GUICtrlSetTip(-1, $sTxtTip)
-			GUICtrlSetState(-1, $GUI_HIDE)
-		$g_hPicChampionRed = _GUICtrlCreateIcon($g_sLibIconPath, $eIcnRedShield, $x, $y, 16, 16 )
-	  		_GUICtrlSetTip(-1, $sTxtTip)
-			GUICtrlSetState(-1, $GUI_HIDE)
-		$g_hlblChampion = GUICtrlCreateLabel(GetTranslatedFileIni("MBR Global GUI Design Names Troops", "Champion_C", "C"), $x + 4, $y + 21, 10, 16, $SS_LEFT)
-	  		_GUICtrlSetTip(-1, $sTxtTip)
-
+		BottomHeroShield($g_hPicWardenGray, $g_hPicWardenBlue, $g_hPicWardenGreen, $g_hPicWardenRed, $g_hlblWarden, GetTranslatedFileIni("MBR Global GUI Design Names Troops", "Warden_W", "W"), $x, $y, $sTxtTip)
 	$x += 19
-		$sTxtTip = GetTranslatedFileIni("MBR GUI Design Bottom","GrpStatus_Info_02", "Gray - N/A" & @CRLF & "Green - Lab is Running" & @CRLF & "Red - Lab Has Stopped")
-		$g_hPicLabGray = _GUICtrlCreateIcon($g_sLibIconPath, $eIcnGrayShield, $x , $y, 16, 16 )
-	  		_GUICtrlSetTip(-1, $sTxtTip)
-		$g_hPicLabGreen = _GUICtrlCreateIcon($g_sLibIconPath, $eIcnGreenShield, $x, $y, 16, 16 )
-	  		_GUICtrlSetTip(-1, $sTxtTip)
+		BottomHeroShield($g_hPicChampionGray, $g_hPicChampionBlue, $g_hPicChampionGreen, $g_hPicChampionRed, $g_hlblChampion, GetTranslatedFileIni("MBR Global GUI Design Names Troops", "Champion_C", "C"), $x, $y, $sTxtTip)
+	$x += 19
+		BottomHeroShield($g_hPicDukeGray, $g_hPicDukeBlue, $g_hPicDukeGreen, $g_hPicDukeRed, $g_hlblDuke, GetTranslatedFileIni("MBR Global GUI Design Names Troops", "Duke_D", "D"), $x, $y, $sTxtTip)
+
+	; Lab display (Gray, Green, Red created one after the other: SwitchAccountVariablesReload loops over their IDs)
+	Local $x = 174, $y = $y_bottom + 43
+		$sTxtTip = GetTranslatedFileIni("MBR GUI Design Bottom", "GrpStatus_Info_02", "Gray - N/A" & @CRLF & "Green - Lab is Running" & @CRLF & "Red - Lab Has Stopped")
+		$g_hPicLabGray = _GUICtrlCreateIcon($g_sLibIconPath, $eIcnLaboratory, $x - 1, $y - 1, 18, 18)
+			_GUICtrlSetTip(-1, $sTxtTip)
+		$g_hPicLabGreen = _GUICtrlCreateIcon($g_sLibIconPath, $eIcnLaboratory, $x - 1, $y - 1, 18, 18)
+			_GUICtrlSetTip(-1, $sTxtTip)
 			GUICtrlSetState(-1, $GUI_HIDE)
-		$g_hPicLabRed = _GUICtrlCreateIcon($g_sLibIconPath, $eIcnRedShield, $x, $y, 16, 16 )
-	  		_GUICtrlSetTip(-1, $sTxtTip)
+		$g_hPicLabRed = _GUICtrlCreateIcon($g_sLibIconPath, $eIcnLaboratory, $x - 1, $y - 1, 18, 18)
+			_GUICtrlSetTip(-1, $sTxtTip)
 			GUICtrlSetState(-1, $GUI_HIDE)
-		$g_hlblLab = GUICtrlCreateLabel(GetTranslatedFileIni("MBR GUI Design Bottom", "Lab_L", "L"), $x + 4, $y + 21, 10, 16, $SS_LEFT)
-	  		_GUICtrlSetTip(-1, $sTxtTip)
-		$g_hLbLLabTime = GUICtrlCreateLabel("", $x - 72, $y + 37, 50, 16, $SS_LEFT)
+		$g_hlblLab = GUICtrlCreateLabel(GetTranslatedFileIni("MBR GUI Design Bottom", "Lab_L", "L"), $x + 4, $y + 17, 10, 16, $SS_LEFT)
+			_GUICtrlSetTip(-1, $sTxtTip)
+		$g_hLbLLabTime = GUICtrlCreateLabel("", $x + 20, $y + 2, 70, 16, $SS_LEFT)
 
 	; Pet House display
-	Local $x = 199, $y = $y_bottom + 52
-		$sTxtTip = GetTranslatedFileIni("MBR GUI Design Bottom","GrpStatus_Info_02", "Gray - N/A" & @CRLF & "Green - Pet House is Running" & @CRLF & "Red - Pet House Has Stopped")
-		$g_hPicPetGray = _GUICtrlCreateIcon($g_sLibIconPath, $eIcnGrayShield, $x , $y, 16, 16 )
-	  		_GUICtrlSetTip(-1, $sTxtTip)
-		$g_hPicPetGreen = _GUICtrlCreateIcon($g_sLibIconPath, $eIcnGreenShield, $x, $y, 16, 16 )
-	  		_GUICtrlSetTip(-1, $sTxtTip)
+	Local $x = 174, $y = $y_bottom + 76
+		$sTxtTip = GetTranslatedFileIni("MBR GUI Design Bottom", "GrpStatus_Info_03", "Gray - N/A" & @CRLF & "Green - Pet House is Running" & @CRLF & "Red - Pet House Has Stopped")
+		$g_hPicPetGray = _GUICtrlCreateIcon($g_sLibIconPath, $eIcnPetHouse, $x - 1, $y - 1, 18, 18)
+			_GUICtrlSetTip(-1, $sTxtTip)
+		$g_hPicPetGreen = _GUICtrlCreateIcon($g_sLibIconPath, $eIcnPetHouse, $x - 1, $y - 1, 18, 18)
+			_GUICtrlSetTip(-1, $sTxtTip)
 			GUICtrlSetState(-1, $GUI_HIDE)
-		$g_hPicPetRed = _GUICtrlCreateIcon($g_sLibIconPath, $eIcnRedShield, $x, $y, 16, 16 )
-	  		_GUICtrlSetTip(-1, $sTxtTip)
+		$g_hPicPetRed = _GUICtrlCreateIcon($g_sLibIconPath, $eIcnPetHouse, $x - 1, $y - 1, 18, 18)
+			_GUICtrlSetTip(-1, $sTxtTip)
 			GUICtrlSetState(-1, $GUI_HIDE)
-		$g_hlblPet = GUICtrlCreateLabel(GetTranslatedFileIni("MBR GUI Design Bottom", "Pet_P", "P"), $x + 4, $y + 21, 10, 16, $SS_LEFT)
-	  		_GUICtrlSetTip(-1, $sTxtTip)
-		$g_hLbLPetTime = GUICtrlCreateLabel("", $x + 20, $y + 2, 50, 16, $SS_LEFT)
-
-
-
-
+		$g_hlblPet = GUICtrlCreateLabel(GetTranslatedFileIni("MBR GUI Design Bottom", "Pet_P", "P"), $x + 4, $y + 17, 10, 16, $SS_LEFT)
+			_GUICtrlSetTip(-1, $sTxtTip)
+		$g_hLbLPetTime = GUICtrlCreateLabel("", $x + 20, $y + 2, 70, 16, $SS_LEFT)
 
    ;~ Village
    Local $x = 295, $y = $y_bottom + 20
@@ -253,3 +205,20 @@ Func CreateBottomPanel()
    GUICtrlCreateGroup("", -99, -99, 1, 1)
 
 EndFunc   ;==>CreateBottomPanel
+
+; one hero status shield (Gray shown, Blue / Green / Red hidden) and its letter below
+Func BottomHeroShield(ByRef $hGray, ByRef $hBlue, ByRef $hGreen, ByRef $hRed, ByRef $hLbl, $sLetter, $x, $y, $sTip)
+	$hGray = _GUICtrlCreateIcon($g_sLibIconPath, $eIcnGrayShield, $x, $y, 16, 16)
+	_GUICtrlSetTip(-1, $sTip)
+	$hBlue = _GUICtrlCreateIcon($g_sLibIconPath, $eIcnBlueShield, $x, $y, 16, 16)
+	_GUICtrlSetTip(-1, $sTip)
+	GUICtrlSetState(-1, $GUI_HIDE)
+	$hGreen = _GUICtrlCreateIcon($g_sLibIconPath, $eIcnGreenShield, $x, $y, 16, 16)
+	_GUICtrlSetTip(-1, $sTip)
+	GUICtrlSetState(-1, $GUI_HIDE)
+	$hRed = _GUICtrlCreateIcon($g_sLibIconPath, $eIcnRedShield, $x, $y, 16, 16)
+	_GUICtrlSetTip(-1, $sTip)
+	GUICtrlSetState(-1, $GUI_HIDE)
+	$hLbl = GUICtrlCreateLabel($sLetter, $x + 4, $y + 21, 10, 16, $SS_LEFT)
+	_GUICtrlSetTip(-1, $sTip)
+EndFunc   ;==>BottomHeroShield

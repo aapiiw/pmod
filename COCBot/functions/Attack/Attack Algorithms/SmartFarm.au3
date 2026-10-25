@@ -338,6 +338,11 @@ Func SetSlotSpecialTroops()
 	SetDebugLog("SetSlotSpecialTroops() Minion Prince Slot: " & $g_iMinionPSlot)
 	SetDebugLog("SetSlotSpecialTroops() Dargon Duke Slot: " & $g_iDukeSlot)
 	SetDebugLog("SetSlotSpecialTroops() Clan Castle Slot: " & $g_iClanCastleSlot)
+	; heroes on the attack bar are ready: green bottom shield
+	Local $aiSlot[6] = [$g_iKingSlot, $g_iQueenSlot, $g_iMinionPSlot, $g_iWardenSlot, $g_iChampionSlot, $g_iDukeSlot]
+	For $i = 0 To 5
+		If $aiSlot[$i] >= 0 Then HeroShieldShow($i, 1)
+	Next
 
 EndFunc ;==>SetSlotSpecialTroops
 
