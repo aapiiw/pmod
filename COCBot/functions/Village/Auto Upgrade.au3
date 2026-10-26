@@ -39,11 +39,10 @@ Func AutoUpgradeCheckResource()
 		Return False
 	EndIf
 	
-	;Check if free builder is goblin builder
-	If $g_iFreeBuilderCount = 1 And Not _ColorCheck(_GetPixelColor(548, 606, True), Hex(0xD79146, 6), 20, Default, "AutoUpgradeCheckBuilder") Then
-		SetLog("AutoUpgradeCheckBuilder, Free Builder = 1, Goblin Builder!", $COLOR_DEBUG2)
-		$g_iFreeBuilderCount = 0
-		Return False
+	; event Goblin Builder (gems) counted in the Build menu counter: not used
+	If GoblinBuilderAdjust($g_iFreeBuilderCount, $g_iTotalBuilderCount, "MenuBuilder") Then
+		SetLog("Goblin Builder not used, real free builder: " & $g_iFreeBuilderCount, $COLOR_DEBUG2)
+		If $g_iFreeBuilderCount = 0 Then Return False
 	EndIf
 	
 	; loot shown top center while the menu is open: read again once when it is not read (menu still opening)

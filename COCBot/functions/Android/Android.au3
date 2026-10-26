@@ -3012,16 +3012,20 @@ Func AndroidminitouchClickDrag($x1, $y1, $x2, $y2, $wasRunState = Default, $bSCI
 	Return SetError(0, 0, 1)
 EndFunc   ;==>AndroidMinitouchClickDrag
 
+; hold at the end before release and wait after release (ms). The Build menu list sets it shorter: hold 300 ms
+; already stops it without fling (list moved exactly the drag distance, settled 300 ms after release, adb test 26 Oct 2026)
+Global $g_iMumuDragEndMs = 1000
+
 Func AndroidMumuClickDrag($x1, $y1, $x2, $y2, $wasRunState = Default, $bSCIDSwitch = False)
 	AndroidAdbLaunchShellInstance($wasRunState)
 	
 	Execute($g_sAndroidEmulator & "AdjustClickCoordinates($x1,$y1)")
 	Execute($g_sAndroidEmulator & "AdjustClickCoordinates($x2,$y2)")
 	SetDebugLog("AndroidMumuClickDrag raw coordinates: (" & $x1 & "," & $y1 & ") to (" & $x2 & "," & $y2 & ")")
-	
+
 	Local $sleepStart = 250
 	Local $sleepMove = 10
-	Local $sleepEnd = 1000
+	Local $sleepEnd = $g_iMumuDragEndMs
 	Local $sleep = $sleepStart
 	Local $botSleep = 0
 	Local $send = ""

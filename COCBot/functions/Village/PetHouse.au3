@@ -18,7 +18,10 @@ Func PetUpgrade($bTest = False)
 		If $g_bUpgradePetsEnable[$i] Then $bAnyEnabled = True
 	Next
 	If Not $bAnyEnabled Then Return False
-	If Not $bTest And $g_sPetUpgradeTime <> "" And _DateDiff("n", _NowCalc(), $g_sPetUpgradeTime) > 0 Then
+	; saved time is a guess (a pet finished 19 h early on qiralle, 26 Oct 2026): counters just read in the Build menu
+	; (Laboratory check) showing a free Pet House win over it
+	Local $bPetFree = BuildMenuCountersFresh(False) And $g_aiBuildMenuCounter[4][0] > 0
+	If Not $bTest And Not $bPetFree And $g_sPetUpgradeTime <> "" And _DateDiff("n", _NowCalc(), $g_sPetUpgradeTime) > 0 Then
 		SetLog("Pet upgrade in progress, next check after " & $g_sPetUpgradeTime, $COLOR_INFO)
 		Return False
 	EndIf
@@ -86,7 +89,8 @@ Func PetUpgrade($bTest = False)
 		Return True
 	EndIf
 
-	If Not ClickB("UpgradePet") Then Click(625, 545, 1, 0, "Upgrade " & $sPet)
+	; DE Confirm button only (area of "UpgradePets"): the Hammer of Heroes button is left of it
+	If Not ClickB("UpgradePets", "UpgradePet*") Then Click(625, 545, 1, 0, "Upgrade " & $sPet)
 	If _Sleep(1000) Then Return False
 	If isGemOpen(True) Then
 		SetLog($sPet & " upgrade failed, gem window popped up", $COLOR_ERROR)

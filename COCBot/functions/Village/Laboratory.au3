@@ -316,8 +316,14 @@ Func CheckIfLabIdle($bDebug = False)
 				SetLog("CheckIfLabIdle: Lab is Working on Upgrade", $COLOR_SUCCESS)
 				$bRet = False
 			Case $iLab = 1 And $iLabMax = 2
-				SetLog("CheckIfLabIdle: Lab is Working on Upgrade", $COLOR_SUCCESS)
-				$bRet = False
+				; Goblin Researcher event (gems) is the 2nd slot. Goblin icon: the free slot is the goblin, not used;
+				; lab icon: the lab is free (goblin busy)
+				If IsGoblinCounter("MainLab") Then
+					SetLog("CheckIfLabIdle: Lab is Working on Upgrade, Goblin Researcher not used", $COLOR_SUCCESS)
+					$bRet = False
+				Else
+					SetLog("CheckIfLabIdle: Lab is Idle (Goblin Researcher busy)", $COLOR_DEBUG1)
+				EndIf
 			Case $iLab = 1 And $iLabMax >= 1
 				SetLog("CheckIfLabIdle: Lab is Idle", $COLOR_DEBUG1)
 				$bRet = True

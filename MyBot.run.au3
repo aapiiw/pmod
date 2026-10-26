@@ -1186,7 +1186,8 @@ Func CommonRoutine($RoutineType = Default)
 		Case "Idle"
 			Local $aRndFuncList[16] = ['Collect', 'CollectLootCart', 'TreasuryCollect', 'CleanYard', 'CollectCookie', 'UseFreeMagic', 'RequestCC', 'DailyChallenge', 'CollectFreeMagicItems', 'Laboratory', 'UpgradeHeroes', 'UpgradeBuilding', 'AutoUpgrade', 'UpgradeWall', 'UpgradeLow', 'BuilderBase']
 		Case "NoClanGamesEvent"
-			Local $aRndFuncList[10] = ['RequestCC', 'DailyChallenge', 'CollectFreeMagicItems', 'Laboratory', 'CollectCCGold', 'UpgradeHeroes', 'UpgradeBuilding', 'AutoUpgrade', 'UpgradeWall', 'UpgradeLow']
+			; no CollectCCGold: FirstCheck just collected it (2nd run found < 2000 gold, ~7 s)
+			Local $aRndFuncList[9] = ['RequestCC', 'DailyChallenge', 'CollectFreeMagicItems', 'Laboratory', 'UpgradeHeroes', 'UpgradeBuilding', 'AutoUpgrade', 'UpgradeWall', 'UpgradeLow']
 	EndSwitch
 	
 	SetLog($RoutineType & " Func List:", $COLOR_SUCCESS)

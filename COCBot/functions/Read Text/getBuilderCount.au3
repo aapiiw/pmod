@@ -23,6 +23,7 @@ Func getBuilderCount($bSuppressLog = False, $bBuilderBase = False)
 		Else
 			$g_iFreeBuilderCount = Int($aGetBuilders[0]) ; update global values
 			$g_iTotalBuilderCount = Int($aGetBuilders[1])
+			GoblinBuilderAdjust($g_iFreeBuilderCount, $g_iTotalBuilderCount, "Main")
 		EndIf
 		$g_iGfxErrorCount = 0
 		$bRet = True
@@ -47,3 +48,30 @@ Func getBuilderCount($bSuppressLog = False, $bBuilderBase = False)
 	
 	Return $bRet
 EndFunc   ;==>getBuilderCount
+
+; Goblin Builder (event, gems): never used. The counter shows the goblin (icon + goblin in free/total, 1/7) only while it
+; is the free one; with a real builder free it shows the builder icon and real builders only (1/6, qiralle 26 Oct 2026).
+; Goblin icon: free and total lowered by 1. Returns True when lowered
+Func GoblinBuilderAdjust(ByRef $iFree, ByRef $iTotal, $sWhere)
+	If $iTotal < 2 Or Not IsGoblinCounter($sWhere) Then Return False
+	$iFree = _Max(0, $iFree - 1)
+	$iTotal -= 1
+	SetDebugLog("Goblin Builder not counted, real builders: " & $iFree & "/" & $iTotal)
+	Return True
+EndFunc   ;==>GoblinBuilderAdjust
+
+; True when the counter icon is a goblin face (Goblin Builder / Goblin Researcher is the free slot).
+; Colors from qiralle, 26 Oct 2026 (same on every Build menu tab)
+Func IsGoblinCounter($sWhere)
+	Switch $sWhere
+		Case "Main" ; main screen builder counter icon (builder: FCB15B / 293110)
+			Return _ColorCheck(_GetPixelColor(771, 528, True), Hex(0x929431, 6), 25) And _ColorCheck(_GetPixelColor(785, 540, True), Hex(0xFFBB71, 6), 25)
+		Case "MainLab" ; main screen lab counter icon, right of the builder counter
+			Return _ColorCheck(_GetPixelColor(817, 529, True), Hex(0x849834, 6), 25) And _ColorCheck(_GetPixelColor(831, 541, True), Hex(0xFFB96F, 6), 25)
+		Case "MenuBuilder" ; Build menu tab 1 icon (builder: DD9548 / F7C294)
+			Return _ColorCheck(_GetPixelColor(548, 606, True), Hex(0xFFFF72, 6), 25) And _ColorCheck(_GetPixelColor(545, 612, True), Hex(0xDFF555, 6), 25)
+		Case "MenuLab" ; Build menu tab 2 icon
+			Return _ColorCheck(_GetPixelColor(634, 606, True), Hex(0xF4FF6A, 6), 25) And _ColorCheck(_GetPixelColor(631, 612, True), Hex(0x869233, 6), 25)
+	EndSwitch
+	Return False
+EndFunc   ;==>IsGoblinCounter

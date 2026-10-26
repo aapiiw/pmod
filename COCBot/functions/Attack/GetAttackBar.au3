@@ -300,6 +300,7 @@ Func GetAttackBar($bRemaining = False, $pMatchMode = $DB, $bDebug = False)
 	#comments-end
 
 	Local $aFinalAttackBar[0][9]
+	If $bRemaining Then $g_iRemainSiege = -1
 	For $i = 0 To UBound($aAttackBar) - 1
 		Local $bRemoved = False
 		If Not $g_bRunState Then Return
@@ -312,6 +313,7 @@ Func GetAttackBar($bRemaining = False, $pMatchMode = $DB, $bDebug = False)
 					$aAttackBar[$i][4] = 1
 					SetDebugLog("GetAttackBar(): Special Troop:  " & GetTroopName(TroopIndexLookup($aAttackBar[$i][0], "", True)) & " deploy failed?")
 					UpdateSpecialTroops(TroopIndexLookup($aAttackBar[$i][0], "", True), False)
+					If StringRegExp($aAttackBar[$i][0], $sKeepSieges, 0) Then $g_iRemainSiege = TroopIndexLookup($aAttackBar[$i][0], "", True)
 				Else
 					UpdateSpecialTroops(TroopIndexLookup($aAttackBar[$i][0], "", True), True)
 					SetDebugLog("GetAttackBar(): Special Troop:  " & GetTroopName(TroopIndexLookup($aAttackBar[$i][0], "", True)) & " deployed successfully")

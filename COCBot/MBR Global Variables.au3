@@ -1627,6 +1627,7 @@ Global $g_bFullArmy = False ;Check for full army or not
 Global $g_iKingSlot = -1, $g_iQueenSlot = -1, $g_iWardenSlot = -1, $g_iChampionSlot = -1, $g_iMinionPSlot = -1, $g_iDukeSlot, $g_iClanCastleSlot = -1
 Global $g_iTotalAttackSlot = 10, $g_bDraggedAttackBar = False ; Slot11+
 Global $g_iSiegeLevel = 1
+Global $g_iRemainSiege = -1 ; siege still on the attack bar at REMAIN (first drop failed), dropped again by CSV REMAIN
 
 ; Attack - Heroes
 Global $g_iHeroWaitAttackNoBit[$g_iModeCount][$eHeroCount] ; Heroes wait status for attack

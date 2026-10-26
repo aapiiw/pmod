@@ -313,6 +313,12 @@ Func ParseAttackCSV($debug = False)
 											EndIf
 										Next
 									Next
+									; siege still on the bar (first drop missed, ~1 of 8 attacks in Oct 2026 logs): drop it now
+									If $g_iRemainSiege >= $eWallW And $g_iRemainSiege - $eWallW < UBound($g_asSiegeMachineShortNames) Then
+										Setlog("Drop Remaining " & GetTroopName($g_iRemainSiege), $COLOR_DEBUG)
+										DropTroopFromINI($value1, $index1, $index2, $indexArray, 1, 1, $g_asSiegeMachineShortNames[$g_iRemainSiege - $eWallW], $delaypoints1, $delaypoints2, $delaydrop1, $delaydrop2, $sleepdrop1, $sleepdrop2, $debug)
+										$g_iRemainSiege = -1
+									EndIf
 								EndIf
 							Else
 								DropTroopFromINI($value1, $index1, $index2, $indexArray, $qty1, $qty2, $value4, $delaypoints1, $delaypoints2, $delaydrop1, $delaydrop2, $sleepdrop1, $sleepdrop2, $debug)

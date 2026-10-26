@@ -626,7 +626,7 @@ Func GetBuildingTypeBB($sUpgrades = "")
 	Next
 	
 	If $sUpgrades = "Air Bombs" Then $sUpgradeType = "Defenses"
-	If $sUpgrades = "Gold Mine" Then $sUpgradeType = "Resources"
+	If $sUpgrades = "Gold Mine" Or $sUpgrades = "Gem Mine" Then $sUpgradeType = "Resources"
 	If $sUpgrades = "Giant Cannon" Then $sUpgradeType = "Defenses"
 	
 	If $g_bDebugSetLog Then SetLog("Found UpgradeType : " & $sUpgradeType, $COLOR_DEBUG1)

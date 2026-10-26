@@ -32,25 +32,6 @@ Func CheckTombs()
 	EndIf
 EndFunc   ;==>CheckTombs
 
-Func CleanYardCheckBuilder($bTest = False)
-	Local $bRet = False
-	getBuilderCount(True) ;check if we have available builder
-	If $bTest Then $g_iFreeBuilderCount = 1
-	If $g_iFreeBuilderCount > 0 Then 
-		$bRet = True
-		If $g_iFreeBuilderCount = 1 Then 
-			If _ColorCheck(_GetPixelColor(413, 43, True), Hex(0xFFAD62, 6), 20, Default, "CleanYardCheckBuilder") Then 
-				SetLog("CleanYardCheckBuilder, Free Builder = 1, Goblin Builder!, Return False", $COLOR_DEBUG1)
-				$bRet = False
-			EndIf
-		EndIf
-	Else
-		SetDebugLog("No More Builders available")
-	EndIf
-	SetDebugLog("Free Builder : " & $g_iFreeBuilderCount, $COLOR_DEBUG)
-	Return $bRet
-EndFunc
-
 Func CleanYard($bTest = False)
 	Local $bRet = False
 	If Not $g_bChkCleanYard And Not $g_bChkGemsBox Then Return

@@ -205,16 +205,8 @@ Func WallUpgradeCheckBuilder($bTest = False)
 	If $bTest Then
 		$bRet = True
 	Else
-		If $g_iFreeBuilderCount < 1 Then
-			$bRet = False
-		Else
-			If _ColorCheck(_GetPixelColor(785, 540, True), Hex(0xFFBC70, 6), 20, Default, "AutoUpgradeCheckBuilder") Then
-				SetLog("WallUpgradeCheckBuilder, Free Builder = 1, Goblin Builder!, Return False", $COLOR_DEBUG1)
-				$bRet = False
-			Else
-				$bRet = True
-			EndIf
-		EndIf
+		$bRet = $g_iFreeBuilderCount >= 1 ; Goblin Builder already left out by getBuilderCount
+		If Not $bRet Then SetDebugLog("WallUpgradeCheckBuilder: no free builder")
 	EndIf
 	Return $bRet
 EndFunc

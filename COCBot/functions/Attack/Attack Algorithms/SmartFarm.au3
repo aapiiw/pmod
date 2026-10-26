@@ -348,7 +348,9 @@ EndFunc ;==>SetSlotSpecialTroops
 
 Func UpdateSpecialTroops($iTroopIndex = $eCastle, $bDeployed = False)
 	
+	; only the troop read on the attack bar (all heroes were set by one siege before: wrong drop flags)
 	For $i = 0 To UBound($g_avAttackTroops) - 1
+		If $g_avAttackTroops[$i][0] <> $iTroopIndex Then ContinueLoop
 		Switch $g_avAttackTroops[$i][0]
 			Case $eCastle, $eWallW, $eBattleB, $eStoneS, $eSiegeB, $eLogL, $eFlameF, $eBattleD, $eTroopL, $eSkyW
 				SetDebugLog("UpdateSpecialTroops() CC/Siege Dropped: " & String($bDeployed))

@@ -369,10 +369,13 @@ Func ReadBuildMenuCounters($bBB = $g_bBuildMenuBB)
 		SetDebugLog("BB Build menu counters, Builder:" & $g_aiBuildMenuCounter[1][0] & "/" & $g_aiBuildMenuCounter[1][1] & ", Star Lab:" & $g_aiBuildMenuCounter[2][0] & "/" & $g_aiBuildMenuCounter[2][1])
 		Return
 	EndIf
-	; free builder is the event Goblin Builder (same check as dev AutoUpgradeCheckResource): do not count it
-	If $g_aiBuildMenuCounter[1][0] = 1 And Not _ColorCheck(_GetPixelColor(548, 606, True), Hex(0xD79146, 6), 20, Default, "BuildMenu Goblin Builder") Then
-		SetDebugLog("Build menu: free builder is Goblin Builder, not counted")
-		$g_aiBuildMenuCounter[1][0] = 0
+	; event Goblin Builder / Goblin Researcher (gems): not counted
+	If $g_aiBuildMenuCounter[1][1] > 0 Then GoblinBuilderAdjust($g_aiBuildMenuCounter[1][0], $g_aiBuildMenuCounter[1][1], "MenuBuilder")
+	; lab: goblin icon = only the goblin is free (lab icon with 1/2: the lab is free, goblin busy)
+	If $g_aiBuildMenuCounter[2][1] > 1 And IsGoblinCounter("MenuLab") Then
+		$g_aiBuildMenuCounter[2][0] = _Max(0, $g_aiBuildMenuCounter[2][0] - 1)
+		$g_aiBuildMenuCounter[2][1] -= 1
+		SetDebugLog("Build menu: Goblin Researcher not counted")
 	EndIf
 	If $g_aiBuildMenuCounter[1][1] > 0 Then
 		$g_iFreeBuilderCount = $g_aiBuildMenuCounter[1][0]
@@ -674,16 +677,23 @@ EndFunc   ;==>BuildMenuRowTime
 
 ; drags inside the list (slow enough to not fling, start point between texts so no row is clicked), about 7 rows
 Func BuildMenuScrollDown()
-	ClickDrag(680, 545, 680, 125, 300)
+	BuildMenuDrag(680, 545, 680, 125)
 	$g_iBuildMenuPage += 1
-	If _Sleep(700) Then Return
+	If _Sleep(200) Then Return
 EndFunc   ;==>BuildMenuScrollDown
 
 Func BuildMenuScrollUp()
-	ClickDrag(680, 125, 680, 545, 300)
+	BuildMenuDrag(680, 125, 680, 545)
 	If $g_iBuildMenuPage > 1 Then $g_iBuildMenuPage -= 1
-	If _Sleep(700) Then Return
+	If _Sleep(200) Then Return
 EndFunc   ;==>BuildMenuScrollUp
+
+; list drag with short end hold (~1.8 s less per page than the default 1000 ms hold + 700 ms wait)
+Func BuildMenuDrag($x1, $y1, $x2, $y2)
+	$g_iMumuDragEndMs = 300
+	ClickDrag($x1, $y1, $x2, $y2, 300)
+	$g_iMumuDragEndMs = 1000
+EndFunc   ;==>BuildMenuDrag
 
 ; read rows of current tab, scrolling down until the list does not move anymore,
 ; or (when $aStopNames is an array) as soon as all names of $aStopNames were seen.
