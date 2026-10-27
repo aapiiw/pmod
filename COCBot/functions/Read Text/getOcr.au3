@@ -57,6 +57,12 @@ Func getResourcesLoot($x_start, $y_start) ; -> Gets complete value of Gold/Elixi
 EndFunc   ;==>getResourcesLoot
 
 ;HArchH Needs to be a bit longer.  Was 75, trying 85
+; ranked battle result loot (bigger font than coc-loot), Tesseract digits, "" when not a number
+Func getResourcesLootTs($x_start, $y_start, $iWidth)
+	Local $s = getOcrAndCapture("coc-loot-ts", $x_start, $y_start, $iWidth, 24, True)
+	Return StringRegExp($s, "^\d{1,9}$") ? $s : ""
+EndFunc   ;==>getResourcesLootTs
+
 Func getResourcesLootDE($x_start, $y_start) ; -> Gets complete value of Dark Elixir after attack xxx,xxx "AttackReport"
 	Return getOcrAndCapture("coc-loot", $x_start, $y_start, 85, 22, True)
 EndFunc   ;==>getResourcesLootDE
@@ -580,17 +586,23 @@ Func getOcr(ByRef Const $_hHBitmap, $language)
 	Switch $language
 		Case "coc-buildermenu-name"
 			$sRet = OcrFromHBitmapDirect($_hHBitmap, $g_sOcrNameWhitelist, 7, $language, True)
+			; PSM 7 returns '' for short names ("Miner", "Bowler" in the Lab list, adb test 27 Oct), PSM 13 reads them
+			If StringStripWS($sRet, $STR_STRIPALL) = "" Then $sRet = OcrFromHBitmapDirect($_hHBitmap, $g_sOcrNameWhitelist, 13, $language, True)
 			$sRet = StringRegExpReplace($sRet, "\s+", " ")
 			; Koreksi otomatis huruf yang mirip pada font CoC
 			$sRet = StringReplace($sRet, "Roval", "Royal")
 			$sRet = StringReplace($sRet, "Elixik", "Elixir")
 			Return StringStripWS($sRet, $STR_STRIPLEADING + $STR_STRIPTRAILING)
 
-		Case "coc-buildcost" ; upgrade cost in Build menu, fallback when template font lost a digit
+		Case "coc-loot-ts" ; ranked battle result loot
 			Return OcrFromHBitmapDirect($_hHBitmap, "0123456789 ", 7, $language, True)
 
+		Case "coc-buildcost" ; upgrade cost in Build menu, fallback when template font lost a digit
+			; PSM 13 (raw line): PSM 7 returned '' for clean "60 000" / "10 000" (Lab DE costs, Oct 2026 screenshots)
+			Return OcrFromHBitmapDirect($_hHBitmap, "0123456789 ", 13, $language, True)
+
 		Case "coc-buildtime" ; upgrade time in Build menu ("2d 3h"), only partly readable: use BuildMenuTimeToMin() (lower bound)
-			Return OcrFromHBitmapDirect($_hHBitmap, "0123456789dhmsDHMS ", 7, $language, True)
+			Return OcrFromHBitmapDirect($_hHBitmap, "0123456789dhmsDHMSlI ", 7, $language, True)
 
 		Case "coc-magicitem-capa" ; small white "0/1" capacity on Trader items, no MBR template font matches it
 			$sRet = OcrFromHBitmapDirect($_hHBitmap, "0123456789/", 7, $language, True)

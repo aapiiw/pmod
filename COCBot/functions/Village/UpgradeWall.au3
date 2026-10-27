@@ -46,10 +46,13 @@ Func UpgradeWall($bTest = False)
 			SetDebugLog("$iLoop = " & $i & "/" & $iLoop)
 			$bWallUpgraded = -1
 			$bWallUpgraded = UpgradeWallBuildMenu()
+			; -1 = Build menu not usable. Never compare a Bool with -1: in AutoIt True = -1 is True (any non zero number),
+			; every Build menu upgrade ran the old village search after it (zone/qath 27 Oct)
+			Local $bMenuFailed = (Not IsBool($bWallUpgraded) And $bWallUpgraded = -1)
 			; old way (search wall image on village, ~30 s) only when the Build menu was not usable on the first try: after a
 			; Build menu wall upgrade, the 2nd loop (Elixir then Gold) went there 18 times in one night, 15 times not enough resource
-			If $bWallUpgraded = -1 And $i > 1 Then ExitLoop
-			If $bWallUpgraded = -1 Then $bWallUpgraded = DoUpgradeWall()
+			If $bMenuFailed And $i > 1 Then ExitLoop
+			If $bMenuFailed Then $bWallUpgraded = DoUpgradeWall()
 			If Not $bWallUpgraded Then ExitLoop
 			If _Sleep(1000) Then Return
 		Next
@@ -73,7 +76,7 @@ Func UpgradeWallBuildMenu()
 	Local $aList = BuildMenuCollect($g_sImgResourceIcon, $g_iXFindUpgrade, -22, "building", $aStop, 12, "Build menu list (wall search)")
 	Local $iRow = -1
 	For $i = 0 To UBound($aList) - 1
-		If $aList[$i][7] And ($aList[$i][3] = "Wall" Or $aList[$i][3] = "Walls") Then
+		If $aList[$i][7] And ($aList[$i][3] = "Wall" Or $aList[$i][3] = "Walls") And $aList[$i][0] <> "DE" Then
 			; a misread name gives "Wall" to another row (zone, Oct 2026: "Wall 1 200 000 Gold" was an Elixir Collector,
 			; the 1 builder kept for walls was used): the cost must be a wall cost
 			If Number($aList[$i][5]) > 0 And _ArraySearch($g_aiWallCost, Number($aList[$i][5]), 1) < 1 Then
@@ -171,8 +174,8 @@ Func WallLootEnough()
 EndFunc   ;==>WallLootEnough
 
 ; Auto Adjust Min Save for walls, capacity of one storage at this TH ($g_aiMaxStorage, max storage level = TH + 1), 4 storages:
-; TH 9+: keep 2 storages of Gold, Elixir 3.9 storages minus the wall cost (Elixir wall when Elixir reaches 3.9 storages:
-; a Min Save of 3.9 storages + wall cost was above the full capacity, Elixir was never used, qath TH16 Oct 2026)
+; TH 9+: keep 2 storages of Gold, Elixir 3.5 storages minus the wall cost (Elixir wall when Elixir reaches 3.5 storages:
+; a Min Save of 3.5 storages + wall cost was above the full capacity, Elixir was never used, qath TH16 Oct 2026)
 ; TH 7-8 rushing: Gold 2 storages, Elixir Hero Hall cost + 1 storage; TH 1-6 rushing: Gold 2, Elixir 3 storages
 Func WallAutoAdjustMinSave()
 	If Not $g_bAutoAdjustSaveWall Then Return
@@ -181,7 +184,7 @@ Func WallAutoAdjustMinSave()
 	Local $iCap = $g_aiMaxStorage[$iTH], $iGold = 0, $iElix = 0
 	If $iTH >= 9 Then
 		$iGold = Int($iCap * 2)
-		$iElix = Int($iCap * 3.9) - ($g_iLastWallCost > 0 ? $g_iLastWallCost : 0)
+		$iElix = Int($iCap * 3.5) - ($g_iLastWallCost > 0 ? $g_iLastWallCost : 0)
 	ElseIf IsTHLevelAchieved() Then
 		Return
 	ElseIf $iTH >= 7 Then
@@ -189,7 +192,7 @@ Func WallAutoAdjustMinSave()
 		$iElix = $g_aiHeroHallCost[$iTH - 7] + $iCap
 	Else
 		$iGold = $iCap * 2
-		$iElix = $iCap * 2.8
+		$iElix = $iCap * 2.5
 	EndIf
 	If $iGold = $g_iUpgradeWallMinGold And $iElix = $g_iUpgradeWallMinElixir Then Return
 	$g_iUpgradeWallMinGold = $iGold
@@ -217,18 +220,24 @@ Func DoUpgradeWall($iSelectedWallCost = 0)
 	If Not $g_bRunState Then Return
 	Local $bCanUseElix = False, $bCanUseGold = False
 	Local $aBtnCoord[4] = [150, 500, 750, 600]
-	; selected from Build menu: buttons shifted left (Gold icon ~186,571, Upgrade More plus ~366,500)
-	If $iSelectedWallCost > 0 Then
+	Local $bRet = True
+
+	WallAutoAdjustMinSave()
+	
+	; wall selected from the Build menu: loot read with the menu open. VillageReport closed the menu (checkObstacles
+	; "FullScreenWindow"), the buttons moved back to the center and Gold (x ~508) was outside the left area (zone 27 Oct)
+	If $iSelectedWallCost > 0 And IsBuildMenuOpen() Then
+		BuildMenuReadLoot(False, False)
+	Else
+		VillageReport(True, True)
+	EndIf
+	; Build menu open: buttons shifted left (Gold icon ~186,571, Upgrade More plus ~366,500)
+	If IsBuildMenuOpen() Then
 		$aBtnCoord[0] = 100
 		$aBtnCoord[1] = 470
 		$aBtnCoord[2] = 500
 		$aBtnCoord[3] = 640
 	EndIf
-	Local $bRet = True
-
-	WallAutoAdjustMinSave()
-	
-	VillageReport(True, True)
 	Local $iCanUseGold = $g_aiCurrentLoot[$eLootGold] - $g_iUpgradeWallMinGold
 	Local $iCanUseElix = $g_aiCurrentLoot[$eLootElixir] - $g_iUpgradeWallMinElixir
 
@@ -286,14 +295,26 @@ Func DoUpgradeWall($iSelectedWallCost = 0)
 						SetDebugLog("Found Elix Button on " & _ArrayToString($aElixButton), $COLOR_DEBUG)
 				EndSelect
 			Next
-			$bCanUseElix = False
-			For $i = 0 To UBound($aButton) - 1
-				If $aButton[$i][0] = "Elix" Then $bCanUseElix = True
-			Next
 		EndIf
+		; Build menu layout: the images were made for the old centered buttons (Gold never matched, 27 Oct; none with the Wall
+		; Ring button, zone/qurlk/qruel 28 Oct): the cost label scan replaces them when it finds a button
+		If IsBuildMenuOpen() Then
+			Local $aGoldC[2], $aElixC[2]
+			If WallButtonsByColor($aElixC, $aGoldC) Then
+				$aGoldButton = $aGoldC
+				$aElixButton = $aElixC
+			EndIf
+		EndIf
+		If $aElixButton[0] = "" And $aGoldButton[0] <> "" Then $bCanUseElix = False ; Gold only wall level
 
 		If _Sleep(50) Then Return
-		Local $iWallCost = $iSelectedWallCost > 0 ? $iSelectedWallCost : $g_aiWallCost[$aWallLevel[2]]
+		Local $iWallCost = $iSelectedWallCost > 0 ? $iSelectedWallCost : $g_aiWallCost[Number($aWallLevel[2])]
+		; cost 0 (level not read) divided the loot by 0: "Can upgrade = 9223372036854775807", Min Save ignored (qath 27 Oct)
+		If $iWallCost < 1 Then
+			SetLog("Wall: cost unknown (level '" & $aWallLevel[2] & "'), skip", $COLOR_WARNING)
+			ClickAway()
+			Return False
+		EndIf
 		If $iWallCost < $g_aiWallCost[4] Then $bCanUseElix = False ; to level 2-4 Gold only, Elixir from level 5
 		Local $iWallCanUpgradeGold = ($bCanUseGold ? Floor($iCanUseGold / $iWallCost) : 0)
 		Local $iWallCanUpgradeElix = ($bCanUseElix ? Floor($iCanUseElix/ $iWallCost) : 0)
@@ -315,6 +336,13 @@ Func DoUpgradeWall($iSelectedWallCost = 0)
 			Return False
 		ElseIf $iWallCanUpgradeGold < 1 And $iWallCanUpgradeElix < 1 Then
 			SetLog("Cannot upgrade wall, not enough resource", $COLOR_DEBUG2)
+			ClickAway()
+			Return False
+		EndIf
+		; a click on an unset button (0,0) was counted as an upgrade (zone 27 Oct: Gold button outside the search area)
+		Local $bUseElix = ($g_iUpgradeWallLootType = 1) Or ($g_iUpgradeWallLootType = 2 And $bCanUseElix And $iWallCanUpgradeElix > 0)
+		If ($bUseElix And $aElixButton[0] = "") Or (Not $bUseElix And $aGoldButton[0] = "") Then
+			SetLog("Wall: " & ($bUseElix ? "Elixir" : "Gold") & " upgrade button not found, skip", $COLOR_WARNING)
 			ClickAway()
 			Return False
 		EndIf
@@ -440,17 +468,92 @@ Func DoUpgradeWall($iSelectedWallCost = 0)
 				If IsUpgradeWindowOpen() Then 
 					Click(625, 545, 1, 50, "UpgradeWall")
 					If _Sleep(500) Then Return
-					ClickAway()
-					Return True
 				EndIf
+				ClickAway()
+				; the resource button upgrades the wall at once (no confirm window): the result was left unset and the
+				; old village search ran after a Build menu upgrade (zone 27 Oct, ~30 s)
+				Return True
 			EndIf
 		EndIf
 	Else
 		SetLog("Not a wall, looking Next wall", $COLOR_DEBUG)
 		Return False
-		ClickAway()
 	EndIf
+	Return False
 EndFunc
+
+; $aElix / $aGold = click points (icon point - 25, + 25) like the image results
+; Wall upgrade buttons with the Build menu open. Grid size, order and button count change per account and state (Upgrade
+; More, Wall Ring, < 10 walls left, Gold only levels; zone 28 Oct coin 207,585 / drop 271,585, BB 186,570 / 279,568), so the
+; whole button area is scanned for Gold coin / Elixir drop pixels and an icon counts only with cost text on its left (white,
+; or red = not enough; text px >= 51 on 6 screenshots, other gold/purple spots <= 16). Click point = icon - 25, + 25.
+Func WallButtonsByColor(ByRef $aElix, ByRef $aGold)
+	Local $aCl[60][8], $iCl = 0, $iPix, $r, $g, $b, $iType, $bNew
+	_CaptureRegion()
+	For $x = 110 To 390 Step 2
+		For $y = 470 To 640 Step 2
+			$iPix = Dec(_GetPixelColor($x, $y, False))
+			$r = BitAND(BitShift($iPix, 16), 0xFF)
+			$g = BitAND(BitShift($iPix, 8), 0xFF)
+			$b = BitAND($iPix, 0xFF)
+			If $r > 200 And $g > 150 And $b < 90 Then
+				$iType = 0
+			ElseIf $r > 150 And $b > 150 And $g < 90 Then
+				$iType = 1
+			Else
+				ContinueLoop
+			EndIf
+			$bNew = True
+			For $i = 0 To $iCl - 1
+				If $aCl[$i][0] = $iType And Abs($x - $aCl[$i][4]) <= 12 And Abs($y - $aCl[$i][5]) <= 12 Then
+					$aCl[$i][1] += 1
+					$aCl[$i][2] += $x
+					$aCl[$i][3] += $y
+					If $x > $aCl[$i][7] Then $aCl[$i][7] = $x
+					$bNew = False
+					ExitLoop
+				EndIf
+			Next
+			If $bNew And $iCl < 60 Then
+				$aCl[$iCl][0] = $iType
+				$aCl[$iCl][1] = 1
+				$aCl[$iCl][2] = $x
+				$aCl[$iCl][3] = $y
+				$aCl[$iCl][4] = $x
+				$aCl[$iCl][5] = $y
+				$aCl[$iCl][7] = $x
+				$iCl += 1
+			EndIf
+		Next
+	Next
+	Local $aBest[2] = [0, 0], $iCx, $iCy, $iText
+	For $i = 0 To $iCl - 1
+		If $aCl[$i][1] < 4 Or $aCl[$i][7] - $aCl[$i][4] > 10 Then ContinueLoop ; icon <= 8 px wide (BB level badge "35": 12)
+		$iCx = Round($aCl[$i][2] / $aCl[$i][1])
+		$iCy = Round($aCl[$i][3] / $aCl[$i][1])
+		$iText = 0
+		For $x = $iCx - 50 To $iCx - 8 Step 2
+			For $y = $iCy - 4 To $iCy + 4
+				$iPix = Dec(_GetPixelColor($x, $y, False))
+				$r = BitAND(BitShift($iPix, 16), 0xFF)
+				$g = BitAND(BitShift($iPix, 8), 0xFF)
+				$b = BitAND($iPix, 0xFF)
+				If $r > 230 And (($g > 230 And $b > 230) Or ($g > 90 And $g < 160 And $b > 90 And $b < 160)) Then $iText += 1
+			Next
+		Next
+		If $iText < 30 Or $iText <= $aBest[$aCl[$i][0]] Then ContinueLoop
+		$aBest[$aCl[$i][0]] = $iText
+		If $aCl[$i][0] = 0 Then
+			$aGold[0] = $iCx - 25
+			$aGold[1] = $iCy + 25
+		Else
+			$aElix[0] = $iCx - 25
+			$aElix[1] = $iCy + 25
+		EndIf
+	Next
+	SetDebugLog("Wall buttons by color: Gold " & ($aBest[0] ? $aGold[0] & "|" & $aGold[1] : "-") & ", Elix " & ($aBest[1] ? $aElix[0] & "|" & $aElix[1] : "-") & " (text px " & $aBest[0] & "/" & $aBest[1] & ")")
+	Return $aBest[0] > 0 Or $aBest[1] > 0
+EndFunc   ;==>WallButtonsByColor
 
 Func UpWallElixir($iWallCost, $iCountPlus, $UpType, $aButton)
 	Local $sDir = "", $bPlusButtonFound = False, $iCount = 1, $iCostUpgrade = 0
@@ -488,6 +591,7 @@ Func UpWallElixir($iWallCost, $iCountPlus, $UpType, $aButton)
 	Next
 	;click Upgrade button
 	If $bPlusButtonFound Then
+		WallButtonRefresh("Elix", $aButton)
 		ClickP($aButton)
 		PushMsg("UpgradeWithElixir")
 		$iCostUpgrade = $iCount * $iWallCost
@@ -550,6 +654,7 @@ Func UpWallGold($iWallCost, $iCountPlus, $UpType, $aButton)
 	Next
 	;click Upgrade button
 	If $bPlusButtonFound Then
+		WallButtonRefresh("Gold", $aButton)
 		ClickP($aButton)
 		PushMsg("UpgradeWithGold")
 		$iCostUpgrade = $iCount * $iWallCost
@@ -641,6 +746,8 @@ Func SearchWall(ByRef $aWallLevelFound, $bTest = False)
 				Click($x, $y)
 				If _Sleep(1000) Then Return
 				$aWallLevel = BuildingInfo()
+				; level not read ("Wall (Level 1( )"): level of the wall image that was clicked
+				If $aWallLevel[1] = "Wall" And Number($aWallLevel[2]) < 1 Then $aWallLevel[2] = $iWallLevel
 				If $aWallLevel[1] = "Wall" And $aWallLevel[2] < $iWallLevelToDelete Then
 					$bWallFound = True
 					ExitLoop
@@ -710,6 +817,15 @@ Func imglocFindWalls($walllevel, $searcharea = "DCD", $redline = "", $maxreturn 
 EndFunc   ;==>imglocFindWalls
 ; left edge of the +1 search: right of +10 when it is there (Plus1 can match the "+1" of "+10" and add 10 walls),
 ; else x 150 (fewer than 10 walls of the level: Remove Wall | +1 | Gold upgrade on the top row, +1 at x ~248)
+; after Upgrade More / +1 / +10 the cost text gets longer and with < 10 walls left Gold moves to the top row: button found again
+Func WallButtonRefresh($sRes, ByRef $aButton)
+	If Not IsBuildMenuOpen() Then Return
+	Local $aGold[2], $aElix[2]
+	If Not WallButtonsByColor($aElix, $aGold) Then Return
+	If $sRes = "Elix" And $aElix[0] <> "" Then $aButton = $aElix
+	If $sRes = "Gold" And $aGold[0] <> "" Then $aButton = $aGold
+EndFunc   ;==>WallButtonRefresh
+
 Func WallPlus1X()
 	If QuickMIS("BC1", $g_sImgCheckWallDirUpgradeButton & "\Plus10", 150, 470, 750, 600) Then Return $g_iQuickMISX + 45
 	Return 150

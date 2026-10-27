@@ -26,6 +26,13 @@ Func PetUpgrade($bTest = False)
 		Return False
 	EndIf
 
+	; Pet House free but every pet locked ("Upgrade Pet House to Level N") or maxed: the list was read for nothing every cycle
+	Local $hNoPet = $g_ahRoutineTimer[CurAccountIndex()][2]
+	If Not $bTest And $hNoPet <> 0 And __TimerDiff($hNoPet) < $g_aiNoUpgradeWaitMin[CurAccountIndex()][1] * 60000 Then
+		SetDebugLog("No pet to upgrade " & Round(__TimerDiff($hNoPet) / 60000) & " min ago, next check after " & $g_aiNoUpgradeWaitMin[CurAccountIndex()][1] & " min")
+		Return False
+	EndIf
+
 	If Not IsBuildMenuOpen() Then checkMainScreen(False) ; menu left open by the Laboratory check: only the tab changes
 	SetLog("Checking for Pet upgrade", $COLOR_INFO)
 	If Not OpenBuildMenu(4) Then Return False
@@ -38,7 +45,11 @@ Func PetUpgrade($bTest = False)
 
 	Local $aList = BuildMenuCollect($g_sImgResIcon, 597, -23, "pet")
 	If UBound($aList) = 0 Then
-		SetLog("No pet upgrade found in Build menu", $COLOR_INFO)
+		; all locked ("Upgrade Pet House to Level N") or max: 6 h; red cost (not enough DE yet): 1 h
+		$g_aiNoUpgradeWaitMin[CurAccountIndex()][1] = $g_bBuildMenuRedSeen ? 60 : 360
+		SetLog("No pet upgrade found in Build menu (" & ($g_bBuildMenuRedSeen ? "not enough Dark Elixir" : "locked: upgrade Pet House, or max") & _
+				"), next check in " & $g_aiNoUpgradeWaitMin[CurAccountIndex()][1] / 60 & " h", $COLOR_INFO)
+		$g_ahRoutineTimer[CurAccountIndex()][2] = __TimerInit()
 		CloseBuildMenu()
 		Return False
 	EndIf

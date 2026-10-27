@@ -36,7 +36,12 @@ Func BuildingInfo($iXstart = 242, $iYstart = 477)
 	If StringInStr($sBldgText, "( lixir Collector") Then $sBldgText = StringReplace($sBldgText, "( lixir", "Elixir")
 	If StringInStr($sBldgText, "Battle Machine (Broken)") Then $sBldgText = "Battle Machine (FakeLevel 92)"
 	$aString = StringSplit($sBldgText, "(") ; Spilt the name and building level
-	If $aString[0] = 2 Then ; If we have name and level then use it
+	If $aString[0] > 2 Then ; a digit read as "(" ("Wall (Level 1( )" = Level 16, 17 wall upgrades lost in one night, Oct 2026):
+		; keep the name, level only when it is readable
+		$aResult[1] = StringStripWS($aString[1], 7)
+		Local $aLevel = StringRegExp($sBldgText, "Level\s*(\d+)\s*\)", $STR_REGEXPARRAYMATCH)
+		If IsArray($aLevel) Then $aResult[2] = Number($aLevel[0])
+	ElseIf $aString[0] = 2 Then ; If we have name and level then use it
 		SetDebugLog("1st $aString = " & $aString[0] & ", " & $aString[1] & ", " & $aString[2], $COLOR_DEBUG) ;debug
 		If $aString[1] <> "" Then $aResult[1] = StringStripWS($aString[1], 7) ; check for bad read and store name in result[]
 		If $aString[2] <> "" Then ; check for bad read of level

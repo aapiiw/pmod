@@ -371,6 +371,12 @@ Func LabUpgrade($bTest = False, $bKeepOpen = False)
 	If Not $g_bAutoLabUpgradeEnable Then Return False
 	checkMainScreen(False)
 	If Not CheckIfLabIdle($bTest) Then Return False ; lab counter on main screen
+	; idle lab with every research locked ("Upgrade Laboratory to Level N", macia 27 Oct) or red: list read for nothing every cycle
+	Local $hNoLab = $g_ahRoutineTimer[CurAccountIndex()][4]
+	If Not $bTest And $hNoLab <> 0 And __TimerDiff($hNoLab) < $g_aiNoUpgradeWaitMin[CurAccountIndex()][0] * 60000 Then
+		SetDebugLog("No Lab upgrade " & Round(__TimerDiff($hNoLab) / 60000) & " min ago, next check after " & $g_aiNoUpgradeWaitMin[CurAccountIndex()][0] & " min")
+		Return False
+	EndIf
 	If _Sleep(50) Then Return False
 	SetLog("Checking for Laboratory Research", $COLOR_INFO)
 
@@ -399,10 +405,16 @@ Func LabUpgrade($bTest = False, $bKeepOpen = False)
 	Local $aStop = LabWantedNames()
 	; no order / no selection ("Any"): first affordable row from the top, page 1 is enough most of the time
 	Local $bAnyOnly = Not $g_bLabUpgradeOrderEnable And $g_iCmbLaboratory = 0
-	Local $aList = BuildMenuCollect($g_sImgResIcon, $g_iXFindLabUpgrade, -23, "lab", $aStop, $bAnyOnly ? 1 : 8)
+	; order: stop as soon as the 1st upgrade of the order is seen and affordable (it is picked anyway), the rest of the
+	; order was read down to its last name before. The pick is then found again by page (BuildMenuGoToItem scrolls up)
+	Local $aList = BuildMenuCollect($g_sImgResIcon, $g_iXFindLabUpgrade, -23, "lab", $aStop, $bAnyOnly ? 1 : 12, "", "LabCollectStop")
 	If $bAnyOnly And LabPickUpgrade($aList, False) < 0 Then $aList = BuildMenuCollect($g_sImgResIcon, $g_iXFindLabUpgrade, -23, "lab", $aStop)
 	If UBound($aList) = 0 Then
-		SetLog("No Laboratory upgrade found in Build menu", $COLOR_INFO)
+		; all locked ("Upgrade Laboratory to Level N"): 6 h; red cost (not enough resource yet): 1 h
+		$g_aiNoUpgradeWaitMin[CurAccountIndex()][0] = $g_bBuildMenuRedSeen ? 60 : 360
+		SetLog("No Laboratory upgrade found in Build menu (" & ($g_bBuildMenuRedSeen ? "not enough resource" : "locked: upgrade Laboratory") & _
+				"), next check in " & $g_aiNoUpgradeWaitMin[CurAccountIndex()][0] / 60 & " h", $COLOR_INFO)
+		$g_ahRoutineTimer[CurAccountIndex()][4] = __TimerInit()
 		If Not $bKeepOpen Then CloseBuildMenu()
 		Return False
 	EndIf
@@ -532,6 +544,29 @@ Func LabPickUpgrade(ByRef $aList, $bLog = True)
 	Next
 	Return -1
 EndFunc   ;==>LabPickUpgrade
+
+; BuildMenuCollect stop check: 1st selected Lab upgrade (order or single selection) read and affordable
+Func LabCollectStop($aList)
+	Local $iWant = -1
+	If $g_bLabUpgradeOrderEnable Then
+		For $z = 0 To UBound($g_aCmbLabUpgradeOrder) - 1
+			If $g_aCmbLabUpgradeOrder[$z] >= 0 Then
+				$iWant = $g_aCmbLabUpgradeOrder[$z] + 1
+				ExitLoop
+			EndIf
+		Next
+	ElseIf $g_iCmbLaboratory > 0 Then
+		$iWant = $g_iCmbLaboratory
+	EndIf
+	If $iWant < 1 Then Return False
+	For $i = 0 To UBound($aList) - 1
+		If $aList[$i][7] And LabNameIsWanted($aList[$i][3], $iWant) And IsLabUpgradeResourceEnough($aList[$i][5], $aList[$i][0]) Then
+			SetDebugLog("Lab: 1st of the order (" & $aList[$i][3] & ") found on page " & $aList[$i][8] & ", stop reading")
+			Return True
+		EndIf
+	Next
+	Return False
+EndFunc   ;==>LabCollectStop
 
 ; names of selected Lab upgrades (order list or single selection), Default when "Any" / Any Spell / Any Siege is used
 Func LabWantedNames()

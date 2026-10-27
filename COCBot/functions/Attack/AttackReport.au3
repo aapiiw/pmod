@@ -41,7 +41,15 @@ Func AttackReport()
 			$g_iStatsLastAttack[$eLootTrophy] = -$g_iStatsLastAttack[$eLootTrophy]
 		EndIf
 		$g_iStatsLastAttack[$eLootDarkElixir] = ""
-		SetLog("Loot: [G]: " & _NumberFormat($g_iStatsLastAttack[$eLootGold]) & " [E]: " & _NumberFormat($g_iStatsLastAttack[$eLootElixir]), $COLOR_SUCCESS)
+		; ranked (League) battle result: rows ~19 px higher and a bigger font the template OCR can not read
+		; (94 of 94 League loot reads empty, 27 Oct). Tesseract digits on the new rows (adb screenshots: all 5 values read)
+		If $g_iStatsLastAttack[$eLootGold] = "" And $g_iStatsLastAttack[$eLootElixir] = "" Then
+			$g_iStatsLastAttack[$eLootGold] = getResourcesLootTs(320, 281, 160)
+			$g_iStatsLastAttack[$eLootElixir] = getResourcesLootTs(320, 319, 160)
+			$g_iStatsLastAttack[$eLootDarkElixir] = getResourcesLootTs(370, 357, 100)
+		EndIf
+		SetLog("Loot: [G]: " & _NumberFormat($g_iStatsLastAttack[$eLootGold]) & " [E]: " & _NumberFormat($g_iStatsLastAttack[$eLootElixir]) & _
+				($g_iStatsLastAttack[$eLootDarkElixir] <> "" ? " [DE]: " & _NumberFormat($g_iStatsLastAttack[$eLootDarkElixir]) : ""), $COLOR_SUCCESS)
 	EndIf
 
 	If $g_iStatsLastAttack[$eLootTrophy] >= 0 Then

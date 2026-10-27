@@ -130,6 +130,7 @@ Func BuildMenuSetFilter($sType = "", $iTab = 1)
 		If BuildMenuFilterWaitWindow(False) Then ExitLoop
 	Next
 	$g_iBuildMenuPage = 1
+	BuildMenuWaitStill() ; list redrawn after the filter (quiver 27 Oct: read 40 ms later, Lab names '' and costs lost)
 	If $bOk Then
 		$g_asBuildMenuFilter[$iTab] = $sType
 		SetDebugLog("Build menu filter tab " & $iTab & ": " & ($sType = "" ? "none" : $sType))
@@ -423,6 +424,9 @@ EndFunc   ;==>BuildMenuReadLoot
 
 ; upgrade time text read by OCR ("2d 3h", often only partly readable) -> minutes, as LOWER bound (never later than real finish)
 Func BuildMenuTimeToMin($sTime)
+	; Tesseract reads the CoC "1" as l / I and "5" as S ("SHSm" = 5H 54M, "IH" = 1H, adb test 27 Oct)
+	$sTime = StringRegExpReplace($sTime, "[lI](?=[\dlIdhmDHM])", "1")
+	$sTime = StringRegExpReplace($sTime, "S(?=[\ddhmDHM])", "5")
 	$sTime = StringLower($sTime)
 	Local $iMin = 0, $a
 	$a = StringRegExp($sTime, "(\d+)\s*d", $STR_REGEXPARRAYMATCH)
@@ -485,12 +489,30 @@ Func BuildMenuReadCost($iX, $iY)
 	Local $sDigits = StringReplace($sCost, " ", "")
 	; wide first group split by a space: "10 000 000" read as "1 0 000 000"
 	If (StringRegExp($sCost, "^[1-9]\d{0,2}( \d{3})*$") Or StringRegExp($sCost, "^[1-9] \d( \d{3})+$")) And StringLen($sDigits) >= $iMinDigits Then Return Number($sDigits)
-	; fallback: Tesseract digits (also when the template read lost a digit: "175 000" read as "15 000")
-	Local $sTess = StringStripWS(getOcrAndCapture("coc-buildcost", $iX - 105, $iY - 2, 92, 18, False), $STR_STRIPALL)
-	If StringRegExp($sTess, "^[1-9]\d{2,8}$") And StringLen($sTess) >= $iMinDigits Then Return Number($sTess)
+	; fallback: Tesseract digits (also when the template read lost a digit: "175 000" read as "15 000").
+	; Template drops digits that touch ("60 000" -> "0 000", "1 500 000" -> "1 00 000") and reads 4 as 1. Tesseract area
+	; from x-128: from x-105 the first digit of 8 digit costs was cut ("26 500 000" -> "6500000"). Tesseract can add or
+	; change a digit, so its length must be the pixel digit count; when that count is unknown, the template digits must
+	; all be in the Tesseract read, in the same order (adb test 27 Oct, 2 accounts tab 1: 93 of 97 rows read)
+	Local $sTess = StringStripWS(getOcrAndCapture("coc-buildcost", $iX - 128, $iY - 2, 115, 18, False), $STR_STRIPALL)
+	If StringRegExp($sTess, "^[1-9]\d{2,8}$") Then
+		If $iMinDigits > 1 And StringLen($sTess) = $iMinDigits Then Return Number($sTess)
+		If $iMinDigits = 1 And ($sDigits = "" Or (StringLen($sTess) > StringLen($sDigits) And BuildMenuIsSubsequence($sDigits, $sTess))) Then Return Number($sTess)
+	EndIf
 	SetDebugLog("BuildMenu cost not readable: '" & $sCost & "' / '" & $sTess & "' (text needs " & $iMinDigits & "+ digits)")
 	Return 0
 EndFunc   ;==>BuildMenuReadCost
+
+; True when all chars of $sPart are in $sAll in the same order ("0000" in "60000", "15000" in "175000")
+Func BuildMenuIsSubsequence($sPart, $sAll)
+	Local $iPos = 1
+	For $i = 1 To StringLen($sPart)
+		$iPos = StringInStr($sAll, StringMid($sPart, $i, 1), 1, 1, $iPos)
+		If $iPos = 0 Then Return False
+		$iPos += 1
+	Next
+	Return True
+EndFunc   ;==>BuildMenuIsSubsequence
 
 ; digit count of the white cost text (last _CaptureRegion frame), to catch a lost digit ("12 600 000" read as "2 600 000").
 ; Pixel width can not tell 7 from 8 digits ("1" is narrow), so digits are counted: white column runs are digits,
@@ -672,21 +694,45 @@ EndFunc   ;==>BuildMenuStopScroll
 
 ; upgrade time of the row with resource icon at $iY, in minutes (lower bound, 0 = unknown). Only read for the chosen row.
 Func BuildMenuRowTime($iY)
-	Return BuildMenuTimeToMin(getOcrAndCapture("coc-buildtime", 755, $iY - 26, 76, 14, False))
+	; text at y-18..y-8: y-26 h14 read only its top half ("15d 12H" -> "s", adb test 27 Oct)
+	Return BuildMenuTimeToMin(getOcrAndCapture("coc-buildtime", 755, $iY - 21, 76, 16, False))
 EndFunc   ;==>BuildMenuRowTime
 
 ; drags inside the list (slow enough to not fling, start point between texts so no row is clicked), about 7 rows
 Func BuildMenuScrollDown()
 	BuildMenuDrag(680, 545, 680, 125)
 	$g_iBuildMenuPage += 1
-	If _Sleep(200) Then Return
+	BuildMenuWaitStill()
 EndFunc   ;==>BuildMenuScrollDown
 
 Func BuildMenuScrollUp()
 	BuildMenuDrag(680, 125, 680, 545)
 	If $g_iBuildMenuPage > 1 Then $g_iBuildMenuPage -= 1
-	If _Sleep(200) Then Return
+	BuildMenuWaitStill()
 EndFunc   ;==>BuildMenuScrollUp
+
+; wait until the list stops moving after a drag: 2 frames 150 ms apart with the same white (text) pixels in the name and
+; cost columns. A fixed 200 ms wait was too short sometimes (qath 27 Oct: page 2 read while moving, garbled names, all
+; costs ''). Only white is compared: the shine of in-progress bars changes the other colors all the time
+Global $g_aiBuildMenuStillX[4] = [575, 600, 780, 800] ; name and cost text columns
+
+Func BuildMenuWaitStill($iMaxMs = 1500)
+	Local $sLast = "", $sCur, $hTimer = __TimerInit(), $iPix
+	While __TimerDiff($hTimer) < $iMaxMs
+		If _Sleep(150) Then Return
+		_CaptureRegion()
+		$sCur = ""
+		For $y = 62 To 592 Step 2
+			For $x In $g_aiBuildMenuStillX
+				$iPix = Dec(_GetPixelColor($x, $y, False))
+				$sCur &= (BitAND(BitShift($iPix, 16), 0xFF) > 225 And BitAND(BitShift($iPix, 8), 0xFF) > 225 And BitAND($iPix, 0xFF) > 225) ? "1" : "0"
+			Next
+		Next
+		If $sCur = $sLast Then Return
+		$sLast = $sCur
+	WEnd
+	SetDebugLog("Build menu list still moving after " & $iMaxMs & " ms")
+EndFunc   ;==>BuildMenuWaitStill
 
 ; list drag with short end hold (~1.8 s less per page than the default 1000 ms hold + 700 ms wait)
 Func BuildMenuDrag($x1, $y1, $x2, $y2)
@@ -698,15 +744,20 @@ EndFunc   ;==>BuildMenuDrag
 ; read rows of current tab, scrolling down until the list does not move anymore,
 ; or (when $aStopNames is an array) as soon as all names of $aStopNames were seen.
 ; $sLogTitle: rows are logged page by page while reading (not all at the end)
+; $sStopFunc: function called with the rows read so far after each page, True = stop scrolling
 ; Return [n][9] = BuildMenuReadPage columns + [8] = page number
-Func BuildMenuCollect($sIconDir, $iNameX, $iNameDy, $sType, $aStopNames = Default, $iMaxPage = 12, $sLogTitle = "")
+Global $g_bBuildMenuRedSeen = False ; last BuildMenuCollect saw a red row (not enough resource)
+
+Func BuildMenuCollect($sIconDir, $iNameX, $iNameDy, $sType, $aStopNames = Default, $iMaxPage = 12, $sLogTitle = "", $sStopFunc = "")
 	Local $aAll[0][9], $sLastSig = "", $sSig, $iFlags, $bAffordSeen = False, $bCheckNext = False
+	$g_bBuildMenuRedSeen = False
 	If $sLogTitle <> "" Then SetLog($sLogTitle & ":", $COLOR_INFO)
 	For $iPage = 1 To $iMaxPage
 		If Not $g_bRunState Then ExitLoop
 		If $iPage > 1 Then BuildMenuScrollDown()
 		Local $aPage = BuildMenuReadPage($sIconDir, $iNameX, $iNameDy, $sType)
 		$iFlags = @extended
+		If BitAND($iFlags, 4) Then $g_bBuildMenuRedSeen = True
 		$sSig = ""
 		For $i = 0 To UBound($aPage) - 1
 			$sSig &= $aPage[$i][3] & $aPage[$i][5] & "|"
@@ -738,6 +789,9 @@ Func BuildMenuCollect($sIconDir, $iNameX, $iNameDy, $sType, $aStopNames = Defaul
 				If _ArraySearch($aAll, $sStop, 0, 0, 0, 0, 1, 3) < 0 Then $bAllSeen = False
 			Next
 			If $bAllSeen Then ExitLoop ; no need to read the rest of the list
+		EndIf
+		If $sStopFunc <> "" And UBound($aAll) > 0 Then
+			If Call($sStopFunc, $aAll) = True Then ExitLoop
 		EndIf
 	Next
 	If $sLogTitle <> "" And UBound($aAll) = 0 Then SetLog(" - (no affordable row)", $COLOR_DEBUG)
@@ -911,6 +965,8 @@ Func BBFindFirstUpgrade(ByRef $aSkip)
 					EndIf
 				EndIf
 				$aPage[$i][3] = "?"
+				; name and cost both unread (row cut at the list edge): "upgrade window not found" after a 4 s try (quiver 27 Oct)
+				If $aPage[$i][5] = 0 Then ContinueLoop
 			EndIf
 			If $aPage[$i][3] = "Builder Hall" And $g_bChkAutoUpgradeBBIgnoreHall Then ContinueLoop
 			If $aPage[$i][5] = -1 Then ; red cost

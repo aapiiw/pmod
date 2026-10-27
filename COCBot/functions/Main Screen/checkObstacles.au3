@@ -295,7 +295,6 @@ Func _checkObstacles($bBuilderBase = False) ;Checks if something is in the way f
 	EndIf
 	
 	If Not $g_bRunState Then Return
-	;CheckPetHouseTutorial()
 	CheckBuilderHutTutorial()
 	
 	If Not $g_bRunState Then Return

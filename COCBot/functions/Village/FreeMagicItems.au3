@@ -15,6 +15,12 @@
 
 Func CollectFreeMagicItems($bTest = False)
 	If Not $g_bChkCollectFreeMagicItems Then Return
+	; daily free item already claimed: the Trader was opened for nothing every cycle (~7 s, 27 Oct)
+	Local $hClaimed = $g_ahRoutineTimer[CurAccountIndex()][3]
+	If Not $bTest And $hClaimed <> 0 And __TimerDiff($hClaimed) < 24 * 3600000 Then
+		SetDebugLog("Free magic item claimed " & Round(__TimerDiff($hClaimed) / 60000) & " min ago, Trader check after 24 h")
+		Return
+	EndIf
 	$g_aRemoveFreeMagicItems[0] = False ;reset first
 	SetLog("Check for collect Free Magic Items", $COLOR_INFO)
 	If Not $g_bRunState Then Return
@@ -34,6 +40,7 @@ Func CollectFreeMagicItems($bTest = False)
 		$aGem[$i] = $aResults[$i][0]
 	Next
 	SetLog("Magic Items: " & $aGem[0] & " | " & $aGem[1] & " | " & $aGem[2])
+	If $aGem[0] = "Claimed" Then $g_ahRoutineTimer[CurAccountIndex()][3] = __TimerInit()
 	
 	For $i = 0 To UBound($aResults) - 1
 		If $aResults[$i][0] = "FullStorage" Then 
@@ -509,6 +516,10 @@ Func UseFreeMagicItem()
 					If _Sleep(500) Then Return
 					If IsOKCancelPage() Then Click(530, 425)
 					SetLog("Succesfully, use Magic item", $COLOR_SUCCESS)
+					; item window / reward still on screen: the next Clan Games caravan click failed every time (27 Oct, 12 s each)
+					If _Sleep(1000) Then Return
+					ClickAway()
+					If _Sleep(500) Then Return
 				EndIf
 			EndIf
 		Else
