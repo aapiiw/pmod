@@ -73,10 +73,14 @@ Func UpgradeWallBuildMenu()
 		Return -1
 	EndIf
 	Local $aStop[1] = ["Wall"] ; stop scrolling when the wall row is seen
+	$g_bBuildMenuWallOnly = True
 	Local $aList = BuildMenuCollect($g_sImgResourceIcon, $g_iXFindUpgrade, -22, "building", $aStop, 12, "Build menu list (wall search)")
+	$g_bBuildMenuWallOnly = False
 	Local $iRow = -1
 	For $i = 0 To UBound($aList) - 1
-		If $aList[$i][7] And ($aList[$i][3] = "Wall" Or $aList[$i][3] = "Walls") And $aList[$i][0] <> "DE" Then
+		; DE icon with cost 0 = icon misread at the list bottom (quiver 28 Oct p5 'Wall : DE', 4 000 000 Gold): kept, the cost
+		; then comes from the selected wall level
+		If $aList[$i][7] And ($aList[$i][3] = "Wall" Or $aList[$i][3] = "Walls") And Not ($aList[$i][0] = "DE" And Number($aList[$i][5]) > 0) Then
 			; a misread name gives "Wall" to another row (zone, Oct 2026: "Wall 1 200 000 Gold" was an Elixir Collector,
 			; the 1 builder kept for walls was used): the cost must be a wall cost
 			If Number($aList[$i][5]) > 0 And _ArraySearch($g_aiWallCost, Number($aList[$i][5]), 1) < 1 Then
@@ -117,7 +121,9 @@ Func UpgradeWallBuildMenu()
 			Return False
 		EndIf
 	EndIf
+	$g_bBuildMenuWallOnly = True
 	Local $aCoord = BuildMenuGoToItem(1, $aList[$iRow][3], $aList[$iRow][8], $g_sImgResourceIcon, $g_iXFindUpgrade, -22, "building", $sFilter)
+	$g_bBuildMenuWallOnly = False
 	If Not IsArray($aCoord) Then
 		SetLog("Wall: row not found again after scrolling", $COLOR_DEBUG1)
 		CloseBuildMenu()
@@ -130,6 +136,20 @@ Func UpgradeWallBuildMenu()
 	; (Oct 2026 screen: "Wall (Level 16)" at x 160-340, y 438-461, the default read at 242,477 was always empty)
 	Local $aInfo = BuildingInfo(60, 435)
 	If $aInfo[1] = "" Then $aInfo = BuildingInfo(60, 477)
+	If $aInfo[1] = "" Then
+		; nothing selected (quiver 28 Oct, last list page, 5 rows without a readable name: list still moving): one more try
+		SetLog("Wall: no building selected, click the row again", $COLOR_DEBUG1)
+		If $g_bDebugImageSave Then SaveDebugImage("WallRowClick")
+		$g_bBuildMenuWallOnly = True
+		$aCoord = BuildMenuGoToItem(1, $aList[$iRow][3], $aList[$iRow][8], $g_sImgResourceIcon, $g_iXFindUpgrade, -22, "building", $sFilter)
+		$g_bBuildMenuWallOnly = False
+		If IsArray($aCoord) Then
+			ClickP($aCoord)
+			If _Sleep(1500) Then Return False
+			$aInfo = BuildingInfo(60, 435)
+			If $aInfo[1] = "" Then $aInfo = BuildingInfo(60, 477)
+		EndIf
+	EndIf
 	If $aInfo[1] <> "Wall" Then
 		SetLog("Wall: selected building is '" & $aInfo[1] & "', not a wall, skip", $COLOR_WARNING)
 		ClickAway()
@@ -262,7 +282,7 @@ Func DoUpgradeWall($iSelectedWallCost = 0)
 
 	Local $aDel[1] = [0], $x, $y, $bWallFound = False, $aWallLevel, $aButton
 	Local $iClickTimesGold = 0, $iClickTimesElix = 0, $iPlus10Gold = 0, $iPlus10Elix = 0, $iPlus1Gold = 0, $iPlus1Elix = 0
-	Local $aGoldButton[2], $aElixButton[2], $aPlusButton[2]
+	Local $aGoldButton[2], $aElixButton[2], $aPlusButton[3]
 
 	If $iSelectedWallCost > 0 Then
 		Local $aSelectedWall[3] = [0, 0, "?"]
@@ -304,6 +324,13 @@ Func DoUpgradeWall($iSelectedWallCost = 0)
 				$aGoldButton = $aGoldC
 				$aElixButton = $aElixC
 			EndIf
+			; PlusSign image never matched with the menu open (no "Trying Upgrade More Wall" on 12 accounts 28 Oct)
+			$bPlusSignFound = WallPlusSignByShape($aPlusButton)
+			If $bPlusSignFound And Not WallUpgradeMoreEnabled($aPlusButton) Then
+				SetDebugLog("Wall Upgrade More disabled (no other wall of this level)")
+				$bPlusSignFound = False
+			EndIf
+			If $bPlusSignFound Then SetDebugLog("Wall Upgrade More + at " & $aPlusButton[0] & "|" & $aPlusButton[1] & " arm " & $aPlusButton[2])
 		EndIf
 		If $aElixButton[0] = "" And $aGoldButton[0] <> "" Then $bCanUseElix = False ; Gold only wall level
 
@@ -346,7 +373,9 @@ Func DoUpgradeWall($iSelectedWallCost = 0)
 			ClickAway()
 			Return False
 		EndIf
-		
+		Local $iMoreCount = $bUseElix ? $iWallCanUpgradeElix : $iWallCanUpgradeGold
+		If $bPlusSignFound And $iMoreCount > 1 And IsBuildMenuOpen() Then Return WallUpgradeMoreBM($aPlusButton, $bUseElix ? "Elix" : "Gold", $iMoreCount, $iWallCost, $bUseElix ? $aElixButton : $aGoldButton)
+
 		If $bCanUseGold Or $bCanUseElix Then
 			If ($iWallCanUpgradeGold > 1 Or $iWallCanUpgradeElix > 1) And $bPlusSignFound Then
 				SetLog("Trying Upgrade More Wall", $COLOR_ACTION)
@@ -528,7 +557,8 @@ Func WallButtonsByColor(ByRef $aElix, ByRef $aGold)
 	Next
 	Local $aBest[2] = [0, 0], $iCx, $iCy, $iText
 	For $i = 0 To $iCl - 1
-		If $aCl[$i][1] < 4 Or $aCl[$i][7] - $aCl[$i][4] > 10 Then ContinueLoop ; icon <= 8 px wide (BB level badge "35": 12)
+		; icon <= 10 px wide (BB level badge "35": 12), a full coin can be 12 wide (>= 17 px: macia 189,568 / quartz 370,486 28 Oct)
+		If $aCl[$i][1] < 4 Or $aCl[$i][7] - $aCl[$i][4] > ($aCl[$i][1] >= 12 ? 12 : 10) Then ContinueLoop
 		$iCx = Round($aCl[$i][2] / $aCl[$i][1])
 		$iCy = Round($aCl[$i][3] / $aCl[$i][1])
 		$iText = 0
@@ -554,6 +584,157 @@ Func WallButtonsByColor(ByRef $aElix, ByRef $aGold)
 	SetDebugLog("Wall buttons by color: Gold " & ($aBest[0] ? $aGold[0] & "|" & $aGold[1] : "-") & ", Elix " & ($aBest[1] ? $aElix[0] & "|" & $aElix[1] : "-") & " (text px " & $aBest[0] & "/" & $aBest[1] & ")")
 	Return $aBest[0] > 0 Or $aBest[1] > 0
 EndFunc   ;==>WallButtonsByColor
+
+Func WallPixWhite($x, $y)
+	Local $iPix = Dec(_GetPixelColor($x, $y, False))
+	Return BitAND(BitShift($iPix, 16), 0xFF) > 225 And BitAND(BitShift($iPix, 8), 0xFF) > 225 And BitAND($iPix, 0xFF) > 225
+EndFunc   ;==>WallPixWhite
+
+Func WallWhiteArm($x, $y, $dx, $dy)
+	Local $n = 0
+	While $n < 10 And WallPixWhite($x + $dx * ($n + 1), $y + $dy * ($n + 1))
+		$n += 1
+	WEnd
+	Return $n
+EndFunc   ;==>WallWhiteArm
+
+; white "+" of the Upgrade More button with the Build menu open: center with 4 arms of 4-9 px and no white on the diagonals
+; (big grid 360,504 macia/qath/quiver/BB, middle column 269,504 quartz, small grid 327,533 zone; none on 230 other screenshots).
+; Lines are 1-2 px thick: full resolution, top row band only. $aPlus = [x, y, arm length]. Uses the last _CaptureRegion frame
+Func WallPlusSignByShape(ByRef $aPlus)
+	Local $a[4]
+	For $x = 115 To 394
+		For $y = 476 To 560
+			If Not WallPixWhite($x, $y) Then ContinueLoop
+			$a[0] = WallWhiteArm($x, $y, 1, 0)
+			If $a[0] < 4 Or $a[0] > 9 Then ContinueLoop
+			$a[1] = WallWhiteArm($x, $y, -1, 0)
+			If Abs($a[0] - $a[1]) > 1 Then ContinueLoop
+			$a[2] = WallWhiteArm($x, $y, 0, 1)
+			$a[3] = WallWhiteArm($x, $y, 0, -1)
+			If $a[2] < 4 Or $a[2] > 9 Or Abs($a[2] - $a[3]) > 1 Then ContinueLoop
+			If WallPixWhite($x - 4, $y - 4) Or WallPixWhite($x + 4, $y - 4) Or WallPixWhite($x - 4, $y + 4) Or WallPixWhite($x + 4, $y + 4) Then ContinueLoop
+			If UBound($aPlus) < 3 Then ReDim $aPlus[3]
+			$aPlus[0] = $x
+			$aPlus[1] = $y
+			$aPlus[2] = $a[0]
+			Return True
+		Next
+	Next
+	Return False
+EndFunc   ;==>WallPlusSignByShape
+
+; Upgrade More enabled = white label under the "+" (red with no other wall of this level, BB quiver 28 Oct: "No more
+; walls at that level to add to your selection"; white px 296 big grid, 177 small, 0 red). Uses the last frame
+Func WallUpgradeMoreEnabled($aPlus)
+	Local $iHits = 0
+	For $x = $aPlus[0] - 45 To $aPlus[0] + 5 Step 2
+		For $y = $aPlus[1] + 12 To $aPlus[1] + 40 Step 2
+			If WallPixWhite($x, $y) Then $iHits += 1
+		Next
+	Next
+	Return $iHits >= 15
+EndFunc   ;==>WallUpgradeMoreEnabled
+
+; green text pixels ("+1" / "+10" of an enabled Add Wall button) in a narrow box on the button (gaps show green grass)
+Func WallGreenAt($iX, $iY, $iHalf)
+	Local $iHits = 0, $iPix
+	For $x = $iX - $iHalf To $iX + $iHalf
+		For $y = $iY - 10 To $iY + 8
+			$iPix = Dec(_GetPixelColor($x, $y, False))
+			If BitAND(BitShift($iPix, 8), 0xFF) > 170 And BitAND(BitShift($iPix, 16), 0xFF) < 170 And BitAND($iPix, 0xFF) < 110 Then $iHits += 1
+		Next
+	Next
+	Return $iHits
+EndFunc   ;==>WallGreenAt
+
+; Upgrade More with the Build menu open (quiver 28 Oct adb: top row Info | Select Row | Upgrade More becomes
+; Remove Wall | +10 Add Wall | +1 Add Wall, title "Wall (Level 15)x 2", cost doubled). +1 takes the place of Upgrade More
+; ("+1" text ~10 px left of the "+"), +10 one column left (92 px big grid, 64 small). A disabled button has no green
+; (+10 with < 10 walls of the level left: "Less than 10 available walls remaining", Remove Wall at x1), so each click
+; is checked first. Return True = upgrade clicked
+Func WallUpgradeMoreBM($aPlus, $sRes, $iCount, $iWallCost, $aButton)
+	Local $iHalf = $aPlus[2] >= 8 ? 12 : 9
+	Local $iX1 = $aPlus[0] - ($aPlus[2] >= 8 ? 10 : 8), $iY1 = $aPlus[1]
+	Local $iX10 = $iX1 - ($aPlus[2] >= 8 ? 92 : ($aPlus[2] = 7 ? 78 : 64))
+	SetLog("Trying Upgrade More Wall (can upgrade " & $iCount & ")", $COLOR_ACTION)
+	Click($aPlus[0] - 8, $aPlus[1] + 6, 1, 50, "Wall Upgrade More")
+	Local $aTmp[3], $bReady = False
+	For $i = 1 To 6 ; buttons change with an animation (BB: one check after 700 ms missed it)
+		If _Sleep(350) Then Return False
+		_CaptureRegion()
+		If WallPlusSignByShape($aTmp) Then ContinueLoop
+		If WallGreenAt($iX1, $iY1, $iHalf) >= 30 Then
+			$bReady = True
+			ExitLoop
+		EndIf
+		; BB qassa layout with < 10 walls left: Remove Wall | +1 | Gold upgrade (+1 one column left, no +10)
+		If WallGreenAt($iX10, $iY1, $iHalf) >= 30 Then
+			; confirmed on a later frame: an enabled +10 shown before +1 (animation) would be clicked as +1
+			If _Sleep(350) Then Return False
+			_CaptureRegion()
+			If WallGreenAt($iX1, $iY1, $iHalf) >= 30 Then
+				$bReady = True
+				ExitLoop
+			EndIf
+			If WallGreenAt($iX10, $iY1, $iHalf) < 30 Then ContinueLoop
+			$iX1 = $iX10
+			$iX10 = 0
+			$bReady = True
+			ExitLoop
+		EndIf
+	Next
+	Local $iWalls = 1
+	If $iCount > 50 Then $iCount = 50
+	If Not $bReady Then
+		SetLog("Wall: +1 not found after Upgrade More, upgrade 1 wall", $COLOR_INFO)
+		If $g_bDebugImageSave Then SaveDebugImage("WallUpgradeMore", False)
+	Else
+		While $iX10 > 0 And $iWalls + 10 <= $iCount
+			If WallGreenAt($iX10, $iY1, $iHalf) < 30 Then ExitLoop ; +10 disabled
+			Click($iX10, $iY1, 1, 0, "Wall +10")
+			$iWalls += 10
+			If _Sleep(400) Then Return False
+			_CaptureRegion()
+		WEnd
+		While $iWalls < $iCount
+			If WallGreenAt($iX1, $iY1, $iHalf) < 30 Then ExitLoop ; no other wall of this level
+			Click($iX1, $iY1, 1, 0, "Wall +1")
+			$iWalls += 1
+			If _Sleep(300) Then Return False
+			_CaptureRegion()
+		WEnd
+		If _Sleep(300) Then Return False
+	EndIf
+	WallButtonRefresh($sRes, $aButton)
+	If $aButton[0] = "" Then
+		SetLog("Wall: " & $sRes & " button not found after Upgrade More, skip", $COLOR_WARNING)
+		ClickAway()
+		Return False
+	EndIf
+	ClickP($aButton)
+	If _Sleep(1000) Then Return False
+	If isGemOpen(True) Then
+		SetLog("Wall upgrade x" & $iWalls & " failed, gem window popped up", $COLOR_ERROR)
+		ClickAway()
+		Return False
+	EndIf
+	If IsOKCancelPage() Then ClickP($aConfirmSurrender) ; confirm upgrade OK button
+	Local $iCost = $iWalls * $iWallCost
+	If $sRes = "Elix" Then
+		PushMsg("UpgradeWithElixir")
+		$g_iNbrOfWallsUppedElixir += $iWalls
+		$g_iCostElixirWall += $iCost
+	Else
+		PushMsg("UpgradeWithGold")
+		$g_iNbrOfWallsUppedGold += $iWalls
+		$g_iCostGoldWall += $iCost
+	EndIf
+	$g_iNbrOfWallsUpped += $iWalls
+	SetLog("Upgraded wall with " & $sRes & ": " & $iWalls & ", cost " & _NumberFormat($iCost), $COLOR_SUCCESS)
+	UpdateStats()
+	Return True
+EndFunc   ;==>WallUpgradeMoreBM
 
 Func UpWallElixir($iWallCost, $iCountPlus, $UpType, $aButton)
 	Local $sDir = "", $bPlusButtonFound = False, $iCount = 1, $iCostUpgrade = 0

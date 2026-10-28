@@ -1066,6 +1066,7 @@ Global Const $g_asUpgradeIgnore[51][4] = [ _
 ; (not only Town Hall and Wall): not used. Wall is in group D (Defense) of the ignore list.
 Global $g_asUpgradeIgnoreFilter[5][2] = [["T", ""], ["H", "Hero"], ["A", "Army"], ["R", "Resource"], ["D", "Defense"]]
 Global $g_asBuildMenuFilter[5] = ["", "", "", "", ""] ; Build menu filter set by the bot per home tab ("" = none)
+Global $g_bBuildMenuWallOnly = False ; wall search: name OCR only for rows with a wall cost (or cost not read)
 Global $g_iChkUpgradesToIgnore[51] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 Global $g_iChkResourcesToIgnore[3] = [0, 0, 0]
 Global $g_aiCmbRushTHOption[5] = [0, 0, 0, 0, 0]

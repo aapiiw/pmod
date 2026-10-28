@@ -396,6 +396,7 @@ Func BuildMenuLogList($sTitle, ByRef $aList)
 EndFunc   ;==>BuildMenuLogList
 
 Func BuildMenuLogRow(ByRef $aList, $i)
+	If $aList[$i][3] = "(not wall)" Then Return
 	SetLog(" - " & ($aList[$i][7] ? $aList[$i][3] : "? '" & $aList[$i][3] & "'") & " : " & ($aList[$i][5] = -1 ? "(not enough) " : _NumberFormat($aList[$i][5]) & " ") & $aList[$i][0], $COLOR_DEBUG)
 EndFunc   ;==>BuildMenuLogRow
 
@@ -649,6 +650,13 @@ Func BuildMenuReadPage($sIconDir, $iNameX, $iNameDy, $sType, $bRedNames = False)
 		; Wall search ("building") keeps them too: "10 000 000" was not read and the wall was not found (zone, Oct 2026)
 		If $iCost <= 0 And Not (($sType = "bb" Or $sType = "building") And $iCost = 0) And Not ($bRedNames And $iCost = -1) Then ContinueLoop
 		If $iCost <> -1 Then $iFlags = BitOR($iFlags, 2)
+		; wall search: a read cost that is no wall cost can not be the wall row (UpgradeWallBuildMenu drops it), no name OCR
+		; (~0.3-1 s per row, 10-28 s per wall search 28 Oct). Kept as "(not wall)" so the page signature still sees the row
+		If $g_bBuildMenuWallOnly And $iCost > 0 And _ArraySearch($g_aiWallCost, $iCost, 1) < 1 Then
+			Local $aSkipRow[1][8] = [[$aIcon[$i][0], $iX, $iY, "(not wall)", 1, $iCost, 0, False]]
+			_ArrayAdd($aRet, $aSkipRow)
+			ContinueLoop
+		EndIf
 		; new building to place (green name, the white text OCR reads it as ''): not an upgrade, no name OCR
 		If ($sType = "building" Or $sType = "hero") And AutoUpgradeIsNewRow($iY) Then ContinueLoop
 		Local $iW = $iX - 80 - $iNameX ; like dev: keep upgrade time text out of the name
@@ -1094,23 +1102,26 @@ Func BBWallUpgradeMore($sResource, $iCount)
 	Static $iFail = 0 ; resource button not found after Upgrade More 3 times in a row: single wall upgrade until bot restart
 	If $iFail >= 3 Then Return 0
 	_CaptureRegion()
-	If BBWallTopButtonPixels(340, "beige") < 300 Or BBWallTopButtonPixels(340, "green") > 5 Then
-		SetDebugLog("Wall: no Upgrade More button")
+	; Upgrade More by its white "+" (column 340 only missed it: quazzy 28 Oct 'no Upgrade More button'), +1 takes its column
+	Local $aPlusSign[3]
+	If Not WallPlusSignByShape($aPlusSign) Or Not WallUpgradeMoreEnabled($aPlusSign) Then
+		SetDebugLog("Wall: no Upgrade More button (or disabled)")
 		Return 0
 	EndIf
-	Click(340, 510, 1, 50, "Wall Upgrade More")
-	Local $bPlus = False, $iPlusX = 340
+	Local $iMoreX = $aPlusSign[0] - 20
+	Click($iMoreX, 510, 1, 50, "Wall Upgrade More")
+	Local $bPlus = False, $iPlusX = $iMoreX
 	For $i = 1 To 6 ; buttons change with an animation (one check after 700 ms missed it, 21 Oct 2026)
 		If _Sleep(350) Then Return -1
 		_CaptureRegion()
-		If BBWallTopButtonPixels(340, "green") >= 15 Then
+		If BBWallTopButtonPixels($iMoreX, "green") >= 15 Then
 			$bPlus = True
 			ExitLoop
 		EndIf
 		; fewer than 10 walls left of this level (qassa, Oct 2026): no +10, top row Remove Wall | +1 | Gold upgrade
-		If BBWallTopButtonPixels(248, "green") >= 15 Then
+		If BBWallTopButtonPixels($iMoreX - 92, "green") >= 15 Then
 			$bPlus = True
-			$iPlusX = 248
+			$iPlusX = $iMoreX - 92
 			ExitLoop
 		EndIf
 	Next
@@ -1121,9 +1132,9 @@ Func BBWallUpgradeMore($sResource, $iCount)
 		SetLog("Wall: +1 not available (no other wall of this level), upgrade 1 wall", $COLOR_INFO)
 		$iCount = 1
 	EndIf
-	If $iCount >= 11 And $iPlusX = 340 And BBWallTopButtonPixels(248, "green") >= 40 Then
+	If $iCount >= 11 And $iPlusX = $iMoreX And BBWallTopButtonPixels($iMoreX - 92, "green") >= 40 Then
 		While $iWalls + 10 <= $iCount
-			Click(248, 510, 1, 50, "Wall +10")
+			Click($iMoreX - 92, 510, 1, 50, "Wall +10")
 			If _Sleep(400) Then Return -1
 			$iWalls += 10
 		WEnd
@@ -1147,7 +1158,7 @@ Func BBWallUpgradeMore($sResource, $iCount)
 	EndIf
 	; total cost red (cost OCR off): Remove Wall (-1) until the cost is not red
 	While BBWallCostRed($iIconX - 30, $iRowY) And $iWalls > 1
-		Click(155, 510, 1, 50, "Wall -1")
+		Click($iPlusX - ($iPlusX = $iMoreX ? 184 : 92), 510, 1, 50, "Wall -1") ; Remove Wall = leftmost of the top row
 		If _Sleep(300) Then Return -1
 		$iWalls -= 1
 		_CaptureRegion()

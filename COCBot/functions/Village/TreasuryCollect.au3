@@ -20,21 +20,27 @@ Func TreasuryCollect()
 	If isGoldFull() And IsElixirFull() Then Return
 	If _Sleep(50) Then Return
 	If Not $g_bRunState Then Return 
-	If Not CheckZoomOut(False, True) THen ZoomOut()
-	
 	Local $CCFound = False
 	Local $TryCCAutoLocate = False
 	If Int($g_aiClanCastlePos[0]) < 1 Or Int($g_aiClanCastlePos[1]) < 1 Then
+		If Not CheckZoomOut(False, True) Then ZoomOut()
 		$TryCCAutoLocate = True
 	Else
-		Click($g_aiClanCastlePos[0], $g_aiClanCastlePos[1])
-		If _Sleep(1000) Then Return
-		Local $BuildingInfo = BuildingInfo(290, 477)
-		If $BuildingInfo[1] = "Clan Castle" Then
-			$TryCCAutoLocate = False
-		Else
-			$TryCCAutoLocate = True
-		EndIf
+		; saved position first: a Clan Castle there needs no zoom check (stone search failed after attacks, ~5-20 s with
+		; zoom and drag: qruel/qarelith 28 Oct). Another building selected: zoom out, then the saved position again
+		Local $BuildingInfo
+		For $iTry = 1 To 2
+			Click($g_aiClanCastlePos[0], $g_aiClanCastlePos[1])
+			If _Sleep(1000) Then Return
+			$BuildingInfo = BuildingInfo(290, 477)
+			If $BuildingInfo[1] = "Clan Castle" Or $iTry = 2 Then ExitLoop
+			ClickAway()
+			If _Sleep(300) Then Return
+			; ZoomOut also centers the village: CheckZoomOut passed at zoom 1.03 / offset 8,-4 and the 2nd click hit the
+			; Wall next to the Clan Castle again (qurlk 28 Oct 19:49, auto locate failed, Treasury skipped 6 h)
+			ZoomOut()
+		Next
+		$TryCCAutoLocate = ($BuildingInfo[1] <> "Clan Castle")
 	EndIf
 	
 	If $TryCCAutoLocate Then

@@ -26,6 +26,15 @@ Func AttackReport()
 		If _Sleep($DELAYATTACKREPORT2) Then Return
 		$g_iStatsLastAttack[$eLootDarkElixir] = getResourcesLootDE(370, 385)
 		If _Sleep($DELAYATTACKREPORT2) Then Return
+		; League layout with the DE pixel matched: Gold read, Elixir and DE empty (qurlk 28 Oct): League rows by Tesseract
+		If $g_iStatsLastAttack[$eLootElixir] = "" Then
+			Local $sTsGold = getResourcesLootTs(320, 281, 160), $sTsElix = getResourcesLootTs(320, 319, 160)
+			If $sTsGold <> "" Or $sTsElix <> "" Then
+				$g_iStatsLastAttack[$eLootGold] = $sTsGold
+				$g_iStatsLastAttack[$eLootElixir] = $sTsElix
+				$g_iStatsLastAttack[$eLootDarkElixir] = getResourcesLootTs(370, 357, 100)
+			EndIf
+		EndIf
 		$g_iStatsLastAttack[$eLootTrophy] = getResourcesLootT(403, 404)
 		If _ColorCheck(_GetPixelColor($aAtkRprtTrophyCheck[0], $aAtkRprtTrophyCheck[1], True), Hex($aAtkRprtTrophyCheck[2], 6), $aAtkRprtTrophyCheck[3]) Then
 			$g_iStatsLastAttack[$eLootTrophy] = -$g_iStatsLastAttack[$eLootTrophy]

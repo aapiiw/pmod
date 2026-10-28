@@ -55,6 +55,7 @@ Func SwitchAccountVariablesReload($sType = "Load", $iAccount = $g_iCurAccount)
 	; Lab time
 	Static $asLabUpgradeTime = $asEmpty, $aiLabStatus = $aiZero, $aiLabElixirCost = $aiZero, $aiLabDElixirCost = $aiZero
 	Static $asStarLabUpgradeTime = $asEmpty
+	Static $asPetUpgradeTime = $asEmpty ; was one value for all accounts: quazzy skipped Pet with quartz's time (28 Oct)
 
 	; Hero State
 	Static $aiHeroAvailable = $aiZero
@@ -135,6 +136,7 @@ Func SwitchAccountVariablesReload($sType = "Load", $iAccount = $g_iCurAccount)
 			$aiLabDElixirCost = $aiZero
 			$aiLabStatus = $aiZero
 			$asStarLabUpgradeTime = $asEmpty
+			$asPetUpgradeTime = $asEmpty
 
 			; Hero State
 			$aiHeroAvailable = $aiZero
@@ -204,6 +206,7 @@ Func SwitchAccountVariablesReload($sType = "Load", $iAccount = $g_iCurAccount)
 
 			; Lab time
 			$asLabUpgradeTime[$iAccount] = $g_sLabUpgradeTime
+			$asPetUpgradeTime[$iAccount] = $g_sPetUpgradeTime
 			$aiLabElixirCost[$iAccount] = $g_iLaboratoryElixirCost
 			$aiLabDElixirCost[$iAccount] = $g_iLaboratoryDElixirCost
 			If GUICtrlGetState($g_hPicLabGreen) = $GUI_ENABLE + $GUI_SHOW Then
@@ -286,6 +289,7 @@ Func SwitchAccountVariablesReload($sType = "Load", $iAccount = $g_iCurAccount)
 
 			; Lab time
 			$g_sLabUpgradeTime = $asLabUpgradeTime[$iAccount]
+			$g_sPetUpgradeTime = $asPetUpgradeTime[$iAccount]
 			GUICtrlSetData($g_hLbLLabTime, "")
 			$g_iLaboratoryElixirCost = $aiLabElixirCost[$iAccount]
 			$g_iLaboratoryDElixirCost = $aiLabDElixirCost[$iAccount]
