@@ -97,10 +97,12 @@ Func BotCommand()
 		If $g_bMeetCondStop Then
 			Switch $iCmbBotCommand
 				Case 0
-					If $iCmbBotCond <= 14 And $g_bCollectStarBonus And WaitforPixel(91, 578, 92, 579, "FFFFA1", 1, "StarBonus") Then
+					; grey stars above the Battle button = star bonus not done (was 91,578 FFFFA1: never true, 29 Oct screens)
+					If $iCmbBotCond <= 14 And $g_bCollectStarBonus And WaitforPixel(20, 543, 103, 554, "5B5B5B", 20, 1, "StarBonus") Then
 						SetLog("Star bonus available. Continue attacking to collect them.")
 						Return False
 					EndIf
+					If $g_bSkipTrain Then $g_bTrainEnabled = False ; Misc Mod "Skip Training" on Halt Attack
 					If Not $g_bDonationEnabled Then
 						SetLog("Halt Attack, Stay Online/Collect", $COLOR_INFO)
 					ElseIf Not $g_bTrainEnabled Then

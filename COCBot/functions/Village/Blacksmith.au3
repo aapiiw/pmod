@@ -84,16 +84,39 @@ Func BlacksmithReadPage()
 	Local $aCorner = QuickMIS("CNX", $g_sImgEquipmentCorner, 845, 50, 860, 535)
 	If Not IsArray($aCorner) Or UBound($aCorner) = 0 Then Return $aRet
 	RemoveDupCNX($aCorner, 2, 10)
+	For $i = 0 To UBound($aCorner) - 1 ; y as number: sorted as text 93 came after 511
+		$aCorner[$i][2] = Number($aCorner[$i][2])
+	Next
 	_ArraySort($aCorner, 0, 0, 0, 2)
+	; corner not matched on some rows (quazzy 29 Oct: Fireball y 213, Spiky Ball y 392 missing): a gap of N rows
+	; (59.7 px each, +-6) between 2 found corners gets the rows in between; section headers break the step, no fill there
+	Local $iX = Number($aCorner[0][1]), $aY[0]
 	For $i = 0 To UBound($aCorner) - 1
+		If $i > 0 Then
+			Local $iGap = Number($aCorner[$i][2]) - Number($aCorner[$i - 1][2]), $iRows = Round($iGap / 59.7)
+			If $iRows >= 2 And Abs($iGap - $iRows * 59.7) <= 6 Then
+				For $k = 1 To $iRows - 1
+					_ArrayAdd($aY, Round(Number($aCorner[$i - 1][2]) + $k * $iGap / $iRows))
+				Next
+			EndIf
+		EndIf
+		_ArrayAdd($aY, Number($aCorner[$i][2]))
+	Next
+	For $i = 0 To UBound($aY) - 1
 		If Not $g_bRunState Then Return $aRet
-		Local $iY = Number($aCorner[$i][2])
+		Local $iY = $aY[$i]
 		Local $aName = getBuildingName(597, $iY + 6, 180)
+		If StringStripWS($aName[0], 8) = "" Then ContinueLoop ; no row there (list end)
 		Local $sName = OcrMatchName($aName[0], $aNames)
 		Local $bMatched = (@extended = 1)
 		; red ore cost text = not enough ores
 		Local $bEnough = Not _PixelSearch(823, $iY + 9, 823, $iY + 35, Hex(0xFF7B72, 6), 20, True, "EnoughOres")
-		Local $aAdd[1][5] = [[$sName, $bMatched, Number($aCorner[$i][1]) - 50, $iY + 10, $bEnough]]
+		; locked row ("Upgrade Blacksmith to Level N", padlock, no ore cost) also has the corner: no blue Shiny Ore icon (quazzy 29 Oct)
+		If $bEnough And Not _PixelSearch(828, $iY - 5, 852, $iY + 45, Hex(0x18A8E8, 6), 30, True, "OreIcon") Then
+			SetDebugLog("Equipment row " & $sName & ": locked (no ore cost)")
+			$bEnough = False
+		EndIf
+		Local $aAdd[1][5] = [[$sName, $bMatched, $iX - 50, $iY + 10, $bEnough]]
 		_ArrayAdd($aRet, $aAdd)
 	Next
 	Return $aRet

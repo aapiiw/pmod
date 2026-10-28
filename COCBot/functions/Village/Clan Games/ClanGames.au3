@@ -28,6 +28,14 @@ Func _ClanGames($test = False, $bOnlyPurge = False)
 		Return
 	EndIf
 
+	; score max reached (qurlk 10000, 28 Oct: window opened and read every cycle, ~5 s): check again after 6 h
+	Local Static $ahScoreMaxTimer[16] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+	If Not $test And $ahScoreMaxTimer[CurAccountIndex()] <> 0 And __TimerDiff($ahScoreMaxTimer[CurAccountIndex()]) < 6 * 3600000 Then
+		SetLog("Clan Games score max reached, skip Clan Games", $COLOR_INFO)
+		$g_bisCGPointMaxed = True
+		Return False
+	EndIf
+
 	;Prevent checking clangames before date 22 (clangames should start on 22 and end on 28 or 29) depends on how many tiers/maxpoint
 	Local $currentDate = Number(@MDAY)
 	If $currentDate > 4 And $currentDate < 21 Then
@@ -75,13 +83,15 @@ Func _ClanGames($test = False, $bOnlyPurge = False)
 			CloseClangamesWindow()
 			Return False
 		Else
-			SetLog("Your Score is: " & $aiScoreLimit[0], $COLOR_INFO)
+			SetLog("Your Score is: " & $aiScoreLimit[0] & " (limit read: " & $aiScoreLimit[1] & ")", $COLOR_INFO)
 			$sTimeCG = ConvertOCRTime("ClanGames()", StringLower($g_sClanGamesTimeRemaining), True)
 			Setlog("Clan Games Minute Remain: " & $sTimeCG)
 
-			If $aiScoreLimit[0] = $aiScoreLimit[1] Then
+			; limit read shorter than the score (text cut) also means max: 10000 read with 'event in progress' on qurlk 10:39-14:27 (max 10000)
+			If $aiScoreLimit[0] = $aiScoreLimit[1] Or ($aiScoreLimit[0] > $aiScoreLimit[1] And $aiScoreLimit[0] >= 4000) Or $aiScoreLimit[0] >= 10000 Then
 				SetLog("Your score limit is reached! Congrats")
 				$g_bIsCGPointMaxed = True
+				If Not $test Then $ahScoreMaxTimer[CurAccountIndex()] = __TimerInit()
 				CloseClangamesWindow()
 				Return False
 			EndIf

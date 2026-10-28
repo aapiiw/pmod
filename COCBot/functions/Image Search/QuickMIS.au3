@@ -278,6 +278,10 @@ Func RemoveDupCNX(ByRef $arr, $sortBy = 1, $distance = 10)
 			ContinueLoop
 		EndIf
 	Next
+	For $i = 0 To UBound($atmparray) - 1 ; _ArrayAdd of a "|" string made x/y text: later sorts by x/y were text order (93 after 511)
+		$atmparray[$i][1] = Number($atmparray[$i][1])
+		$atmparray[$i][2] = Number($atmparray[$i][2])
+	Next
 	$arr = $atmparray
 	If $g_bDebugSetlog Then SetDebugLog("RemoveDupCNX:" & _ArrayToString($arr))
 EndFunc

@@ -749,6 +749,7 @@ Func chkOnHaltAttack()
 	Else
 		$g_bSkipBB = False
 	EndIf
+	$g_bSkipTrain = (GUICtrlRead($g_hChkMMSkipTrain) = $GUI_CHECKED)
 EndFunc ;==> chkOnHaltAttack
 
 Func chkOnDoubleTrain()

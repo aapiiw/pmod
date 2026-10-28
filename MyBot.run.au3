@@ -916,7 +916,8 @@ Func __RunFunction($action)
 		Case "AutoUpgradeCC"
 			AutoUpgradeCC()
 		Case "CollectCCGold"
-			CollectCCGold()
+			; ~6 s (zoom + drag) also when nothing to collect (28 of 46 checks, 29 Oct night): once per hour
+			If RoutineIntervalDue(5, 60) Then CollectCCGold()
 
 		; must review below function
 		Case "UpgradeHeroes"

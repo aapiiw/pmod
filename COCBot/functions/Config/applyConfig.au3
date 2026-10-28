@@ -49,6 +49,10 @@ Func applyConfig($bRedrawAtExit = True, $TypeReadSave = "Read") ;Applies the dat
 
 	; Move with redraw disabled causes ghost window in VMWare, so move first then disable redraw
 	Local $bWasRdraw = SetRedrawBotWindow(False, Default, Default, Default, "applyConfig")
+	; bot running with locked controls (profile switch, Treasury CC save): the chk* handlers below enable their controls
+	; again (Lab order, pets, ignore, Auto Adjust...), unlock first and lock again at the end so the saved states stay right
+	Local $bRelock = $g_bRunState And Not $g_bGuiControlsEnabled
+	If $bRelock Then EnableGuiControls(False)
 	; <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
 	; <><><><> Bot / Profile (global settings) <><><><>
@@ -168,6 +172,7 @@ Func applyConfig($bRedrawAtExit = True, $TypeReadSave = "Read") ;Applies the dat
 
 
 	ApplyConfig_Debug($TypeReadSave)
+	If $bRelock Then DisableGuiControls(False)
 	; Reenabling window redraw - Keep this last....
 	If $bRedrawAtExit Then SetRedrawBotWindow($bWasRdraw, Default, Default, Default, "applyConfig")
 
@@ -302,8 +307,13 @@ Func ApplyConfig_600_6($TypeReadSave)
 			For $i = 0 To $eLootCount - 1
 				GUICtrlSetData($g_ahTxtResumeAttackLoot[$i], $g_aiResumeAttackLoot[$i])
 			Next
+			GUICtrlSetState($g_hChkCollectStarBonus, $g_bCollectStarBonus ? $GUI_CHECKED : $GUI_UNCHECKED)
 			_GUICtrlComboBox_SetCurSel($g_hCmbTimeStop, $g_iCmbTimeStop)
+			_GUICtrlComboBox_SetCurSel($g_hCmbResumeTime, $g_iResumeAttackTime)
 			chkBotStop()
+			GUICtrlSetData($g_hTxtRestartGold, $g_iTxtRestartGold)
+			GUICtrlSetData($g_hTxtRestartElixir, $g_iTxtRestartElixir)
+			GUICtrlSetData($g_hTxtRestartDark, $g_iTxtRestartDark)
 
 			GUICtrlSetState($g_hChkCollect, $g_bChkCollect ? $GUI_CHECKED : $GUI_UNCHECKED)
 			GUICtrlSetState($g_hChkCollectLootCart, $g_bChkCollectLootCart ? $GUI_CHECKED : $GUI_UNCHECKED)
@@ -485,6 +495,7 @@ Func ApplyConfig_600_6($TypeReadSave)
 			;Misc Mod
 			GUICtrlSetState($g_hChkMMSkipFirstCheckRoutine, $g_bSkipFirstCheckRoutine ? $GUI_CHECKED : $GUI_UNCHECKED)
 			GUICtrlSetState($g_hChkMMSkipBB, $g_bSkipBB ? $GUI_CHECKED : $GUI_UNCHECKED)
+			GUICtrlSetState($g_hChkMMSkipTrain, $g_bSkipTrain ? $GUI_CHECKED : $GUI_UNCHECKED)
 			GUICtrlSetState($g_hChkMMIgnoreIncorrectTroopCombo, $g_bIgnoreIncorrectTroopCombo ? $GUI_CHECKED : $GUI_UNCHECKED)
 			_GUICtrlComboBox_SetCurSel($g_hCmbFillIncorrectTroopCombo, $g_iCmbFillIncorrectTroopCombo)
 			GUICtrlSetState($g_hChkMMIgnoreIncorrectSpellCombo, $g_bIgnoreIncorrectSpellCombo ? $GUI_CHECKED : $GUI_UNCHECKED)
@@ -511,7 +522,12 @@ Func ApplyConfig_600_6($TypeReadSave)
 			For $i = 0 To $eLootCount - 1
 				$g_aiResumeAttackLoot[$i] = GUICtrlRead($g_ahTxtResumeAttackLoot[$i])
 			Next
+			$g_bCollectStarBonus = (GUICtrlRead($g_hChkCollectStarBonus) = $GUI_CHECKED)
 			$g_iCmbTimeStop = _GUICtrlComboBox_GetCurSel($g_hCmbTimeStop)
+			$g_iResumeAttackTime = _GUICtrlComboBox_GetCurSel($g_hCmbResumeTime)
+			$g_iTxtRestartGold = GUICtrlRead($g_hTxtRestartGold)
+			$g_iTxtRestartElixir = GUICtrlRead($g_hTxtRestartElixir)
+			$g_iTxtRestartDark = GUICtrlRead($g_hTxtRestartDark)
 			$g_bChkCollect = (GUICtrlRead($g_hChkCollect) = $GUI_CHECKED)
 			$g_bChkCollectLootCart = (GUICtrlRead($g_hChkCollectLootCart) = $GUI_CHECKED)
 			$g_bChkTreasuryCollect = (GUICtrlRead($g_hChkTreasuryCollect) = $GUI_CHECKED)
@@ -664,6 +680,7 @@ Func ApplyConfig_600_6($TypeReadSave)
 			;Misc Mod
 			$g_bSkipFirstCheckRoutine = (GUICtrlRead($g_hChkMMSkipFirstCheckRoutine) = $GUI_CHECKED)
 			$g_bSkipBB = (GUICtrlRead($g_hChkMMSkipBB) = $GUI_CHECKED)
+			$g_bSkipTrain = (GUICtrlRead($g_hChkMMSkipTrain) = $GUI_CHECKED)
 			$g_bIgnoreIncorrectTroopCombo = (GUICtrlRead($g_hChkMMIgnoreIncorrectTroopCombo) = $GUI_CHECKED)
 			$g_iCmbFillIncorrectTroopCombo = _GUICtrlComboBox_GetCurSel($g_hCmbFillIncorrectTroopCombo)
 			$g_bIgnoreIncorrectSpellCombo = (GUICtrlRead($g_hChkMMIgnoreIncorrectSpellCombo) = $GUI_CHECKED)

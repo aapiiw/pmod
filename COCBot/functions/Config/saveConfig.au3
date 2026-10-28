@@ -523,6 +523,7 @@ Func SaveConfig_600_6()
 	;Misc Mod
 	_Ini_Add("other", "SkipFirstCheckRoutine", $g_bSkipFirstCheckRoutine)
 	_Ini_Add("other", "SkipBB", $g_bSkipBB)
+	_Ini_Add("other", "SkipTrain", $g_bSkipTrain)
 	_Ini_Add("other", "IgnoreIncorrectTroopCombo", $g_bIgnoreIncorrectTroopCombo)
 	_Ini_Add("other", "FillIncorrectTroopCombo", $g_iCmbFillIncorrectTroopCombo)
 	_Ini_Add("other", "IgnoreIncorrectSpellCombo", $g_bIgnoreIncorrectSpellCombo)

@@ -473,7 +473,7 @@ EndFunc
 
 Func SearchLimit($iSkipped = 50)
 	Local $bRet = False
-	If $iSkipped >= Number($g_iSearchRestartLimit) Then
+	If $g_bSearchRestartEnable And $iSkipped >= Number($g_iSearchRestartLimit) Then
 		SetLog("Search Limit search/max : " & $iSkipped & "/" & $g_iSearchRestartLimit, $COLOR_DEBUG2)
 		ReturnHome(False, False)
 		$g_bIsSearchLimit = True
