@@ -22,13 +22,13 @@ Global $g_aiDonIcons[$eTroopCount + 1] = [$eIcnDonBarbarian, $eIcnSuperBarbarian
 							$eIcnDonWitch, $eIcnSuperWitch, $eIcnDonLavaHound, $eIcnIceHound, $eIcnDonBowler, $eIcnSuperBowler, $eIcnIceGolem, $eIcnHeadhunter, $eIcnDonBlank]
 
 Func chkRequestCC()
-	If GUICtrlRead($g_hChkRequestTroopsEnable) = $GUI_CHECKED Then
-		$g_bRequestTroopsEnable = True
-		GUICtrlSetState($g_hTxtRequestCC, $GUI_ENABLE)
-	Else
-		$g_bRequestTroopsEnable = False
-		GUICtrlSetState($g_hTxtRequestCC, $GUI_DISABLE)
-	EndIf
+	$g_bRequestTroopsEnable = (GUICtrlRead($g_hChkRequestTroopsEnable) = $GUI_CHECKED)
+	; cake and Update Request are only used while requesting (RequestCC): locked with the request off
+	Local $iState = $g_bRequestTroopsEnable ? $GUI_ENABLE : $GUI_DISABLE
+	GUICtrlSetState($g_hTxtRequestCC, $iState)
+	GUICtrlSetState($g_hChkReinforcementCake, $iState)
+	GUICtrlSetState($g_hChkUpdateRequest, $iState)
+	UpdateRequestCtrlState()
 EndFunc
 
 Func chkReinforcementCake()
@@ -40,17 +40,17 @@ Func chkReinforcementCake()
 EndFunc
 
 Func chkUpdateRequest()
-	If  GUICtrlRead($g_hChkUpdateRequest) = $GUI_CHECKED Then
-		$g_bChkUpdateRequest = True
-		For $i = $g_hCmbRequestTroop1 To $g_hRequestSiegeQuantity2
-			GUICtrlSetState($i, $GUI_ENABLE)
-		Next
-	Else
-		$g_bChkUpdateRequest = False
-		For $i = $g_hCmbRequestTroop1 To $g_hRequestSiegeQuantity2
-			GUICtrlSetState($i, $GUI_DISABLE)
-		Next
-	EndIf
+	$g_bChkUpdateRequest = (GUICtrlRead($g_hChkUpdateRequest) = $GUI_CHECKED)
+	UpdateRequestCtrlState()
+EndFunc
+
+; request troop / spell / siege combos: only with Request and Update Request on (GUI state only: applyConfig calls
+; chkRequestCC before the Update Request check box is set from the profile)
+Func UpdateRequestCtrlState()
+	Local $iState = (GUICtrlRead($g_hChkUpdateRequest) = $GUI_CHECKED And GUICtrlRead($g_hChkRequestTroopsEnable) = $GUI_CHECKED) ? $GUI_ENABLE : $GUI_DISABLE
+	For $i = $g_hCmbRequestTroop1 To $g_hRequestSiegeQuantity2
+		GUICtrlSetState($i, $iState)
+	Next
 EndFunc
 
 Func RequestQty()

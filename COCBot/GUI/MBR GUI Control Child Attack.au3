@@ -222,6 +222,7 @@ Func chkAttackPlannerEnable()
 		For $i = 0 To 23
 			GUICtrlSetState($g_ahChkAttackHours[$i], $GUI_DISABLE)
 		Next
+		GUICtrlSetState($g_ahChkAttackHoursE1, $GUI_DISABLE) ; was left enabled with the planner off
 		GUICtrlSetState($g_ahChkAttackHoursE2, $GUI_DISABLE)
 	EndIf
 EndFunc   ;==>chkAttackPlannerEnable

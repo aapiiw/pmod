@@ -107,7 +107,7 @@ Func UpgradeWallBuildMenu()
 	; loot minus wall Min Save, resource type of the GUI (0 Gold, 1 Elixir, 2 Elixir then Gold).
 	; loot read again now (shown top center while the menu is open): the value read at the start can be old or unread (0),
 	; builders keep upgrading between routines. Unread loot = no early skip, DoUpgradeWall checks after its own report.
-	BuildMenuReadLoot(False, False)
+	WallReadLootBM()
 	If Number($g_aiCurrentLoot[$eLootGold]) > 0 Or Number($g_aiCurrentLoot[$eLootElixir]) > 0 Then
 		Local $iCost = Number($aList[$iRow][5])
 		Local $iCanGold = Number($g_aiCurrentLoot[$eLootGold]) - $g_iUpgradeWallMinGold
@@ -174,6 +174,16 @@ Func UpgradeWallBuildMenu()
 	EndIf
 	Return DoUpgradeWall($iWallCost)
 EndFunc   ;==>UpgradeWallBuildMenu
+
+; loot read with the Build menu open; a value not read there ('' = 0) keeps the last village report value (qath 28 Oct
+; 22:26 Gold 16.6 M read as 0: 'can use Gold - 11 000 000', the 5 M wall skipped; quiver 23:17 Gold 16.4 M / Elixir
+; 20.8 M read as 0 in DoUpgradeWall: 'Both Gold and Elix are low' with the wall already selected)
+Func WallReadLootBM()
+	Local $iOldGold = Number($g_aiCurrentLoot[$eLootGold]), $iOldElix = Number($g_aiCurrentLoot[$eLootElixir])
+	BuildMenuReadLoot(False, False)
+	If Number($g_aiCurrentLoot[$eLootGold]) <= 0 And $iOldGold > 0 Then $g_aiCurrentLoot[$eLootGold] = $iOldGold
+	If Number($g_aiCurrentLoot[$eLootElixir]) <= 0 And $iOldElix > 0 Then $g_aiCurrentLoot[$eLootElixir] = $iOldElix
+EndFunc   ;==>WallReadLootBM
 
 ; loot (village report) minus wall Min Save, before the Build menu is opened (Oct 2026: menu opened with loot under
 ; Min Save when the last builder was kept for walls). Auto Adjust Min Save is applied first.
@@ -247,7 +257,7 @@ Func DoUpgradeWall($iSelectedWallCost = 0)
 	; wall selected from the Build menu: loot read with the menu open. VillageReport closed the menu (checkObstacles
 	; "FullScreenWindow"), the buttons moved back to the center and Gold (x ~508) was outside the left area (zone 27 Oct)
 	If $iSelectedWallCost > 0 And IsBuildMenuOpen() Then
-		BuildMenuReadLoot(False, False)
+		WallReadLootBM()
 	Else
 		VillageReport(True, True)
 	EndIf
@@ -373,8 +383,15 @@ Func DoUpgradeWall($iSelectedWallCost = 0)
 			ClickAway()
 			Return False
 		EndIf
-		Local $iMoreCount = $bUseElix ? $iWallCanUpgradeElix : $iWallCanUpgradeGold
-		If $bPlusSignFound And $iMoreCount > 1 And IsBuildMenuOpen() Then Return WallUpgradeMoreBM($aPlusButton, $bUseElix ? "Elix" : "Gold", $iMoreCount, $iWallCost, $bUseElix ? $aElixButton : $aGoldButton)
+		; Elixir then Gold with 1 Elixir wall but more Gold walls: Upgrade More with Gold (quiver 28 Oct 21:47 went to the
+		; old template path: Elix 1, Gold 2)
+		Local $bMoreElix = $bUseElix
+		If $g_iUpgradeWallLootType = 2 And $iWallCanUpgradeElix < 2 And $iWallCanUpgradeGold > 1 And $aGoldButton[0] <> "" Then $bMoreElix = False
+		Local $iMoreCount = $bMoreElix ? $iWallCanUpgradeElix : $iWallCanUpgradeGold
+		If IsBuildMenuOpen() Then
+			If $bPlusSignFound And $iMoreCount > 1 Then Return WallUpgradeMoreBM($aPlusButton, $bMoreElix ? "Elix" : "Gold", $iMoreCount, $iWallCost, $bMoreElix ? $aElixButton : $aGoldButton)
+			$bPlusSignFound = False ; old template +10/+1 path is for the layout without the Build menu
+		EndIf
 
 		If $bCanUseGold Or $bCanUseElix Then
 			If ($iWallCanUpgradeGold > 1 Or $iWallCanUpgradeElix > 1) And $bPlusSignFound Then

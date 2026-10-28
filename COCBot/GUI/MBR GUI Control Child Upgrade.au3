@@ -699,6 +699,7 @@ Func chkWalls()
 		For $i = $g_hChkUseGold To $g_hChkOnly1Builder
 			GUICtrlSetState($i, $GUI_ENABLE)
 		Next
+		chkAutoAdjustSaveMinWall() ; Min Save inputs stay locked while Auto Adjust sets them
 	Else
 		$g_bAutoUpgradeWallsEnable = False
 		For $i = $g_hChkUseGold To $g_hChkOnly1Builder
@@ -717,6 +718,10 @@ EndFunc   ;==>chkWallOnly1Builder
 
 Func chkAutoAdjustSaveMinWall()
 	$g_bAutoAdjustSaveWall = (GUICtrlRead($g_hAutoAdjustSaveWall) = $GUI_CHECKED)
+	; Auto Adjust writes Min Gold / Min Elixir itself (WallAutoAdjustMinSave): typed values were overwritten
+	Local $iState = ($g_bAutoAdjustSaveWall Or GUICtrlRead($g_hChkWalls) <> $GUI_CHECKED) ? $GUI_DISABLE : $GUI_ENABLE
+	GUICtrlSetState($g_hTxtWallMinGold, $iState)
+	GUICtrlSetState($g_hTxtWallMinElixir, $iState)
 EndFunc
 
 

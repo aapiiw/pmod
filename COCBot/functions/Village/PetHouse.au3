@@ -37,6 +37,12 @@ Func PetUpgrade($bTest = False)
 	SetLog("Checking for Pet upgrade", $COLOR_INFO)
 	If Not OpenBuildMenu(4) Then Return False
 	BuildMenuReadLoot()
+	; counter not read (-1) right after the tab change: Pet House busy was missed, the upgrade click opened the gem window
+	; (qurlk 28 Oct 21:14 'Pet:-1/-1', read again 0/1 a moment later)
+	If $g_aiBuildMenuCounter[4][0] < 0 Then
+		If _Sleep(500) Then Return False
+		ReadBuildMenuCounters(False)
+	EndIf
 	If $g_aiBuildMenuCounter[4][0] = 0 And Not $bTest Then
 		PetSaveBusyTime(BuildMenuBusyTime())
 		CloseBuildMenu()
