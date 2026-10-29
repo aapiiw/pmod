@@ -712,25 +712,3 @@ Func TestCSV($iMatchMode = $LB)
 	ReturnHome()
 EndFunc
 
-Func CSVLoop($iCountLoop = 1, $bStopWhenResourceFull = False)
-	Local $filename = $g_sAttackScrScriptName[$LB]
-	ZoomOut()
-	For $i = 1 To $iCountLoop
-		SetLog("TestCSVLoop #" & $i, $COLOR_ACTION)
-		PrepareSearch()
-		If Not $g_bRunState Then Return
-		VillageSearch()
-		If Not $g_bRunState Then Return
-		SetLog("will use script : " & $filename, $COLOR_INFO)
-		CheckZoomOut()
-		PrepareAttack($LB)
-		Algorithm_AttackCSV()
-		ReturnHome()
-		If Not $g_bRunState Then Return
-		VillageReport()
-		If Not $g_bRunState Then Return
-		RequestCC()
-		Setlog("TestCSV Loop [" & $i & "/" & $iCountLoop & "]", $COLOR_ACTION) 
-		If isGoldFull() And isElixirFull() And $bStopWhenResourceFull Then Return
-	Next
-EndFunc

@@ -281,11 +281,12 @@ Func BuildMenuHelperDue($iHelper)
 EndFunc   ;==>BuildMenuHelperDue
 
 ; Research / Builder Potion from the Magic Item button of the open Build menu (tab 2 lab / tab 1 builders) when the first
-; running upgrade has 1 day or more left ("d" in its time, row 1). $iKind: 0 research, 1 builder. One try per hour per
-; account (a potion lasts 1 hour). Returns True when used.
+; running upgrade has 1 day or more left ("d" in its time, row 1). $iKind: 0 research, 1 builder, 2 pet (tab 4). One try per
+; hour per account (a potion lasts 1 hour). Returns True when used.
 Func BuildMenuUsePotion($iKind)
-	Local $sDir = $iKind = 0 ? $g_sImgResearchPotion : $g_sImgBuilderPotion
-	Local $sName = $iKind = 0 ? "Research" : "Builder"
+	Local $aDir[3] = [$g_sImgResearchPotion, $g_sImgBuilderPotion, $g_sImgPetPotion], $aName[3] = ["Research", "Builder", "Pet"]
+	Local $sDir = $aDir[$iKind], $sName = $aName[$iKind]
+	Local $sButtonDir = $iKind = 2 ? $g_sImgBuilderPotion : $sDir ; Pet Potion: no button image of its own (same Magic Item button)
 	Local $iAcc = CurAccountIndex(), $h = $g_ahPotionTimer[$iAcc][$iKind]
 	If $h <> 0 And __TimerDiff($h) < 3600000 Then Return False
 	If Not IsBuildMenuOpen() Then Return False
@@ -294,7 +295,7 @@ Func BuildMenuUsePotion($iKind)
 		SetLog($sName & " Potion: running upgrade ends in less than 1 day, not used", $COLOR_DEBUG2)
 		Return False
 	EndIf
-	If Not QuickMIS("BC1", $sDir, 440, 620, 460, 640) Then
+	If Not QuickMIS("BC1", $sButtonDir, 440, 620, 460, 640) Then
 		SetLog($sName & " Potion: Magic Item button not found", $COLOR_DEBUG2)
 		Return False
 	EndIf

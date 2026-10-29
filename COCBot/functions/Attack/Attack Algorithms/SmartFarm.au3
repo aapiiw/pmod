@@ -1034,28 +1034,3 @@ Func TestSF()
 	ReturnHome()
 EndFunc
 
-Func SFLoop($iCountLoop = 1, $bStopWhenResourceFull = False)
-	If isGoldFull() And isElixirFull() And $bStopWhenResourceFull Then Return
-	For $i = 1 To $iCountLoop
-		ZoomOut(True)
-		PrepareSearch()
-		If Not $g_bRunState Then Return
-		VillageSearch()
-		If Not IsAttackPage() Then ContinueLoop
-		If Not $g_bRunState Then Return
-		CheckZoomOut()
-		PrepareAttack($DB)
-		If IsProblemAffect() Then ContinueLoop
-		If Not $g_bRunState Then Return
-		Local $Nside = ChkSmartFarm()
-		AttackSmartFarm($Nside[1], $Nside[2])
-		If Not $g_bRunState Then Return
-		ReturnHome()
-		If Not $g_bRunState Then Return
-		VillageReport()
-		If Not $g_bRunState Then Return
-		RequestCC()
-		SetLog("SF Loop [" & $i & "/" & $iCountLoop & "]", $COLOR_ACTION) 
-		If isGoldFull() And isElixirFull() And $bStopWhenResourceFull Then Return
-	Next
-EndFunc

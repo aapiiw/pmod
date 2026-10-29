@@ -351,6 +351,8 @@ Func SellFullMagicItem($MagicItem = "", $Amount = 0)
 		SetLog("Unable to find " & $MagicItem, $COLOR_DEBUG2)
 	EndIf
 	ClickAway()
+	If _Sleep(500) Then Return
+	CloseBuildMenu() ; opened by OpenMagicItemWindow
 EndFunc
 
 Func SellMagicItem($bTest = False)
@@ -413,9 +415,18 @@ Func SellMagicItem($bTest = False)
 	;Return $aMagic
 EndFunc
 
+; Magic Item button of the Build menu first (no Town Hall click / locate needed; the menu stays open: callers close it),
+; Town Hall Magic Item button when not found
 Func OpenMagicItemWindow()
 	Local $bRet = False
 	Local $bLocateTH = False
+	If OpenBuildMenu(1) And QuickMIS("BC1", $g_sImgBuilderPotion, 440, 620, 460, 640) Then
+		SetLog("Opening Magic Item Window", $COLOR_ACTION)
+		Click($g_iQuickMISX, $g_iQuickMISY, 1, 0, "Magic Item")
+		If _Sleep(1000) Then Return False
+		If IsMagicItemWindowOpen() Then Return True
+	EndIf
+	CloseBuildMenu()
 	Click($g_aiTownHallPos[0], $g_aiTownHallPos[1])
 	If _Sleep(500) Then Return
 	

@@ -752,6 +752,7 @@ Func ReadConfig_600_14()
 	IniReadS($g_bAutoStarLabUpgradeEnable, $g_sProfileBuildingPath, "upgrade", "upgradestartroops", False, "Bool")
 	IniReadS($g_iCmbStarLaboratory, $g_sProfileBuildingPath, "upgrade", "upgradestartroopname", 0, "int")
 	IniReadS($g_bUseLabPotion, $g_sProfileBuildingPath, "upgrade", "uselabpotion", False, "Bool")
+	IniReadS($g_bUsePetPotion, $g_sProfileConfigPath, "upgrade", "UsePetPotion", False, "Bool")
 
 	;mod
 	IniReadS($g_bLabUpgradeOrderEnable, $g_sProfileBuildingPath, "upgrade", "upgradeorder", False, "Bool")

@@ -179,33 +179,6 @@ Func GetCurrentSpell($x_start = 96, $y_start = 165)
 	Return $aResult
 EndFunc   ;==>GetCurrentSpell
 
-Func GetCurrentSiege($x_start = 105, $y_start = 165)
-
-	Local $aResult[4] = [0, 0, 0, 0]
-	Local $iLenght, $x1, $iSiegeCap = 0, $iSiegeQuant = 0
-	If Not $g_bRunState Then Return $aResult
-	
-	If QuickMIS("BC1", $g_sImgSlash, $x_start, $y_start, $x_start + 40, $y_start + 15) Then
-		$iLenght = $g_iQuickMISX - $x_start
-		$x1 = $g_iQuickMISX
-	Else
-		SetLog("DEBUG | ERROR on GetCurrentSiege Find Slash", $COLOR_ERROR)
-		Return $aResult
-	EndIf
-	
-	Local $iSiegeCap = getArmyCapacityOnTrainTroops($x1, $y_start)
-	Local $iSiegeQuant = getArmyCapacityOnTrainTroops($x_start, $y_start, $iLenght)
-	
-	$iSiegeQuant = StringReplace($iSiegeQuant, "#", "")
-	$iSiegeCap = StringReplace($iSiegeCap, "#", "")
-	
-	$aResult[0] = Number($iSiegeQuant)
-	$aResult[1] = Number($iSiegeCap) / 2
-	$aResult[2] = $aResult[1] - $aResult[0]
-	$aResult[3] = Number($iSiegeCap)
-	
-	Return $aResult
-EndFunc   ;==>GetCurrentSpell
 
 Func CheckQueueTroopAndTrainRemain($ArmyCamp = Default) ;GetCurrentTroop(95, 163)
 	If Not OpenTroopsTab(True, "CheckQueueTroopAndTrainRemain()") Then Return
@@ -623,22 +596,6 @@ Func IsNormalSpellTrain()
 	Return $bRet
 EndFunc
 
-Func ReTrainForSwitch()
-	If Not OpenArmyOverview("ReTrainForSwitch") Then Return
-	If Not OpenTroopsTab(False, "ReTrainForSwitch") Then Return
-	RemoveTrainTroop()
-	If _Sleep(500) Then Return
-	If Not $g_bRunState Then Return
-	If Not OpenSpellsTab(False, "ReTrainForSwitch") Then Return
-	RemoveTrainSpell()
-	If _Sleep(500) Then Return
-	If Not $g_bRunState Then Return
-	TrainCustomArmy()
-	If Not $g_bRunState Then Return
-	TrainSiege()
-	ClickAway()
-	If _Sleep(500) Then Return
-EndFunc
 
 Func DoubleTrainTroop($bTest = False)
 	

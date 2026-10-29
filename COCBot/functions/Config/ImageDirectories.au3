@@ -158,6 +158,7 @@ Global $g_sImgGoblin = @ScriptDir & "\imgxml\Resources\AutoUpgrade\Goblin\"
 Global $g_sImgAUpgradeHour = @ScriptDir & "\imgxml\Resources\AutoUpgrade\Hour\"
 Global $g_sImgBuilderPotion = @ScriptDir & "\imgxml\Resources\AutoUpgrade\Potion\" ; Magic Item icon (Build menu) + Builder Potion
 Global $g_sImgResearchPotion = @ScriptDir & "\imgxml\Research\Potion\" ; Magic Item icon (Build menu) + Research Potion
+Global $g_sImgPetPotion = @ScriptDir & "\imgxml\Research\PetHouse\Potion\" ; Pet Potion in Magic Items
 Global $g_sImgResourceIcon = @ScriptDir & "\imgxml\Resources\AutoUpgrade\ResourceIcon\"
 Global $g_sImgBuildingAndTraps = @ScriptDir & "\imgxml\Resources\AutoUpgrade\Shop\BuildingAndTraps\"
 Global $g_sImgBuilderMenu = @ScriptDir & "\imgxml\Resources\AutoUpgrade\BuilderMenu\"

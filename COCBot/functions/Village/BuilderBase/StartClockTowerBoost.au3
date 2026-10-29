@@ -37,12 +37,16 @@ Func StartClockTowerBoost($bSwitchToBB = False, $bSwitchToNV = False, $bUsePotio
 	Else ; Start Boosting
 		SetLog("Boosting Clock Tower", $COLOR_INFO)
 		Local $aXY[2] = [0, 0]
-		Local $aClock = QuickMIS("CNX", $g_sImgStartCTBoost, $g_InnerDiamondLeft, $g_InnerDiamondTop, $g_InnerDiamondRight, $g_InnerDiamondBottom)
+		; outer diamond: the tower at the village edge was found but dropped by the inner diamond check, no log (~100 of 214 tries, 28-29 Oct)
+		Local $aClock = QuickMIS("CNX", $g_sImgStartCTBoost, _Max(0, $g_OuterDiamondLeft), _Max(0, $g_OuterDiamondTop), _Min(859, $g_OuterDiamondRight), _Min(675, $g_OuterDiamondBottom))
 		If IsArray($aClock) And UBound($aClock) > 0 Then
 			For $i = 0 To UBound($aClock) - 1
 				$aXY[0] = $aClock[$i][1]
 				$aXY[1] = $aClock[$i][2]
-				If Not IsInsideDiamond($aXY) Then ContinueLoop
+				If Not isInsideDiamond($aXY, True) Then
+					SetDebugLog("Clock Tower image at " & $aXY[0] & "," & $aXY[1] & " outside the village, skip")
+					ContinueLoop
+				EndIf
 				SetLog("Found Clock Tower on " & $aXY[0] & "," & $aXY[1], $COLOR_INFO)
 				; the image point can be on the top of the tower: lower clicks until the Boost button shows (4 of 7 clicks missed, Oct 2026)
 				Local $bBoostBtn = False

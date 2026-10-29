@@ -273,6 +273,7 @@ Func CheckSuperTroopPotion()
 	
 	ClickAway()
 	If _Sleep(1000) Then Return
+	CloseBuildMenu() ; opened by OpenMagicItemWindow
 EndFunc
 
 Func IsBoostWindowOpened()

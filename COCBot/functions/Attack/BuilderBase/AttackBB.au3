@@ -614,27 +614,6 @@ Func GetBBDPPixelSection($XMiddle, $YMiddle, $x, $y)
 	Return 3 ; Bottom Right
 EndFunc
 
-Func SetVersusBHToMid()
-	Local $xMiddle = 430, $yMiddle = 275, $Delay = 500
-	Local $aRet[3] = [False, $xMiddle, $yMiddle]
-
-	If QuickMIS("BC1", $g_sImgVersusBH, 50,50,800,570) Then
-		ClickDrag($g_iQuickMISX, $g_iQuickMISY, $xMiddle, $yMiddle, $Delay) ;drag to center
-		$aRet[0] = True
-	Else
-		SaveDebugImage("SetVersusBHToMid")
-		ClickDrag(430, 500, 430, 300)	;If we cannot find BH on first search, try to scroll down. Maybe BH is at the bottom of the base.
-		If _Sleep(1500) Then Return
-		If QuickMIS("BC1", $g_sImgVersusBH, 50,50,800,570) Then
-			ClickDrag($g_iQuickMISX, $g_iQuickMISY, $xMiddle, $yMiddle, $Delay) ;drag to center
-			If _Sleep(1500) Then Return
-			$aRet[0] = True
-		Else
-			SetDebugLog("SetVersusBHToMid(): Versus BH Not Found", $COLOR_INFO)
-		EndIf
-	EndIf
-	Return $aRet
-EndFunc
 
 Func isInsideDiamondAttackBB($aCoords, $aaDiamond)
 	Local $x = $aCoords[0], $y = $aCoords[1], $xD, $yD

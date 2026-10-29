@@ -578,9 +578,6 @@ Func btnTestAttackBar()
 	$g_bRunState = $bCurrentRunState
 EndFunc   ;==>btnTestAttackBar
 
-Func minipinch($script = "minipinch")
-	Return AndroidAdbScript($script)
-EndFunc
 
 Func TestClickAway($count = 100, $region = "right")
 	Local $iCount = $count
