@@ -37,16 +37,13 @@ Func StartClockTowerBoost($bSwitchToBB = False, $bSwitchToNV = False, $bUsePotio
 	Else ; Start Boosting
 		SetLog("Boosting Clock Tower", $COLOR_INFO)
 		Local $aXY[2] = [0, 0]
-		; outer diamond: the tower at the village edge was found but dropped by the inner diamond check, no log (~100 of 214 tries, 28-29 Oct)
-		Local $aClock = QuickMIS("CNX", $g_sImgStartCTBoost, _Max(0, $g_OuterDiamondLeft), _Max(0, $g_OuterDiamondTop), _Min(859, $g_OuterDiamondRight), _Min(675, $g_OuterDiamondBottom))
+		; the diamonds are those of the main village, not Builder Base: found towers were dropped "outside" (qurlk 350,186, 29 Oct;
+		; ~100 of 214 tries 28-29 Oct). Whole village area of the screen, without the buttons of the borders
+		Local $aClock = QuickMIS("CNX", $g_sImgStartCTBoost, 70, 60, 790, 580)
 		If IsArray($aClock) And UBound($aClock) > 0 Then
 			For $i = 0 To UBound($aClock) - 1
 				$aXY[0] = $aClock[$i][1]
 				$aXY[1] = $aClock[$i][2]
-				If Not isInsideDiamond($aXY, True) Then
-					SetDebugLog("Clock Tower image at " & $aXY[0] & "," & $aXY[1] & " outside the village, skip")
-					ContinueLoop
-				EndIf
 				SetLog("Found Clock Tower on " & $aXY[0] & "," & $aXY[1], $COLOR_INFO)
 				; the image point can be on the top of the tower: lower clicks until the Boost button shows (4 of 7 clicks missed, Oct 2026)
 				Local $bBoostBtn = False
@@ -68,9 +65,11 @@ Func StartClockTowerBoost($bSwitchToBB = False, $bSwitchToNV = False, $bUsePotio
 					Else
 						SetLog("Failed to find the BOOST window button", $COLOR_ERROR)
 					EndIf
-				Else
+				Else ; no Boost button after 3 clicks: boost cooling down (or not the tower), check again after 30 min
 					SetLog("Cannot find the Boost Button of Clock Tower", $COLOR_ERROR)
+					BBSkipTimerStart(0)
 				EndIf
+				ExitLoop ; one tower: the other points are the same tower (350,186 and 353,183 on qurlk)
 			Next
 		Else
 			SetLog("Clock Tower boost is not available!")
