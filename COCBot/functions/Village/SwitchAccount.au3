@@ -387,6 +387,12 @@ Func ClickAccountSCID($iAccount = 2)
 		For $i = 0 To UBound($aAccount) - 1
 			SetDebugLog("Bottom Splitter on : " & $aAccount[$i][1] & "," & $aAccount[$i][2])
 		Next
+		; rows must sit on the page grid (splitters 433/529/625): list 25 px off (407/503/599, qarelith 01:37 30 Oct) clicked
+		; account 4 for account 6 (qassa played quirk). Off grid = no click, SwitchCOCAcc tries again
+		If Abs(Mod($aAccount[0][2] - 433 + 960, 96)) > 12 And Abs(Mod($aAccount[0][2] - 433 + 960, 96)) < 84 Then
+			SetLog("Supercell ID list not on its page grid (row at y " & $aAccount[0][2] & "), account " & $iAccount & " not clicked", $COLOR_ERROR)
+			Return False
+		EndIf
 		
 		If Not $g_bRunState Then Return
 		Switch $iAccount
@@ -419,6 +425,9 @@ Func ClickAccountSCID($iAccount = 2)
 		EndSwitch
 		
 		If Not $g_bRunState Then Return
+		; row not found: no click (was a click on "," and "Successfully Switch": qassa profile played qarelith 23:22 29 Oct,
+		; list stopped 56 px lower than usual, 2 rows seen) -> False, SwitchCOCAcc tries again
+		If $x = "" Or $y = "" Then Return False
 		SetLog("Click Account : [" & $iAccount & "] " & $g_asProfileName[$iAccount-1] & " on " & $x & "," & $y, $COLOR_SUCCESS)
 		Click($x, $y)
 		$bRet = True
@@ -438,13 +447,28 @@ Func ClickDragSCID($iCount = 1)
 			$sBefore = SCIDListPixels()
 			ClickDrag(666, 624, 666, 320)
 			If _Sleep(1500) Then Return False
-			If SCIDListPixels() <> $sBefore Then ContinueLoop 2
+			If SCIDListPixels() <> $sBefore Then
+				SCIDWaitStill()
+				ContinueLoop 2
+			EndIf
 			SetLog("Supercell ID list did not scroll, drag again #" & $iTry, $COLOR_DEBUG2)
 		Next
 		Return False
 	Next
 	Return True
 EndFunc ;ClickDragSCID
+
+; list can still move (bounce at the end of the list) after the drag: same pixels twice 300 ms apart, max 3 s
+Func SCIDWaitStill()
+	Local $sLast = SCIDListPixels(), $sNow
+	For $i = 1 To 10
+		If _Sleep(300) Then Return
+		$sNow = SCIDListPixels()
+		If $sNow = $sLast Then Return
+		$sLast = $sNow
+	Next
+	SetDebugLog("Supercell ID list still moving after 3 s")
+EndFunc ;SCIDWaitStill
 
 Func SCIDListPixels()
 	Local $sPixels = ""

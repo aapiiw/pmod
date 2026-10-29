@@ -61,16 +61,20 @@ EndFunc
 
 ; chat still scrolling after it opened / after the own request: the request read at y 578 was at y 327 when clicked
 ; (56 "Donate Window did not open" 29 Oct, same capacity read at both places): wait until the Donate buttons stay put
-Func DonateWaitChatStill()
-	Local $sPrev = "-", $sNow, $aButton
+; own request just sent: it shows in the chat 2-5 s later and pushes the requests up (zone 21:35 29 Oct: request read at
+; y 579, at y 328 when clicked; screen: own "any" request "Just now" at the bottom). With Donate buttons on screen, wait
+; until they move (own request in) or 5 s after the send, then until they stay put
+Func DonateWaitChatStill($bJustRequested = False)
+	Local $sFirst = DonateButtonsY(), $sPrev = "-", $sNow
+	If $bJustRequested And $sFirst <> "" Then
+		While $g_hRequestSentTimer <> 0 And __TimerDiff($g_hRequestSentTimer) < 5000
+			If _Sleep(300) Then Return
+			If DonateButtonsY() <> $sFirst Then ExitLoop
+		WEnd
+	EndIf
+	$g_hRequestSentTimer = 0
 	For $i = 1 To 8
-		$sNow = ""
-		$aButton = QuickMIS("CNX", $g_sImgDonateButton, 250, 130, 340, 600)
-		If IsArray($aButton) Then
-			For $j = 0 To UBound($aButton) - 1
-				$sNow &= $aButton[$j][2] & "|"
-			Next
-		EndIf
+		$sNow = DonateButtonsY()
 		If $sNow = $sPrev Then Return
 		$sPrev = $sNow
 		If _Sleep(300) Then Return
@@ -78,7 +82,18 @@ Func DonateWaitChatStill()
 	SetDebugLog("DonateWaitChatStill: Donate buttons still moving")
 EndFunc
 
+Func DonateButtonsY()
+	Local $sY = "", $aButton = QuickMIS("CNX", $g_sImgDonateButton, 250, 130, 340, 600)
+	If IsArray($aButton) Then
+		For $j = 0 To UBound($aButton) - 1
+			$sY &= $aButton[$j][2] & "|"
+		Next
+	EndIf
+	Return $sY
+EndFunc
+
 Func DonateCC($bTest = False, $bSwitch = False, $bClanChatOpened = False)
+	Local Static $iFailImages = 0 ; debug images of "Donate Window did not open" (Static only here: inside the loop it crashed the 2nd time)
 	Local $bDonateTroop = True
 	Local $bDonateSpell = True
 	Local $bDonateSiege = True
@@ -117,7 +132,7 @@ Func DonateCC($bTest = False, $bSwitch = False, $bClanChatOpened = False)
 	Wend
 
 	If Not $g_bRunState Then Return
-	DonateWaitChatStill()
+	DonateWaitChatStill($bClanChatOpened)
 	If $g_iCommandStop <> 0 And $g_iCommandStop <> 3 Then SetLog("Checking for Donate Requests in Clan Chat", $COLOR_INFO)
 
 	Local $aiSearchArray[4] = [250, 130, 340, 600], $aSearchArea = $aiSearchArray
@@ -187,7 +202,6 @@ Func DonateCC($bTest = False, $bSwitch = False, $bClanChatOpened = False)
 			If Not DonateWindow($aiDonateButton, $bOpen) Then
 				SetLog("Donate Window did not open - check next", $COLOR_ERROR)
 				; 56 fails 29 Oct, nearly all with the button at y 578 (bottom request): first ones saved to find the cause
-				Local Static $iFailImages = 0
 				If $iFailImages < 3 Then
 					$iFailImages += 1
 					SaveDebugImage("DonateWindowFail", True, Default, $aiDonateButton[0] & "-" & $aiDonateButton[1] & "-")

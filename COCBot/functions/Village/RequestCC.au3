@@ -50,6 +50,7 @@ Func RequestCC($sText = "", $bTest = False)
 		Case "Available"
 			If _GetPixelColor(333, 654, True) = "ADADAD" Then ContinueCase 
 			_makerequest($bTest, $aRequestButton[0][1], $aRequestButton[0][2])
+			If Not $bTest Then $g_hRequestSentTimer = __TimerInit() ; DonateCC waits for the own request to show in the chat
 		Case "FullOrUnavail"
 			SetLog("Clan Castle is full or not available", $COLOR_DEBUG2)
 	EndSwitch

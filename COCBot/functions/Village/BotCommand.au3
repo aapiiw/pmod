@@ -18,6 +18,7 @@
 Func BotCommand()
 	
 	Static $TimeToStop = -1
+	Static $abHaltedFull[16] ; per account: last check halted for full storages (Resume values)
 
 	Local $bChkBotStop, $iCmbBotCond, $iCmbBotCommand
 
@@ -96,7 +97,6 @@ Func BotCommand()
 
 		; Resume < values of the Halt Attack (were saved but not used): after a halt for full storages the attacks start again
 		; when one of the resources of the condition drops below its value (0 = as soon as the storage is not full)
-		Static $abHaltedFull[16]
 		If $iCmbBotCond <= 14 Then
 			If Not $g_bMeetCondStop And $abHaltedFull[$g_iCurAccount] And HaltResumeLootHigh($iCmbBotCond) Then
 				SetLog("Halt Attack: no resource below its Resume value yet", $COLOR_INFO)

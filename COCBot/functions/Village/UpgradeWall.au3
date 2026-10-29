@@ -72,9 +72,13 @@ Func UpgradeWallBuildMenu()
 		SetLog("Wall: Build menu not opened (village: " & (isOnMainVillage() ? "main" : "not main") & ", menu open: " & IsBuildMenuOpen() & ")", $COLOR_DEBUG1)
 		Return -1
 	EndIf
-	; walls of 2-3 levels = one row per level, most expensive first (macia 29 Oct: Wall 3 000 000 and Wall '' below it):
-	; scroll one page past the last wall row, then take the lowest wall row = cheapest level (passes Min Save first,
-	; Upgrade More gets more walls). Was: first wall row = highest level, skipped when it was over Min Save
+	; walls of 2-3 levels = one row per level, most expensive first (macia 29 Oct: Wall 3 000 000 and Wall '' below it).
+	; First wall row that passes Min Save is taken (stop there, like before); a wall row over Min Save no longer skips the
+	; walls: scrolling goes on to the cheaper levels (max one page past the last wall row). Going back to a row one page up
+	; missed the row (quiver 23:15 29 Oct, cost read again as no wall cost), so the scan stops as soon as a wall fits.
+	; loot read first (shown top center while the menu is open): the value read at the start can be old or unread (0),
+	; builders keep upgrading between routines. Unread loot = no early skip, DoUpgradeWall checks after its own report.
+	WallReadLootBM()
 	$g_bBuildMenuWallOnly = True
 	Local $aList = BuildMenuCollect($g_sImgResourceIcon, $g_iXFindUpgrade, -22, "building", Default, 12, "Build menu list (wall search)", "WallBMStopScroll")
 	$g_bBuildMenuWallOnly = False
@@ -89,11 +93,12 @@ Func UpgradeWallBuildMenu()
 				SetLog("Wall row cost " & _NumberFormat($aList[$i][5]) & " is not a wall cost, row ignored", $COLOR_WARNING)
 				ContinueLoop
 			EndIf
-			$iRow = $i
 			$iWallRows += 1
+			$iRow = $i
+			If WallCostFits(Number($aList[$i][5])) Then ExitLoop
 		EndIf
 	Next
-	If $iWallRows > 1 Then SetLog("Wall: " & $iWallRows & " wall levels in Build menu, cheapest one taken", $COLOR_INFO)
+	If $iWallRows > 1 Then SetLog("Wall: " & $iWallRows & " wall levels in Build menu, cost " & _NumberFormat($aList[$iRow][5]) & " taken", $COLOR_INFO)
 	If $iRow < 0 Then
 		CloseBuildMenu()
 		; list read (red rows are not returned): the wall row is red (not enough resource) or not there.
@@ -107,10 +112,7 @@ Func UpgradeWallBuildMenu()
 	EndIf
 	SetLog("Wall from Build menu: x" & $aList[$iRow][4] & ", cost " & _NumberFormat($aList[$iRow][5]) & " " & $aList[$iRow][0], $COLOR_INFO)
 	; resource check before the wall is selected (camera move + wall window cost ~10 s): same rule as DoUpgradeWall,
-	; loot minus wall Min Save, resource type of the GUI (0 Gold, 1 Elixir, 2 Elixir then Gold).
-	; loot read again now (shown top center while the menu is open): the value read at the start can be old or unread (0),
-	; builders keep upgrading between routines. Unread loot = no early skip, DoUpgradeWall checks after its own report.
-	WallReadLootBM()
+	; loot minus wall Min Save, resource type of the GUI (0 Gold, 1 Elixir, 2 Elixir then Gold)
 	If Number($g_aiCurrentLoot[$eLootGold]) > 0 Or Number($g_aiCurrentLoot[$eLootElixir]) > 0 Then
 		Local $iCost = Number($aList[$iRow][5])
 		Local $iCanGold = Number($g_aiCurrentLoot[$eLootGold]) - $g_iUpgradeWallMinGold
@@ -178,16 +180,26 @@ Func UpgradeWallBuildMenu()
 	Return DoUpgradeWall($iWallCost)
 EndFunc   ;==>UpgradeWallBuildMenu
 
-; BuildMenuCollect hook of the wall search: stop one page after the last page with a wall row (other wall levels are
-; cheaper, so lower in the list)
+; BuildMenuCollect hook of the wall search: stop at a wall row that passes Min Save (or with an unread cost), else one
+; page after the last page with a wall row (other wall levels are cheaper, so lower in the list)
 Func WallBMStopScroll($aAll)
 	Local $iLastWallPage = 0, $iLastPage = 0
 	For $i = 0 To UBound($aAll) - 1
-		If $aAll[$i][3] = "Wall" Or $aAll[$i][3] = "Walls" Then $iLastWallPage = $aAll[$i][8]
 		If $aAll[$i][8] > $iLastPage Then $iLastPage = $aAll[$i][8]
+		If $aAll[$i][3] <> "Wall" And $aAll[$i][3] <> "Walls" Then ContinueLoop
+		If WallCostFits(Number($aAll[$i][5])) Then Return True
+		$iLastWallPage = $aAll[$i][8]
 	Next
 	Return $iLastWallPage > 0 And $iLastPage > $iLastWallPage
 EndFunc   ;==>WallBMStopScroll
+
+; wall cost within loot minus Min Save for the GUI resource type; cost 0 (unread) or loot unread = True (checked later)
+Func WallCostFits($iCost)
+	If $iCost <= 0 Then Return True
+	If Number($g_aiCurrentLoot[$eLootGold]) <= 0 And Number($g_aiCurrentLoot[$eLootElixir]) <= 0 Then Return True
+	If $g_iUpgradeWallLootType <> 1 And Number($g_aiCurrentLoot[$eLootGold]) - $g_iUpgradeWallMinGold >= $iCost Then Return True
+	Return $g_iUpgradeWallLootType <> 0 And Number($g_aiCurrentLoot[$eLootElixir]) - $g_iUpgradeWallMinElixir >= $iCost
+EndFunc   ;==>WallCostFits
 
 ; loot read with the Build menu open; a value not read there ('' = 0) keeps the last village report value (qath 28 Oct
 ; 22:26 Gold 16.6 M read as 0: 'can use Gold - 11 000 000', the 5 M wall skipped; quiver 23:17 Gold 16.4 M / Elixir

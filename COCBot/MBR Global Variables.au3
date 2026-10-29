@@ -1358,6 +1358,7 @@ Global $g_iCmbSwitchAcc = 0 ; Group switch accounts
 Global $g_bForceSwitch = false ; use as a flag for when we want to force an account switch
 Global $g_bChkSharedPrefs = True, $g_bChkSuperCellID = False ; Accounts switch mode
 Global $g_bChkSwitchAcc = False, $g_iTotalAcc = -1
+Global $g_hRequestSentTimer = 0 ; last own request sent (DonateCC waits for it in the chat)
 Global $g_bInitiateSwitchAcc = True, $g_bReMatchAcc = False, $g_bWaitForCCTroopSpell = False, $g_iNextAccount, $g_iCurAccount
 Global $g_abAccountNo[16], $g_asProfileName[16], $g_abDonateOnly[16]
 Global $g_aiAttackedCountSwitch[16], $g_iActiveSwitchCounter = 0, $g_iDonateSwitchCounter = 0
