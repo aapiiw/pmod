@@ -1980,7 +1980,7 @@ Func Bind_ImageList($nCtrl, ByRef $hImageList)
 
 		Case $g_hGUI_UPGRADE_TAB
 			; the icons for upgrade tab
-			Local $aIconIndex = [$eIcnLaboratory, $eIcnBuilder, $eIcnWall] ; Lab & Pets, Auto Upgrade, Walls
+			Local $aIconIndex = [$eIcnLaboratory, $eIcnPetHouse, $eIcnBuilder, $eIcnWall] ; Laboratory, Pets & Equipment, Auto Upgrade, Walls
 
 		Case $g_hGUI_NOTIFY_TAB
 			; the icons for NOTIFY tab

@@ -94,6 +94,17 @@ Func BotCommand()
 				If StopAndResumeTimer($bResume) Then $g_bMeetCondStop = True
 		EndSwitch
 
+		; Resume < values of the Halt Attack (were saved but not used): after a halt for full storages the attacks start again
+		; when one of the resources of the condition drops below its value (0 = as soon as the storage is not full)
+		Static $abHaltedFull[16]
+		If $iCmbBotCond <= 14 Then
+			If Not $g_bMeetCondStop And $abHaltedFull[$g_iCurAccount] And HaltResumeLootHigh($iCmbBotCond) Then
+				SetLog("Halt Attack: no resource below its Resume value yet", $COLOR_INFO)
+				$g_bMeetCondStop = True
+			EndIf
+			$abHaltedFull[$g_iCurAccount] = $g_bMeetCondStop
+		EndIf
+
 		If $g_bMeetCondStop Then
 			Switch $iCmbBotCommand
 				Case 0
@@ -161,6 +172,23 @@ Func BotCommand()
 	EndIf
 	Return False
 EndFunc   ;==>BotCommand
+
+; True when every resource of the condition with a Resume value is still at or above it (same fields as cmbBotCond enables)
+Func HaltResumeLootHigh($iCond)
+	Local $abUse[$eLootCount]
+	$abUse[$eLootTrophy] = ($iCond <= 3 Or ($iCond >= 6 And $iCond <= 9) Or $iCond = 12)
+	$abUse[$eLootGold] = ($iCond <= 6 Or $iCond = 8 Or $iCond = 10 Or $iCond = 14)
+	$abUse[$eLootElixir] = ($iCond <= 5 Or $iCond = 7 Or $iCond = 9 Or $iCond = 11 Or $iCond = 14)
+	$abUse[$eLootDarkElixir] = ($iCond = 13 Or $iCond = 14)
+	Local $bAny = False
+	For $i = 0 To $eLootCount - 1
+		If Not $abUse[$i] Or Number($g_aiResumeAttackLoot[$i]) <= 0 Then ContinueLoop
+		If Number($g_aiCurrentLoot[$i]) <= 0 Then Return False ; not read: no halt on a guess
+		If Number($g_aiCurrentLoot[$i]) < Number($g_aiResumeAttackLoot[$i]) Then Return False
+		$bAny = True
+	Next
+	Return $bAny
+EndFunc   ;==>HaltResumeLootHigh
 
 
 ; #FUNCTION# ====================================================================================================================

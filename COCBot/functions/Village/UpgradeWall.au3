@@ -72,11 +72,13 @@ Func UpgradeWallBuildMenu()
 		SetLog("Wall: Build menu not opened (village: " & (isOnMainVillage() ? "main" : "not main") & ", menu open: " & IsBuildMenuOpen() & ")", $COLOR_DEBUG1)
 		Return -1
 	EndIf
-	Local $aStop[1] = ["Wall"] ; stop scrolling when the wall row is seen
+	; walls of 2-3 levels = one row per level, most expensive first (macia 29 Oct: Wall 3 000 000 and Wall '' below it):
+	; scroll one page past the last wall row, then take the lowest wall row = cheapest level (passes Min Save first,
+	; Upgrade More gets more walls). Was: first wall row = highest level, skipped when it was over Min Save
 	$g_bBuildMenuWallOnly = True
-	Local $aList = BuildMenuCollect($g_sImgResourceIcon, $g_iXFindUpgrade, -22, "building", $aStop, 12, "Build menu list (wall search)")
+	Local $aList = BuildMenuCollect($g_sImgResourceIcon, $g_iXFindUpgrade, -22, "building", Default, 12, "Build menu list (wall search)", "WallBMStopScroll")
 	$g_bBuildMenuWallOnly = False
-	Local $iRow = -1
+	Local $iRow = -1, $iWallRows = 0
 	For $i = 0 To UBound($aList) - 1
 		; DE icon with cost 0 = icon misread at the list bottom (quiver 28 Oct p5 'Wall : DE', 4 000 000 Gold): kept, the cost
 		; then comes from the selected wall level
@@ -88,9 +90,10 @@ Func UpgradeWallBuildMenu()
 				ContinueLoop
 			EndIf
 			$iRow = $i
-			ExitLoop
+			$iWallRows += 1
 		EndIf
 	Next
+	If $iWallRows > 1 Then SetLog("Wall: " & $iWallRows & " wall levels in Build menu, cheapest one taken", $COLOR_INFO)
 	If $iRow < 0 Then
 		CloseBuildMenu()
 		; list read (red rows are not returned): the wall row is red (not enough resource) or not there.
@@ -174,6 +177,17 @@ Func UpgradeWallBuildMenu()
 	EndIf
 	Return DoUpgradeWall($iWallCost)
 EndFunc   ;==>UpgradeWallBuildMenu
+
+; BuildMenuCollect hook of the wall search: stop one page after the last page with a wall row (other wall levels are
+; cheaper, so lower in the list)
+Func WallBMStopScroll($aAll)
+	Local $iLastWallPage = 0, $iLastPage = 0
+	For $i = 0 To UBound($aAll) - 1
+		If $aAll[$i][3] = "Wall" Or $aAll[$i][3] = "Walls" Then $iLastWallPage = $aAll[$i][8]
+		If $aAll[$i][8] > $iLastPage Then $iLastPage = $aAll[$i][8]
+	Next
+	Return $iLastWallPage > 0 And $iLastPage > $iLastWallPage
+EndFunc   ;==>WallBMStopScroll
 
 ; loot read with the Build menu open; a value not read there ('' = 0) keeps the last village report value (qath 28 Oct
 ; 22:26 Gold 16.6 M read as 0: 'can use Gold - 11 000 000', the 5 M wall skipped; quiver 23:17 Gold 16.4 M / Elixir

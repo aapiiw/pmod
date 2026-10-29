@@ -227,7 +227,6 @@ Func chkLab()
 		GUICtrlSetState($g_hCmbLaboratory, $GUI_DISABLE)
 		_GUICtrlSetImage($g_hPicLabUpgrade, $g_sLibIconPath, $g_avLabTroops[0][1])
 	EndIf
-	GUICtrlSetState($g_hBtnHeroEquipment, $GUI_ENABLE) ; inside the Lab range above but does not depend on the Lab (TH check: EnableUpgradeEquipment)
 	If $g_iCmbLaboratory = 0 Then
 		GUICtrlSetState($g_hChkLabUpgradeOrder, $GUI_ENABLE)
 	Else
@@ -503,21 +502,13 @@ EndFunc   ;==>cmbHeroReservedBuilder
 
 Func EnableUpgradeEquipment()
 	If $g_iTownHallLevel < 8 Then
-		GUICtrlSetState($g_hBtnHeroEquipment, $GUI_DISABLE)
+		GUICtrlSetState($g_hChkCustomEquipmentOrderEnable, $GUI_DISABLE)
 		GUICtrlSetState($g_hChkCustomEquipmentOrderEnable, $GUI_UNCHECKED)
 		btnRemoveEquipment()
 	Else
-		GUICtrlSetState($g_hBtnHeroEquipment, $GUI_ENABLE)
+		GUICtrlSetState($g_hChkCustomEquipmentOrderEnable, $GUI_ENABLE)
 	EndIf
 EndFunc   ;==>chkUpgradePets
-
-Func BtnHeroEquipment()
-	GUISetState(@SW_SHOW, $g_hGUI_HeroEquipment)
-EndFunc   ;==>BtnHeroEquipment
-
-Func CloseHeroEquipment()
-	GUISetState(@SW_HIDE, $g_hGUI_HeroEquipment)
-EndFunc   ;==>CloseHeroEquipment
 
 Func chkEquipmentOrder()
 	If GUICtrlRead($g_hChkCustomEquipmentOrderEnable) = $GUI_CHECKED Then
