@@ -2122,6 +2122,9 @@ Global $g_bBBAttacked = False ; DoAttackBB attacked or not
 
 ;ClanCapital
 Global $g_iLootCCGold = 0, $g_iLootCCMedal = 0, $g_bChkEnableMinGoldAUCC = False, $g_iMinCCGoldToUpgrade = 0, $g_bChkEnableAutoUpgradeCC = False, $g_bChkAutoUpgradeCCIgnore = False, $g_bChkAutoUpgradeCCWallIgnore = False
+Global $g_iCCTrophies = 0, $g_bChkAutoUpgradeCCPriorArmy = False
+Global $g_abCCGoldEmpty[16] ; per account: Capital Gold was 0 at the last capital visit and none collected since (AutoUpgradeCC skips the trip)
+Global $g_asCCPriorArmy[5] = ["Army", "Barracks", "Fortress", "Storage", "Factory"] ; Clan Capital upgrades done first (Prior Army)
 Global $g_bChkEnableCollectCCGold = False, $g_bChkEnableForgeGold = False, $g_bChkEnableForgeElix = False
 Global $g_bChkEnableForgeDE = False, $g_bChkEnableForgeBBGold = False, $g_bChkEnableForgeBBElix = False, $g_iCmbForgeBuilder = 0
 Global $aCCBuildingIgnore[14] = ["Ruined", "Big Barbarian", "Pyre", "Boulder", "Bonfire", "Grove", "Tree", "Forest", "Campsite", "Stone", "Pillar", "The First", "Tombs", "Wall"]

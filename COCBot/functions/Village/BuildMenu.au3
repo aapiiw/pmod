@@ -497,6 +497,13 @@ Func BuildMenuReadCost($iX, $iY)
 	; change a digit, so its length must be the pixel digit count; when that count is unknown, the template digits must
 	; all be in the Tesseract read, in the same order (adb test 27 Oct, 2 accounts tab 1: 93 of 97 rows read)
 	Local $sTess = StringStripWS(getOcrAndCapture("coc-buildcost", $iX - 128, $iY - 2, 115, 18, False), $STR_STRIPALL)
+	; template lost the 5 of a "500" group ("8 500 000" -> "8 00 000", "14 500 000" -> "14 00 000"): Tesseract is used only
+	; when the template digits are in it ("14 00 000" / Tesseract "12500000" was taken), else the 5 is put back
+	; (adb test 30 Oct qruel: Tesseract "80000" for 8 500 000 x5, every lost digit of this form was a 5)
+	If StringRegExp($sCost, "^[1-9]\d{0,2} 00( \d{3})+$") And $iMinDigits = StringLen($sDigits) + 1 Then
+		If StringRegExp($sTess, "^[1-9]\d{2,8}$") And StringLen($sTess) = $iMinDigits And BuildMenuIsSubsequence($sDigits, $sTess) Then Return Number($sTess)
+		Return Number(StringReplace(StringRegExpReplace($sCost, "^(\d+) ", "${1}5", 1), " ", ""))
+	EndIf
 	If StringRegExp($sTess, "^[1-9]\d{2,8}$") Then
 		If $iMinDigits > 1 And StringLen($sTess) = $iMinDigits Then Return Number($sTess)
 		If $iMinDigits = 1 And ($sDigits = "" Or (StringLen($sTess) > StringLen($sDigits) And BuildMenuIsSubsequence($sDigits, $sTess))) Then Return Number($sTess)
@@ -725,7 +732,7 @@ EndFunc   ;==>BuildMenuScrollUp
 ; costs ''). Only white is compared: the shine of in-progress bars changes the other colors all the time
 Global $g_aiBuildMenuStillX[4] = [575, 600, 780, 800] ; name and cost text columns
 
-Func BuildMenuWaitStill($iMaxMs = 1500)
+Func BuildMenuWaitStill($iMaxMs = 3000) ; 1500 ms: ~60 "still moving" per night, rows of that page read as '' (29 Oct)
 	Local $sLast = "", $sCur, $hTimer = __TimerInit(), $iPix
 	While __TimerDiff($hTimer) < $iMaxMs
 		If _Sleep(150) Then Return

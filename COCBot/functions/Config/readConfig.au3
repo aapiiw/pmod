@@ -573,6 +573,7 @@ Func ReadConfig_600_6()
 	IniReadS($g_bChkEnableMinGoldAUCC, $g_sProfileConfigPath, "ClanCapital", "MinGoldAUCC", False, "Bool")
 	IniReadS($g_iMinCCGoldToUpgrade, $g_sProfileConfigPath, "ClanCapital", "MinCCGoldToUpgrade", 5000, "int")
 	IniReadS($g_bChkAutoUpgradeCCIgnore, $g_sProfileConfigPath, "ClanCapital", "ChkAutoUpgradeCCIgnore", False, "Bool")
+	IniReadS($g_bChkAutoUpgradeCCPriorArmy, $g_sProfileConfigPath, "ClanCapital", "ChkAutoUpgradeCCPriorArmy", False, "Bool")
 	IniReadS($g_bChkAutoUpgradeCCWallIgnore, $g_sProfileConfigPath, "ClanCapital", "ChkAutoUpgradeCCWallIgnore", False, "Bool")
 
 	;Misc Mod

@@ -490,6 +490,7 @@ Func ApplyConfig_600_6($TypeReadSave)
 			GUICtrlSetState($g_hChkEnableMinGoldAUCC, $g_bChkEnableMinGoldAUCC ? $GUI_CHECKED : $GUI_UNCHECKED)
 			GUICtrlSetData($g_hTxtMinCCGoldToUpgrade, $g_iMinCCGoldToUpgrade)
 			GUICtrlSetState($g_hChkAutoUpgradeCCIgnore, $g_bChkAutoUpgradeCCIgnore ? $GUI_CHECKED : $GUI_UNCHECKED)
+			GUICtrlSetState($g_hChkAutoUpgradeCCPriorArmy, $g_bChkAutoUpgradeCCPriorArmy ? $GUI_CHECKED : $GUI_UNCHECKED)
 			GUICtrlSetState($g_hChkAutoUpgradeCCWallIgnore, $g_bChkAutoUpgradeCCWallIgnore ? $GUI_CHECKED : $GUI_UNCHECKED)
 
 			;Misc Mod
@@ -675,6 +676,7 @@ Func ApplyConfig_600_6($TypeReadSave)
 			$g_bChkEnableMinGoldAUCC = (GUICtrlRead($g_hChkEnableMinGoldAUCC) = $GUI_CHECKED)
 			$g_iMinCCGoldToUpgrade = Number(GUICtrlRead($g_hTxtMinCCGoldToUpgrade))
 			$g_bChkAutoUpgradeCCIgnore = (GUICtrlRead($g_hChkAutoUpgradeCCIgnore) = $GUI_CHECKED)
+			$g_bChkAutoUpgradeCCPriorArmy = (GUICtrlRead($g_hChkAutoUpgradeCCPriorArmy) = $GUI_CHECKED)
 			$g_bChkAutoUpgradeCCWallIgnore = (GUICtrlRead($g_hChkAutoUpgradeCCWallIgnore) = $GUI_CHECKED)
 
 			;Misc Mod

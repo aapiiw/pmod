@@ -75,6 +75,7 @@ Func CollectCCGold($bTest = False)
 			SetLog("CC Gold = " & $g_iLootCCGold, $COLOR_INFO)
 			Click($g_iQuickMISX, $g_iQuickMISY) ;Click close button
 			SetLog("Clan Capital Gold collected successfully!", $COLOR_SUCCESS)
+			$g_abCCGoldEmpty[CurAccountIndex()] = False
 		EndIf
 	Else
 		SetLog("No available Clan Capital Gold to be collected!", $COLOR_DEBUG2)
@@ -94,15 +95,58 @@ Func ReadCCGold()
 	Return $iRet
 EndFunc
 
+; Capital Trophies under the league badge (main capital map): value read at 2 of 3 heights, 0 = not read
+Func ReadCCTrophies()
+	Local $asRead[3]
+	For $i = 0 To 2
+		$asRead[$i] = StringRegExpReplace(getOcrAndCapture("coc-loot-ts", 75, 89 + $i * 2, 58, 22, True), "\D", "")
+	Next
+	For $i = 0 To 1
+		If StringLen($asRead[$i]) >= 2 And ($asRead[$i] = $asRead[$i + 1] Or ($i = 0 And $asRead[0] = $asRead[2])) Then Return Number($asRead[$i])
+	Next
+	SetDebugLog("Capital Trophies not read: " & $asRead[0] & "/" & $asRead[1] & "/" & $asRead[2])
+	Return 0
+EndFunc
+
+; Prior Army: rows [name, x, y] with an army building name move to the top, order kept otherwise (names read once)
+Func CCPriorArmyFirst(ByRef $aRows)
+	If Not $g_bChkAutoUpgradeCCPriorArmy Or UBound($aRows) < 2 Then Return
+	Local $aArmy[0][3], $aOther[0][3], $bArmy
+	For $i = 0 To UBound($aRows) - 1
+		$bArmy = False
+		For $s In $g_asCCPriorArmy
+			If StringInStr($aRows[$i][0], $s) Then $bArmy = True
+		Next
+		If $bArmy Then
+			_ArrayAdd($aArmy, $aRows[$i][0] & "|" & $aRows[$i][1] & "|" & $aRows[$i][2])
+		Else
+			_ArrayAdd($aOther, $aRows[$i][0] & "|" & $aRows[$i][1] & "|" & $aRows[$i][2])
+		EndIf
+	Next
+	If UBound($aArmy) = 0 Then Return
+	SetLog("Prior Army: " & $aArmy[0][0] & " first", $COLOR_INFO)
+	If UBound($aOther) > 0 Then _ArrayAdd($aArmy, $aOther)
+	$aRows = $aArmy
+EndFunc
+
+; Capital Gold / Raid Medals (all capital maps), Capital Trophies (main capital map only: $SetLog True, from SwitchToClanCapital).
+; adb 30 Oct: coc-ms read gold as '' or "3 0 9 4 0" (Number = 3) depending on y, Tesseract "30 940" at y 15..19 on every
+; capital screen; medals "0" only by coc-ms (Tesseract '' / "1"); trophies by Tesseract right at y 89..93 (y 85 gave 488)
 Func ClanCapitalReport($SetLog = True)
-	$g_iLootCCGold = StringReplace(getOcrAndCapture("coc-ms", 710, 17, 100, 25, True), "-", "")
-	$g_iLootCCMedal = StringReplace(getOcrAndCapture("coc-ms", 710, 70, 95, 25, True), "-", "")
-	GUICtrlSetData($g_lblCapitalGold, $g_iLootCCGold)
-	GUICtrlSetData($g_lblCapitalMedal, $g_iLootCCMedal)
+	Local $sGold = StringRegExpReplace(getOcrAndCapture("coc-loot-ts", 710, 17, 100, 25, True), "\D", "")
+	If $sGold = "" Then SetDebugLog("Capital Gold not read")
+	$g_iLootCCGold = Number($sGold) ; not read = 0: AutoUpgradeCC stops instead of contributing on an old value
+	Local $sMedal = StringRegExpReplace(getOcrAndCapture("coc-ms", 710, 74, 95, 25, True), "\D", "")
+	If $sMedal = "" Then $sMedal = StringRegExpReplace(getOcrAndCapture("coc-ms", 710, 70, 95, 25, True), "\D", "")
+	If $sMedal <> "" Then $g_iLootCCMedal = Number($sMedal)
+	If $SetLog Then $g_iCCTrophies = ReadCCTrophies()
+	GUICtrlSetData($g_lblCapitalGold, _NumberFormat($g_iLootCCGold, True))
+	GUICtrlSetData($g_lblCapitalMedal, _NumberFormat($g_iLootCCMedal, True))
+	If $g_iCCTrophies > 0 Then GUICtrlSetData($g_lblCapitalTrophies, $g_iCCTrophies)
 
 	If $SetLog Then
 		SetLog("Capital Report", $COLOR_INFO)
-		SetLog("[Gold]:" & $g_iLootCCGold & " [Medal]:" & $g_iLootCCMedal, $COLOR_SUCCESS)
+		SetLog("[Gold]:" & _NumberFormat($g_iLootCCGold, True) & " [Medal]:" & _NumberFormat($g_iLootCCMedal, True) & " [Trophies]:" & ($g_iCCTrophies > 0 ? $g_iCCTrophies : "?"), $COLOR_SUCCESS)
 	EndIf
 
 	Local $sRaidText = getOcrAndCapture("coc-mapname", 773, 613, 50, 30)
@@ -462,6 +506,7 @@ Func FindCCExistingUpgrade()
 			_ArrayAdd($aResult, $name[0] & "|" & $aUpgrade[$i][1] & "|" &  $aUpgrade[$i][2])
 		Next
 	EndIf
+	CCPriorArmyFirst($aResult)
 	Return $aResult
 EndFunc
 
@@ -502,6 +547,7 @@ Func FindCCSuggestedUpgrade()
 			_ArrayAdd($aResult, $name[0] & "|" & $aUpgrade[$i][1] & "|" &  $aUpgrade[$i][2])
 		Next
 	EndIf
+	CCPriorArmyFirst($aResult)
 	Return $aResult
 EndFunc
 
@@ -577,7 +623,11 @@ EndFunc
 
 Func AutoUpgradeCC($bTest = False)
 	If Not $g_bChkEnableAutoUpgradeCC Then Return
-	
+	If $g_abCCGoldEmpty[CurAccountIndex()] And Not $bTest Then
+		SetDebugLog("Clan Capital AutoUpgrade: no Capital Gold at the last visit and none collected since, skip")
+		Return
+	EndIf
+
 	SetLog("Checking Clan Capital AutoUpgrade", $COLOR_INFO)
 	If $g_bChkEnableMinGoldAUCC And $g_iLootCCGold < $g_iMinCCGoldToUpgrade And $g_iLootCCGold > 0 Then
 		SetLog("CCGold = " & $g_iLootCCGold & ", < Minimum:" & $g_iMinCCGoldToUpgrade & ", skip autoupgradeCC", $COLOR_DEBUG2)
@@ -591,6 +641,7 @@ Func AutoUpgradeCC($bTest = False)
 	
 	If Number($g_iLootCCGold) = 0 And Not $bTest Then
 		SetLog("No Capital Gold to spend to Contribute", $COLOR_DEBUG2)
+		$g_abCCGoldEmpty[CurAccountIndex()] = True
 		SwitchToMainVillage("Cannot Contribute")
 		Return
 	EndIf
@@ -667,9 +718,12 @@ Func AutoUpgradeCC($bTest = False)
 	If _Sleep(2000) Then Return
 	ClanCapitalReport(False)
 	;Upgrade through district map
-	Local $aMapCoord[7][3] = [["Golem Quarry", 185, 590], ["Dragon Cliffs", 630, 465], ["Builder's Workshop", 490, 525], ["Balloon Lagoon", 300, 490], _
-									["Wizard Valley", 410, 400], ["Barbarian Camp", 530, 340], ["Capital Peak", 400, 225]]
+	; Skeleton Park / Goblin Mines: map 30 Oct (still locked in the clan), last so a missed lock icon does not stop the others
+	Local $aMapCoord[9][3] = [["Golem Quarry", 185, 590], ["Dragon Cliffs", 630, 465], ["Builder's Workshop", 490, 525], ["Balloon Lagoon", 300, 490], _
+									["Wizard Valley", 410, 400], ["Barbarian Camp", 530, 340], ["Capital Peak", 400, 225], ["Skeleton Park", 380, 600], ["Goblin Mines", 585, 600]]
+	Local $iGoldBeforePass
 	While $g_iLootCCGold > 0
+		$iGoldBeforePass = $g_iLootCCGold
 		If Number($g_iLootCCGold) > 0 Then
 			SetLog("Checking Upgrade From District Map", $COLOR_INFO)
 			For $i = 0 To UBound($aMapCoord) - 1
@@ -727,6 +781,7 @@ Func AutoUpgradeCC($bTest = False)
 						EndIf
 						ClanCapitalReport(False)
 						If Number($g_iLootCCGold) = 0 Then
+							$g_abCCGoldEmpty[CurAccountIndex()] = True
 							SwitchToMainVillage("CapitalGold=0")
 							Return
 						EndIf
@@ -747,7 +802,13 @@ Func AutoUpgradeCC($bTest = False)
 			Next
 		EndIf
 		ClanCapitalReport(False)
+		; all districts done / maxed: the gold stays the same and the loop ran forever
+		If $g_iLootCCGold >= $iGoldBeforePass Then
+			SetLog("No district upgrade took Capital Gold (" & $g_iLootCCGold & " left), stop", $COLOR_INFO)
+			ExitLoop
+		EndIf
 	WEnd
+	If $g_iLootCCGold = 0 Then $g_abCCGoldEmpty[CurAccountIndex()] = True
 	SwitchToMainVillage("Back to Main") ;last call, we should go back to main screen
 EndFunc
 
