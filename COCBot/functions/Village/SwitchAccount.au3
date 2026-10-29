@@ -348,12 +348,12 @@ Func ClickAccountSCID($iAccount = 2)
 	Next
 	
 	If Not $g_bRunState Then Return
-	If $iAccount > 3 And $iAccount < 7 Then ClickDragSCID(1) ;Account 4,5,6
-	If $iAccount > 6 And $iAccount < 10 Then ClickDragSCID(2) ;Account 7,8,9
-	If $iAccount > 9 And $iAccount < 13 Then ClickDragSCID(3) ;Account 10,11,12
-	If $iAccount > 12 And $iAccount < 16 Then ClickDragSCID(4) ;Account 13,14,15
-	If $iAccount > 15 Then ClickDragSCID(5) ;Account 16
-	
+	; account 4,5,6 = 1 page down, 7,8,9 = 2 pages... a list that did not scroll clicks the account 3 rows up
+	If $iAccount > 3 And Not ClickDragSCID(Int(($iAccount - 1) / 3)) Then
+		SetLog("Supercell ID list did not scroll, account " & $iAccount & " not clicked", $COLOR_ERROR)
+		Return False
+	EndIf
+
 	If _Sleep(500) Then Return
 	If Not $g_bRunState Then Return
 	
@@ -429,12 +429,33 @@ Func ClickAccountSCID($iAccount = 2)
 	Return $bRet
 EndFunc ;ClickAccountSCID
 
+; the drag did not scroll the list on 5 of ~60 switches (29 Oct: qarelith/qassa/quirk/macia played the village of the
+; account 3 rows up): list pixels compared before and after each drag, drag again until it moved
 Func ClickDragSCID($iCount = 1)
-	For $i = 1 To $iCount 
-		ClickDrag(666, 624, 666, 320)
-		If _Sleep(1500) Then Return
+	Local $sBefore
+	For $i = 1 To $iCount
+		For $iTry = 1 To 3
+			$sBefore = SCIDListPixels()
+			ClickDrag(666, 624, 666, 320)
+			If _Sleep(1500) Then Return False
+			If SCIDListPixels() <> $sBefore Then ContinueLoop 2
+			SetLog("Supercell ID list did not scroll, drag again #" & $iTry, $COLOR_DEBUG2)
+		Next
+		Return False
 	Next
+	Return True
 EndFunc ;ClickDragSCID
+
+Func SCIDListPixels()
+	Local $sPixels = ""
+	_CaptureRegion()
+	For $y = 360 To 610 Step 25
+		For $x = 600 To 740 Step 35
+			$sPixels &= _GetPixelColor($x, $y)
+		Next
+	Next
+	Return $sPixels
+EndFunc ;SCIDListPixels
 
 Func aquireSwitchAccountMutex($iSwitchAccountGroup = $g_iCmbSwitchAcc, $bReturnOnlyMutex = False, $bShowMsgBox = False)
 	Local $sMsg = GetTranslatedFileIni("MBR GUI Design Child Bot - Profiles", "Msg_SwitchAccounts_InUse", "My Bot with Switch Accounts Group %s is already in use or active.", $iSwitchAccountGroup)

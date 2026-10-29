@@ -166,6 +166,12 @@ Func DonateCC($bTest = False, $bSwitch = False, $bClanChatOpened = False)
 			If _Sleep($DELAYDONATECC2) Then Return
 			If Not DonateWindow($aiDonateButton, $bOpen) Then
 				SetLog("Donate Window did not open - check next", $COLOR_ERROR)
+				; 56 fails 29 Oct, nearly all with the button at y 578 (bottom request): first ones saved to find the cause
+				Local Static $iFailImages = 0
+				If $iFailImages < 3 Then
+					$iFailImages += 1
+					SaveDebugImage("DonateWindowFail", True, Default, $aiDonateButton[0] & "-" & $aiDonateButton[1] & "-")
+				EndIf
 				Click(10, 10, 1, 0, "Close Donate Window")
 				If _Sleep(1000) Then Return
 				ContinueLoop ; Leave donate to prevent a bot hang condition
