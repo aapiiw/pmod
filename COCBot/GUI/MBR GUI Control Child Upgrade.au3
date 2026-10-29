@@ -526,12 +526,14 @@ Func chkEquipmentOrder()
 			GUICtrlSetState($i, $GUI_ENABLE)
 		Next
 		GuiCtrlSetState($g_hChkMinOreUpgrade, $GUI_ENABLE)
+		GuiCtrlSetState($g_hChkEquippedOnly, $GUI_ENABLE)
 	Else
 		$g_bChkCustomEquipmentOrderEnable = False
 		For $i = $g_hChkCustomEquipmentOrder[0] To $g_ahImgEquipmentOrderSet
 			GUICtrlSetState($i, $GUI_DISABLE)
 		Next
 		GuiCtrlSetState($g_hChkMinOreUpgrade, $GUI_DISABLE)
+		GuiCtrlSetState($g_hChkEquippedOnly, $GUI_DISABLE)
 	EndIf
 EndFunc
 
@@ -552,7 +554,7 @@ Func GUIRoyalEquipmentOrder()
 	Local $iCtrlIdImage2 = $iGUI_CtrlId + 2
 	Local $iEquipmentIndex = _GUICtrlComboBox_GetCurSel($iGUI_CtrlId) + 1
 
-	If $iEquipmentIndex < UBound($g_ahCmbEquipmentOrder) - 1 Then
+	If $iEquipmentIndex >= 1 And $iEquipmentIndex <= $eEquipmentCount Then ; was < combo count - 1: icons only for the first 8 equipments
 		_GUICtrlSetImage($iCtrlIdImage, $g_sLibIconPath, $g_aiEquipmentOrderIcon[$iEquipmentIndex]) ; set proper equipment icon
 		_GUICtrlSetImage($iCtrlIdImage2, $g_sLibIconPath, $g_aiEquipmentOrderIcon2[$iEquipmentIndex]) ; set proper hero icon
 	EndIf
@@ -582,8 +584,8 @@ Func btnRegularOrder()
 	For $i = 0 To UBound($g_ahCmbEquipmentOrder) - 1
 		GUICtrlSetState($g_ahCmbEquipmentOrder[$i], $GUI_ENABLE)
 		_GUICtrlComboBox_SetCurSel($g_ahCmbEquipmentOrder[$i], $i)
-		_GUICtrlSetImage($g_ahImgEquipmentOrder[$i], $g_sLibIconPath, $i + 1)
-		_GUICtrlSetImage($g_ahImgEquipmentOrder2[$i], $g_sLibIconPath, $i + 1)
+		_GUICtrlSetImage($g_ahImgEquipmentOrder[$i], $g_sLibIconPath, $g_aiEquipmentOrderIcon[$i + 1]) ; was icon $i + 1 (troop icons)
+		_GUICtrlSetImage($g_ahImgEquipmentOrder2[$i], $g_sLibIconPath, $g_aiEquipmentOrderIcon2[$i + 1])
 	Next
 	btnEquipmentOrderSet()
 	GUICtrlSetState($g_hBtnEquipmentOrderSet, $GUI_ENABLE) ; Re-enabling it.

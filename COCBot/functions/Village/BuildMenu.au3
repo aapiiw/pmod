@@ -787,6 +787,10 @@ Func BuildMenuCollect($sIconDir, $iNameX, $iNameDy, $sType, $aStopNames = Defaul
 			If $sLogTitle <> "" Then BuildMenuLogRow($aAll, UBound($aAll) - 1)
 			SetDebugLog("[BuildMenu p" & $g_iBuildMenuPage & "] " & $aPage[$i][3] & " x" & $aPage[$i][4] & ", cost " & $aPage[$i][5] & " " & $aPage[$i][0])
 		Next
+		; before the red-row stop: the hook also sees the last page (pet assigned check reads the screen)
+		If $sStopFunc <> "" And UBound($aAll) > 0 Then
+			If Call($sStopFunc, $aAll) = True Then ExitLoop
+		EndIf
 		If BuildMenuStopScroll($iFlags, $bAffordSeen, $bCheckNext) Then
 			SetDebugLog("[BuildMenu p" & $g_iBuildMenuPage & "] no affordable row after red rows, stop scrolling")
 			ExitLoop
@@ -797,9 +801,6 @@ Func BuildMenuCollect($sIconDir, $iNameX, $iNameDy, $sType, $aStopNames = Defaul
 				If _ArraySearch($aAll, $sStop, 0, 0, 0, 0, 1, 3) < 0 Then $bAllSeen = False
 			Next
 			If $bAllSeen Then ExitLoop ; no need to read the rest of the list
-		EndIf
-		If $sStopFunc <> "" And UBound($aAll) > 0 Then
-			If Call($sStopFunc, $aAll) = True Then ExitLoop
 		EndIf
 	Next
 	If $sLogTitle <> "" And UBound($aAll) = 0 Then SetLog(" - (no affordable row)", $COLOR_DEBUG)

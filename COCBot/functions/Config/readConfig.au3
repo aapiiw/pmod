@@ -795,6 +795,7 @@ Func ReadConfig_600_15()
 	Next
 	IniReadS($g_bChkMinOreUpgrade, $g_sProfileConfigPath, "upgrade", "ChkMinOreUpgrade", False, "Bool")
 	IniReadS($g_sTxtMinOreUpgrade, $g_sProfileConfigPath, "upgrade", "MinOreUpgrade", 2000, "int")
+	IniReadS($g_bChkEquippedOnly, $g_sProfileConfigPath, "upgrade", "ChkEquippedOnly", False, "Bool")
 	
 	IniReadS($g_bChkSortPetUpgrade, $g_sProfileConfigPath, "upgrade", "ChkSortPetUpgrade", False, "Bool")
 	IniReadS($g_iCmbSortPetUpgrade, $g_sProfileConfigPath, "upgrade", "CmbSortPetUpgrade", 0, "int")

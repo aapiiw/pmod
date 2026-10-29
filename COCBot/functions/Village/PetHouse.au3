@@ -10,6 +10,8 @@
 ; Example .......:
 ; ===============================================================================================================================
 
+Global $g_asPetAssigned[0] ; names of assigned pets seen by PetAssignedMark
+
 ; Pet upgrade from Build menu, tab 4 "Hero Pets"
 Func PetUpgrade($bTest = False)
 	If $g_iTownHallLevel > 0 And $g_iTownHallLevel < 14 Then Return False
@@ -36,7 +38,10 @@ Func PetUpgrade($bTest = False)
 	If Not IsBuildMenuOpen() Then checkMainScreen(False) ; menu left open by the Laboratory check: only the tab changes
 	SetLog("Checking for Pet upgrade", $COLOR_INFO)
 	If Not OpenBuildMenu(4) Then Return False
+	Local $iOldDE = Number($g_aiCurrentLoot[$eLootDarkElixir])
 	BuildMenuReadLoot()
+	; DE read '' with the menu open (1 of 4 pet checks 28-29 Oct, quazzy test): keep the village report value
+	If Number($g_aiCurrentLoot[$eLootDarkElixir]) <= 0 And $iOldDE > 0 Then $g_aiCurrentLoot[$eLootDarkElixir] = $iOldDE
 	; counter not read (-1) right after the tab change: Pet House busy was missed, the upgrade click opened the gem window
 	; (qurlk 28 Oct 21:14 'Pet:-1/-1', read again 0/1 a moment later)
 	If $g_aiBuildMenuCounter[4][0] < 0 Then
@@ -49,7 +54,11 @@ Func PetUpgrade($bTest = False)
 		Return False
 	EndIf
 
-	Local $aList = BuildMenuCollect($g_sImgResIcon, 597, -23, "pet")
+	; sort "Assigned" (2): only pets assigned to a hero (hero portrait left of the pet, unassigned = grey slot)
+	Local $bAssignedOnly = $g_bChkSortPetUpgrade And $g_iCmbSortPetUpgrade = 2
+	Local $aNone[0]
+	$g_asPetAssigned = $aNone
+	Local $aList = BuildMenuCollect($g_sImgResIcon, 597, -23, "pet", Default, 12, "", $bAssignedOnly ? "PetAssignedMark" : "")
 	If UBound($aList) = 0 Then
 		; all locked ("Upgrade Pet House to Level N") or max: 6 h; red cost (not enough DE yet): 1 h
 		$g_aiNoUpgradeWaitMin[CurAccountIndex()][1] = $g_bBuildMenuRedSeen ? 60 : 360
@@ -71,6 +80,7 @@ Func PetUpgrade($bTest = False)
 	For $iPass = 1 To 2
 		For $i = 0 To UBound($aList) - 1
 			If Not $aList[$i][7] Or $iDE < $aList[$i][5] + $iSave Then ContinueLoop
+			If $bAssignedOnly And _ArraySearch($g_asPetAssigned, $aList[$i][3]) < 0 Then ContinueLoop
 			Local $iPet = _ArraySearch($g_asPetGameNames, $aList[$i][3])
 			If $iPass = 1 And ($iPet < 0 Or Not $g_bUpgradePetsEnable[$iPet]) Then ContinueLoop
 			If $iPick < 0 Then
@@ -82,7 +92,7 @@ Func PetUpgrade($bTest = False)
 			EndIf ; Assigned / no sort: first in list
 		Next
 		If $iPick >= 0 Then ExitLoop
-		If $iPass = 1 Then SetLog("Selected pets not available, try any pet", $COLOR_DEBUG1)
+		If $iPass = 1 Then SetLog("Selected pets not available, try any " & ($bAssignedOnly ? "assigned " : "") & "pet", $COLOR_DEBUG1)
 	Next
 	If $iPick < 0 Then
 		SetLog("Not enough Dark Elixir for pet upgrade", $COLOR_INFO)
@@ -124,6 +134,27 @@ Func PetUpgrade($bTest = False)
 	CloseBuildMenu()
 	Return True
 EndFunc   ;==>PetUpgrade
+
+; BuildMenuCollect hook (pet tab): rows of the page on screen with a hero portrait at x 512-545 (colored, >= 15 of 88 px;
+; assigned L.A.S.S.I 45, unassigned Diggy 0 on quazzy 29 Oct) -> $g_asPetAssigned. Never stops the scroll
+Func PetAssignedMark($aList)
+	_CaptureRegion() ; whole screen once, pixels below read from it
+	For $i = 0 To UBound($aList) - 1
+		If $aList[$i][8] <> $g_iBuildMenuPage Or Not $aList[$i][7] Then ContinueLoop
+		If _ArraySearch($g_asPetAssigned, $aList[$i][3]) >= 0 Then ContinueLoop
+		Local $iY = Number($aList[$i][2]) - 7, $iColor = 0
+		For $x = 512 To 545 Step 3
+			For $y = $iY - 12 To $iY + 11 Step 3
+				Local $iPx = Dec(_GetPixelColor($x, $y))
+				Local $r = BitShift($iPx, 16), $g = BitAND(BitShift($iPx, 8), 0xFF), $b = BitAND($iPx, 0xFF)
+				If _Max(_Max($r, $g), $b) - _Min(_Min($r, $g), $b) > 60 Then $iColor += 1
+			Next
+		Next
+		SetDebugLog("Pet " & $aList[$i][3] & " hero slot colored px: " & $iColor)
+		If $iColor >= 15 Then _ArrayAdd($g_asPetAssigned, $aList[$i][3])
+	Next
+	Return False
+EndFunc   ;==>PetAssignedMark
 
 ; remember when pet house should be free again ($iMin = lower bound read in Build menu, 0 = unknown)
 Func PetSaveBusyTime($iMin)

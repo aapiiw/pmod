@@ -935,6 +935,7 @@ Func ApplyConfig_600_15($TypeReadSave)
 			Next
 			GUICtrlSetState($g_hChkMinOreUpgrade, $g_bChkMinOreUpgrade ? $GUI_CHECKED : $GUI_UNCHECKED)
 			GUICtrlSetData($g_hTxtMinOreUpgrade, $g_sTxtMinOreUpgrade)
+			GUICtrlSetState($g_hChkEquippedOnly, $g_bChkEquippedOnly ? $GUI_CHECKED : $GUI_UNCHECKED)
 
 			Local $iValueSet = 0
 			For $i = 0 To UBound($g_ahCmbEquipmentOrder) - 1
@@ -978,6 +979,7 @@ Func ApplyConfig_600_15($TypeReadSave)
 			Next
 			$g_bChkMinOreUpgrade = (GUICtrlRead($g_hChkMinOreUpgrade) = $GUI_CHECKED)
 			$g_sTxtMinOreUpgrade = GuiCtrlRead($g_hTxtMinOreUpgrade)
+			$g_bChkEquippedOnly = (GUICtrlRead($g_hChkEquippedOnly) = $GUI_CHECKED)
 
 			For $i = 0 to $ePetCount - 1
 				$g_bUpgradePetsEnable[$i] = (GUICtrlRead($g_hChkUpgradePets[$i]) = $GUI_CHECKED)

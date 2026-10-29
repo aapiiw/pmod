@@ -649,6 +649,7 @@ Func SaveConfig_600_15()
 	Next
 	_Ini_Add("upgrade", "ChkMinOreUpgrade", $g_bChkMinOreUpgrade ? 1 : 0)
 	_Ini_Add("upgrade", "MinOreUpgrade", $g_sTxtMinOreUpgrade)
+	_Ini_Add("upgrade", "ChkEquippedOnly", $g_bChkEquippedOnly ? 1 : 0)
 
 	_Ini_Add("upgrade", "ChkSortPetUpgrade", $g_bChkSortPetUpgrade ? 1 : 0)
 	_Ini_Add("upgrade", "CmbSortPetUpgrade", $g_iCmbSortPetUpgrade)

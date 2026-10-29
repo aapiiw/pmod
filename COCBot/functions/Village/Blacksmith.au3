@@ -45,6 +45,7 @@ Func Blacksmith($bTest = False)
 		If Not BlacksmithUpgradeRow($aRow) Then ExitLoop
 		$iUpgraded += 1
 	Next
+	If IsBuildMenuOpen() Then BlacksmithSetFilter("") ; game keeps the hero filter: leave the list unfiltered
 	CloseBuildMenu()
 	Return $iUpgraded > 0
 EndFunc   ;==>Blacksmith
@@ -70,9 +71,9 @@ Func BlacksmithWantedList()
 EndFunc   ;==>BlacksmithWantedList
 
 ; visible rows of Blacksmith tab. A row is found by its corner mark at the right side.
-; Return [n][5] = [name, recognized (True/False), click x, click y, enough ores (True/False)]
+; Return [n][6] = [name, recognized (True/False), click x, click y, enough ores (True/False), equipped (True/False)]
 Func BlacksmithReadPage()
-	Local $aRet[0][5]
+	Local $aRet[0][6]
 	Static $aNames = 0
 	If Not IsArray($aNames) Then
 		Local $aTmp[UBound($g_asEquipmentOrderList)]
@@ -106,6 +107,11 @@ Func BlacksmithReadPage()
 		If Not $g_bRunState Then Return $aRet
 		Local $iY = $aY[$i]
 		Local $aName = getBuildingName(597, $iY + 6, 180)
+		If StringStripWS($aName[0], 8) = "" Then ; new equipment: green name (Vampstache on quazzy 29 Oct, ~B4F050)
+			$g_bOcrGreenText = True
+			$aName = getBuildingName(597, $iY + 6, 180)
+			$g_bOcrGreenText = False
+		EndIf
 		If StringStripWS($aName[0], 8) = "" Then ContinueLoop ; no row there (list end)
 		Local $sName = OcrMatchName($aName[0], $aNames)
 		Local $bMatched = (@extended = 1)
@@ -116,18 +122,71 @@ Func BlacksmithReadPage()
 			SetDebugLog("Equipment row " & $sName & ": locked (no ore cost)")
 			$bEnough = False
 		EndIf
-		Local $aAdd[1][5] = [[$sName, $bMatched, $iX - 50, $iY + 10, $bEnough]]
+		; equipped = colored hero portrait left of the equipment, unequipped = grey (quazzy 29 Oct: 79-109 / 14 colored px)
+		Local $bEquipped = BlacksmithColorCount(512, $iY - 5, 545, $iY + 35) >= 40
+		Local $aAdd[1][6] = [[$sName, $bMatched, $iX - 50, $iY + 10, $bEnough, $bEquipped]]
 		_ArrayAdd($aRet, $aAdd)
 	Next
 	Return $aRet
 EndFunc   ;==>BlacksmithReadPage
 
-; first equipment of the order that can be upgraded. Pages are read until all wanted names are seen (max 3 pages),
-; then the best one is searched again on its page. Return [name, recognized, x, y, enough] or 0
+; first equipment of the order that can be upgraded. The in-game hero filter shows only the equipments of one hero
+; (1-2 pages instead of 6+ for 43 equipments): each hero of the order is read once, in order of its first equipment.
+; Return [name, recognized, x, y, enough, equipped] or 0
 Func BlacksmithFindWanted(ByRef $aWanted)
-	Local $aAll[0][6], $sLastSig = ""
-	For $iPage = 1 To 3
+	Local $aAll[0][8], $sHeroNow = "#", $sHeroesRead = "|"
+	For $sWant In $aWanted
 		If Not $g_bRunState Then Return 0
+		Local $sHero = BlacksmithHeroOf($sWant)
+		If Not StringInStr($sHeroesRead, "|" & $sHero & "|") Then
+			If Not BlacksmithSetFilter($sHero) Then $sHero = "" ; filter not set: whole list
+			$sHeroNow = $sHero
+			$sHeroesRead &= $sHero & "|"
+			BlacksmithReadHero($aAll, $sHero, $sHero = "" ? 8 : 3)
+		EndIf
+		Local $i = _ArraySearch($aAll, $sWant, 0, 0, 0, 0, 1, 0)
+		If $i < 0 Or Not $aAll[$i][1] Then
+			SetDebugLog($sWant & ": not in the list (not unlocked yet?)")
+			ContinueLoop
+		EndIf
+		If Not $aAll[$i][4] Then
+			SetLog($sWant & ": not enough ores or locked", $COLOR_DEBUG1)
+			ContinueLoop
+		EndIf
+		If $g_bChkEquippedOnly And Not $aAll[$i][5] Then
+			SetLog($sWant & ": not equipped, skip (Only Equipped)", $COLOR_DEBUG1)
+			ContinueLoop
+		EndIf
+		SetLog("Equipment priority: " & $sWant, $COLOR_SUCCESS)
+		; another hero filtered now: filter this one again (list back on page 1)
+		If $sHeroNow <> $aAll[$i][7] Then
+			If Not BlacksmithSetFilter($aAll[$i][7]) Then Return 0
+			$sHeroNow = $aAll[$i][7]
+		EndIf
+		While $g_iBuildMenuPage > $aAll[$i][6]
+			BuildMenuScrollUp()
+		WEnd
+		While $g_iBuildMenuPage < $aAll[$i][6]
+			BuildMenuScrollDown()
+		WEnd
+		Local $aPage = BlacksmithReadPage()
+		For $j = 0 To UBound($aPage) - 1
+			If $aPage[$j][1] And $aPage[$j][0] = $sWant And $aPage[$j][4] Then
+				Local $aRet[6] = [$aPage[$j][0], $aPage[$j][1], $aPage[$j][2], $aPage[$j][3], $aPage[$j][4], $aPage[$j][5]]
+				Return $aRet
+			EndIf
+		Next
+		SetLog($sWant & ": row not found again", $COLOR_WARNING)
+		Return 0
+	Next
+	Return 0
+EndFunc   ;==>BlacksmithFindWanted
+
+; read the (filtered) list from page 1 until it does not move; rows go to $aAll [.., page, hero]
+Func BlacksmithReadHero(ByRef $aAll, $sHero, $iMaxPage)
+	Local $sLastSig = ""
+	For $iPage = 1 To $iMaxPage
+		If Not $g_bRunState Then Return
 		If $iPage > 1 Then BuildMenuScrollDown()
 		Local $aPage = BlacksmithReadPage()
 		Local $sSig = ""
@@ -136,45 +195,65 @@ Func BlacksmithFindWanted(ByRef $aWanted)
 		Next
 		If $iPage > 1 And $sSig = $sLastSig Then ExitLoop ; list did not move: end reached
 		$sLastSig = $sSig
-		SetLog("Equipment List (page " & $iPage & "):", $COLOR_INFO)
+		SetLog("Equipment List " & ($sHero = "" ? "" : $sHero & " ") & "(page " & $iPage & "):", $COLOR_INFO)
 		For $i = 0 To UBound($aPage) - 1
-			SetLog(" - " & ($aPage[$i][1] ? $aPage[$i][0] : "? '" & $aPage[$i][0] & "'") & ($aPage[$i][4] ? "" : " (not enough ores)"), $COLOR_DEBUG)
-			Local $aAdd[1][6] = [[$aPage[$i][0], $aPage[$i][1], $aPage[$i][2], $aPage[$i][3], $aPage[$i][4], $g_iBuildMenuPage]]
+			SetLog(" - " & ($aPage[$i][1] ? $aPage[$i][0] : "? '" & $aPage[$i][0] & "'") & ($aPage[$i][5] ? " (equipped)" : "") & ($aPage[$i][4] ? "" : " (not enough ores / locked)"), $COLOR_DEBUG)
+			If _ArraySearch($aAll, $aPage[$i][0], 0, 0, 0, 0, 1, 0) >= 0 Then ContinueLoop
+			Local $aAdd[1][8] = [[$aPage[$i][0], $aPage[$i][1], $aPage[$i][2], $aPage[$i][3], $aPage[$i][4], $aPage[$i][5], $g_iBuildMenuPage, $sHero]]
 			_ArrayAdd($aAll, $aAdd)
 		Next
-		Local $bAllSeen = True
-		For $sWant In $aWanted
-			If _ArraySearch($aAll, $sWant, 0, 0, 0, 0, 1, 0) < 0 Then $bAllSeen = False
-		Next
-		If $bAllSeen Then ExitLoop
+		If UBound($aPage) < 7 Then ExitLoop ; short page = whole (filtered) list seen
 	Next
+EndFunc   ;==>BlacksmithReadHero
 
-	For $sWant In $aWanted
-		For $i = 0 To UBound($aAll) - 1
-			If Not $aAll[$i][1] Or $aAll[$i][0] <> $sWant Then ContinueLoop
-			If Not $aAll[$i][4] Then
-				SetLog($sWant & ": not enough ores", $COLOR_DEBUG1)
-				ExitLoop
-			EndIf
-			SetLog("Equipment priority: " & $sWant, $COLOR_SUCCESS)
-			; on another page: go back to it and read the row position again
-			While $g_iBuildMenuPage > $aAll[$i][5]
-				BuildMenuScrollUp()
-			WEnd
-			If $g_iBuildMenuPage <> $aAll[$i][5] Then Return 0
-			Local $aPage = BlacksmithReadPage()
-			For $j = 0 To UBound($aPage) - 1
-				If $aPage[$j][1] And $aPage[$j][0] = $sWant And $aPage[$j][4] Then
-					Local $aRet[5] = [$aPage[$j][0], $aPage[$j][1], $aPage[$j][2], $aPage[$j][3], $aPage[$j][4]]
-					Return $aRet
-				EndIf
-			Next
-			SetLog($sWant & ": row not found again", $COLOR_WARNING)
-			Return 0
+; hero of an equipment name ("King", "Queen", "Prince", "Warden", "Champion", "Duke"), "" when unknown
+Func BlacksmithHeroOf($sName)
+	For $i = 0 To UBound($g_asEquipmentOrderList) - 1
+		If $g_asEquipmentOrderList[$i][0] = $sName Then Return $g_asEquipmentOrderList[$i][2]
+	Next
+	Return ""
+EndFunc   ;==>BlacksmithHeroOf
+
+; in-game hero filter of the Blacksmith tab ($sHero "" = no filter). Filter button 540,24 opens the hero row (y 167),
+; heroes toggle (several can be on, selected = yellow at y 112), the button closes it again. The list goes back to the top.
+Func BlacksmithSetFilter($sHero)
+	Local $aHero[6][2] = [["King", 181], ["Queen", 250], ["Prince", 318], ["Warden", 386], ["Champion", 454], ["Duke", 522]]
+	Local $bActive = _ColorCheck(_GetPixelColor(540, 24, True), Hex(0xF3B52E, 6), 30) ; button yellow = some hero filtered
+	If $sHero = "" And Not $bActive Then Return True
+	Click(540, 24, 1, 0, "Blacksmith filter")
+	If _Sleep(700) Then Return False
+	; popup open: every hero slot top is yellow (selected) or brown
+	If Not _ColorCheck(_GetPixelColor(181, 112, True), Hex(0xE69F1D, 6), 30) And Not _ColorCheck(_GetPixelColor(181, 112, True), Hex(0x9B724F, 6), 30) Then
+		SetLog("Blacksmith hero filter did not open", $COLOR_WARNING)
+		Return False
+	EndIf
+	For $i = 0 To UBound($aHero) - 1
+		Local $bOn = _ColorCheck(_GetPixelColor($aHero[$i][1], 112, True), Hex(0xE69F1D, 6), 30)
+		If $bOn <> ($aHero[$i][0] = $sHero) Then
+			Click($aHero[$i][1], 167, 1, 0, "Filter " & $aHero[$i][0])
+			If _Sleep(400) Then Return False
+		EndIf
+	Next
+	Click(540, 24, 1, 0, "Close Blacksmith filter")
+	If _Sleep(700) Then Return False
+	$g_iBuildMenuPage = 1
+	SetDebugLog("Blacksmith filter: " & ($sHero = "" ? "none" : $sHero))
+	Return True
+EndFunc   ;==>BlacksmithSetFilter
+
+; colored pixels (max - min channel > 60) in a box, step 3, on a fresh capture
+Func BlacksmithColorCount($x1, $y1, $x2, $y2)
+	_CaptureRegion($x1, $y1, $x2 + 1, $y2 + 1)
+	Local $iCount = 0
+	For $x = 0 To $x2 - $x1 Step 3
+		For $y = 0 To $y2 - $y1 Step 3
+			Local $iPx = Dec(_GetPixelColor($x, $y))
+			Local $r = BitShift($iPx, 16), $g = BitAND(BitShift($iPx, 8), 0xFF), $b = BitAND($iPx, 0xFF)
+			If _Max(_Max($r, $g), $b) - _Min(_Min($r, $g), $b) > 60 Then $iCount += 1
 		Next
 	Next
-	Return 0
-EndFunc   ;==>BlacksmithFindWanted
+	Return $iCount
+EndFunc   ;==>BlacksmithColorCount
 
 ; click the equipment row, upgrade in the upgrade window
 Func BlacksmithUpgradeRow(ByRef $aRow)

@@ -645,7 +645,7 @@ Func _OcrPreprocessWhiteText($hBitmap, $iScale = 3, $iPad = 10, $iMinWhite = 200
 			If $b < $iMin Then $iMin = $b
 			$iMax = $r > $g ? $r : $g
 			If $b > $iMax Then $iMax = $b
-			If $iMin > $iMinWhite And ($iMax - $iMin) < $iMaxSpread Then
+			If ($iMin > $iMinWhite And ($iMax - $iMin) < $iMaxSpread) Or ($g_bOcrGreenText And $g >= 190 And $r >= 130 And $g - $b >= 100) Then
 				DllStructSetData($tMask, 1, 0xFF000000, $iMaskRow + $x + 1) ; text -> black
 				$abCol[$x] = True
 			Else

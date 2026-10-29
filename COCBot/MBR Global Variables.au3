@@ -493,6 +493,9 @@ Global $g_hLibNTDLL = DllOpen("ntdll.dll") ; handle to ntdll.dll, DllClose($g_hL
 Global $g_hLibUser32DLL = DllOpen("user32.dll") ; handle to user32.dll, DllClose($g_hLibUser32DLL) not required
 
 Global Const $g_sLibIconPath = $g_sLibPath & "\MBRBOT.dll" ; icon library
+; icons 408+ (equipments added 29 Oct 2026): a changed MBRBot.dll makes MyBot.run.dll refuse image search
+; ("IMGLOC USE NOT ALLOWED IN COPYCATS"), so they are in a copy with the extra icons; the icon wrappers switch to it
+Global Const $g_sLibIconPath2 = $g_sLibPath & "\MBRBotIcons2.dll", $g_iLibIcon2First = 408
 Global Const $g_sCSVAttacksPath = @ScriptDir & "\CSV\Attack"
 Global Const $g_sIcnBldGold = @ScriptDir & "\Images\gold.png"
 Global Const $g_sIcnBldElixir = @ScriptDir & "\Images\elixir.png"
@@ -539,7 +542,9 @@ Global Enum $eIcnArcher = 1, $eIcnDonArcher, $eIcnBalloon, $eIcnDonBalloon, $eIc
 		$eIcnPetHouseGreen, $eIcnCapitalTrophy, $eIcnFrozenArrow, $eIcnHogPuppet, $eIcnHasteVial, $eIcnFireball, $eIcnAngryJelly, $eIcnSpikyBall, $eIcnRocketSpear, $eIcnDruid, $eIcnMagicMirror, _
 		$eIcnLavaloonPuppet, $eHdV17, $eIcnTH17, $eWall18, $eIcnHelperHut, $eIcnThrower, $eIcnReviveSpell, $eIcnHeroHall, $eIcnHenchmenPuppet, $eIcnDarkOrb, $eIcnPrince, $eIcnPrinceUpgr, _
 		$eIcnSleepingPrince, $eIcnElectroBoots, $eIcnSnakeBracelet, $eIcnMetalPants, $eIcnTroopL, $eIcnFurnace, $eIcnNobleIron, $eIcnPetSneezy, $eIcnActionFigure, $eIcnDuke, $eIcnSkyW, $eIcnCake, _
-		$eIcnPetGreedyRaven, $eIcnMeteorGolem, $eIcnRuinWitch, $eIcnSuperYeti, $eIcnTotemSpell, $eIcnIBSpell, $eIcnAngrySpell ; 401..407, added at the end of MBRBot.dll (Oct 2026)
+		$eIcnPetGreedyRaven, $eIcnMeteorGolem, $eIcnRuinWitch, $eIcnSuperYeti, $eIcnTotemSpell, $eIcnIBSpell, $eIcnAngrySpell, _ ; 401..407, added at the end of MBRBot.dll (Oct 2026)
+		$eIcnStickHorse, $eIcnFrostFlake, $eIcnFireHeart, $eIcnFlameBlower, $eIcnStunBlaster, $eIcnElectroFangs, $eIcnRocketBackpack, _
+		$eIcnDarkCrown, $eIcnMeteorStaff, $eIcnHeroicTorch ; 408..417 from Mod PH MBRBot.dll (29 Oct 2026)
 
 Global $eIcnDonBlank = $eIcnDonBlacklist
 Global $eIcnOptions = $eIcnDonBlacklist
@@ -1985,7 +1990,9 @@ Global Enum $eBarbarianPuppet, $eRageVial, $eEQBoots, $eVampstache, $eGauntlet, 
 			$eArcherPuppet, $eInvisibilityVial, $eGiantArrow, $eHealerPuppet, $eFrozenArrow, $eMagicMirror, $eActionFigure, _
 			$eHenchMenPuppet, $eDarkOrb, $eMetalPants, $eNobleIron, $eDarkCrown, $eMeteorStaff, _
 			$eEternalTome, $eLifeGem, $eRageGem, $eHealingTome, $eHeroicTorch, $eFireBall, $eLavaloonPuppet, _
-			$eSeekingShield, $eRoyalGem, $eHogRiderPuppet, $eHasteVial, $eRocketSpear, $eElectroBoots, $eEquipmentCount
+			$eSeekingShield, $eRoyalGem, $eHogRiderPuppet, $eHasteVial, $eRocketSpear, $eElectroBoots, _
+			$eStickHorse, $eMonolithArrow, $ePortalPendant, $eFrostFlake, _ ; added at the end: config keeps order combo indexes
+			$eFireHeart, $eFlameBlower, $eStunBlaster, $eElectroFangs, $eRocketBackpack, $eRevengeDeck, $eEquipmentCount
 
 Global $g_asEquipmentOrderList[$eEquipmentCount][4] = [ _
 			[GetTranslatedFileIni("MBR GUI Design Child Village - Equipment", "TxtBarbarianPuppet", "Barbarian Puppet"), "BarbarianPuppet", "King", 132], _
@@ -2020,29 +2027,45 @@ Global $g_asEquipmentOrderList[$eEquipmentCount][4] = [ _
 			[GetTranslatedFileIni("MBR GUI Design Child Village - Equipment", "TxtHogRiderPuppet", "Hog Rider Puppet"), "HogRiderPuppet", "Champion", 245], _
 			[GetTranslatedFileIni("MBR GUI Design Child Village - Equipment", "TxtHasteVial", "Haste Vial"), "HasteVial", "Champion", 245], _
 			[GetTranslatedFileIni("MBR GUI Design Child Village - Equipment", "TxtRocketSpear", "Rocket Spear"), "RocketSpear", "Champion", 245], _
-			[GetTranslatedFileIni("MBR GUI Design Child Village - Equipment", "TxtElectroBoots", "Electro Boots"), "ElectroBoots", "Champion", 245]]
+			[GetTranslatedFileIni("MBR GUI Design Child Village - Equipment", "TxtElectroBoots", "Electro Boots"), "ElectroBoots", "Champion", 245], _
+			[GetTranslatedFileIni("MBR GUI Design Child Village - Equipment", "TxtStickHorse", "Stick Horse"), "StickHorse", "King", 132], _
+			[GetTranslatedFileIni("MBR GUI Design Child Village - Equipment", "TxtMonolithArrow", "Monolith Arrow"), "MonolithArrow", "Queen", 172], _
+			[GetTranslatedFileIni("MBR GUI Design Child Village - Equipment", "TxtPortalPendant", "Portal Pendant"), "PortalPendant", "Prince", 132], _
+			[GetTranslatedFileIni("MBR GUI Design Child Village - Equipment", "TxtFrostFlake", "Frost Flake"), "FrostFlake", "Champion", 245], _
+			[GetTranslatedFileIni("MBR GUI Design Child Village - Equipment", "TxtFireHeart", "Fire Heart"), "FireHeart", "Duke", 216], _
+			[GetTranslatedFileIni("MBR GUI Design Child Village - Equipment", "TxtFlameBlower", "Flame Blower"), "FlameBlower", "Duke", 216], _
+			[GetTranslatedFileIni("MBR GUI Design Child Village - Equipment", "TxtStunBlaster", "Stun Blaster"), "StunBlaster", "Duke", 216], _
+			[GetTranslatedFileIni("MBR GUI Design Child Village - Equipment", "TxtElectroFangs", "Electro Fangs"), "ElectroFangs", "Duke", 216], _
+			[GetTranslatedFileIni("MBR GUI Design Child Village - Equipment", "TxtRocketBackpack", "Rocket Backpack"), "RocketBackpack", "Duke", 216], _
+			[GetTranslatedFileIni("MBR GUI Design Child Village - Equipment", "TxtRevengeDeck", "Revenge Deck"), "RevengeDeck", "Duke", 216]]
 
 Global $g_aiEquipmentOrder[$eEquipmentCount] = [ _
 			$eBarbarianPuppet, $eRageVial, $eEQBoots, $eVampstache, $eGauntlet, $eSpikyBall, $eSnakeBracelet, _
 			$eArcherPuppet, $eInvisibilityVial, $eGiantArrow, $eHealerPuppet, $eFrozenArrow, $eMagicMirror, $eActionFigure, _
 			$eHenchMenPuppet, $eDarkOrb, $eMetalPants, $eNobleIron, $eDarkCrown, $eMeteorStaff, _
 			$eEternalTome, $eLifeGem, $eRageGem, $eHealingTome, $eHeroicTorch, $eFireBall, $eLavaloonPuppet, _
-			$eSeekingShield, $eRoyalGem, $eHogRiderPuppet, $eHasteVial, $eRocketSpear, $eElectroBoots]
+			$eSeekingShield, $eRoyalGem, $eHogRiderPuppet, $eHasteVial, $eRocketSpear, $eElectroBoots, _
+			$eStickHorse, $eMonolithArrow, $ePortalPendant, $eFrostFlake, $eFireHeart, $eFlameBlower, $eStunBlaster, $eElectroFangs, $eRocketBackpack, $eRevengeDeck]
 Global Const $g_aiEquipmentOrderIcon[$eEquipmentCount + 1] = [ $eIcnOptions, _
 			$eIcnBarbarianPuppet, $eIcnRageVial, $eIcnEQBoots, $eIcnVampstache, $eIcnGauntlet, $eIcnSpikyBall, $eIcnSnakeBracelet, _
 			$eIcnArcherPuppet, $eIcnInvisibilityVial, $eIcnGiantArrow, $eIcnHealerPuppet, $eIcnFrozenArrow, $eIcnMagicMirror, $eIcnActionFigure, _
-			$eIcnHenchmenPuppet, $eIcnDarkOrb, $eIcnMetalPants, $eIcnNobleIron, $eIcnOptions, $eIcnOptions, _
-			$eIcnEternalTome, $eIcnLifeGem, $eIcnRageGem, $eIcnHealingTome, $eIcnOptions, $eIcnFireball, $eIcnLavaloonPuppet, _
-			$eIcnSeekingShield, $eIcnRoyalGem, $eIcnHogPuppet, $eIcnHasteVial, $eIcnRocketSpear, $eIcnElectroBoots]
+			$eIcnHenchmenPuppet, $eIcnDarkOrb, $eIcnMetalPants, $eIcnNobleIron, $eIcnDarkCrown, $eIcnMeteorStaff, _
+			$eIcnEternalTome, $eIcnLifeGem, $eIcnRageGem, $eIcnHealingTome, $eIcnHeroicTorch, $eIcnFireball, $eIcnLavaloonPuppet, _
+			$eIcnSeekingShield, $eIcnRoyalGem, $eIcnHogPuppet, $eIcnHasteVial, $eIcnRocketSpear, $eIcnElectroBoots, _
+			$eIcnStickHorse, $eIcnBlacksmith, $eIcnBlacksmith, $eIcnFrostFlake, _ ; Monolith Arrow, Portal Pendant: no icon yet
+			$eIcnFireHeart, $eIcnFlameBlower, $eIcnStunBlaster, $eIcnElectroFangs, $eIcnRocketBackpack, $eIcnBlacksmith] ; Revenge Deck: no icon yet
 Global Const $g_aiEquipmentOrderIcon2[$eEquipmentCount + 1] = [ $eIcnOptions, _
 			$eIcnKing, $eIcnKing, $eIcnKing, $eIcnKing, $eIcnKing, $eIcnKing, $eIcnKing, _
 			$eIcnQueen, $eIcnQueen, $eIcnQueen, $eIcnQueen, $eIcnQueen, $eIcnQueen, $eIcnQueen, _
 			$eIcnPrince, $eIcnPrince, $eIcnPrince, $eIcnPrince, $eIcnPrince, $eIcnPrince, _
 			$eIcnWarden, $eIcnWarden, $eIcnWarden, $eIcnWarden, $eIcnWarden, $eIcnWarden, $eIcnWarden, _
-			$eIcnChampion, $eIcnChampion, $eIcnChampion, $eIcnChampion, $eIcnChampion, $eIcnChampion]
+			$eIcnChampion, $eIcnChampion, $eIcnChampion, $eIcnChampion, $eIcnChampion, $eIcnChampion, _
+			$eIcnKing, $eIcnQueen, $eIcnPrince, $eIcnChampion, $eIcnDuke, $eIcnDuke, $eIcnDuke, $eIcnDuke, $eIcnDuke, $eIcnDuke]
 
 Global $g_hChkCustomEquipmentOrderEnable = 0, $g_bChkCustomEquipmentOrderEnable = False
 Global $g_hChkMinOreUpgrade = 0, $g_bChkMinOreUpgrade = False, $g_hTxtMinOreUpgrade = 0, $g_sTxtMinOreUpgrade = ""
+Global $g_hChkEquippedOnly = 0, $g_bChkEquippedOnly = False
+Global $g_bOcrGreenText = False ; name OCR: bright green text (new equipment name, Blacksmith tab) counts as text too ; Blacksmith: only equipments a hero wears (colored hero portrait)
 Global $g_hBtnEquipmentOrderSet = 0, $g_ahImgEquipmentOrderSet = 0,$g_hBtnRemoveEquipment = 0, $g_hBtnRegularOrder = 0
 Global $g_aZero10[$eEquipmentCount] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 Global $g_ahCmbEquipmentOrder = $g_aZero10

@@ -218,6 +218,8 @@ Func CreateHeroEquipment()
 	$g_hChkMinOreUpgrade = GUICtrlCreateCheckbox(GetTranslatedFileIni("MBR GUI Design Child Attack - Equipment", "ChkMinOreUpgrade", "Only Upgrade Equipment when Shiny Ore >"), $x + 50, $y, -1, -1)
 	GUICtrlSetOnEvent(-1, "ChkMinOreUpgrade")
 	$g_hTxtMinOreUpgrade = GUICtrlCreateInput("", $x + 280, $y + 2, 50, 18, BitOR($GUI_SS_DEFAULT_INPUT, $ES_RIGHT, $ES_NUMBER))
+	$g_hChkEquippedOnly = GUICtrlCreateCheckbox(GetTranslatedFileIni("MBR GUI Design Child Attack - Equipment", "ChkEquippedOnly", "Only Equipped"), $x + 340, $y, -1, -1)
+	_GUICtrlSetTip(-1, GetTranslatedFileIni("MBR GUI Design Child Attack - Equipment", "ChkEquippedOnly_Info_01", "Upgrade only equipments a hero wears now"))
 
 	Local $sComboData = ""
 	For $t = 0 To UBound($g_asEquipmentOrderList) - 1

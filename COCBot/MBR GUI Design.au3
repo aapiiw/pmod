@@ -613,6 +613,7 @@ EndFunc   ;==>GetDPIRatio
 ; Example .......: No
 ; ===============================================================================================================================
 Func _GUICtrlCreateIcon($filename, $iconName, $left, $top, $width = 32, $height = 32, $style = -1, $exStyle = -1)
+	If $filename = $g_sLibIconPath And Number($iconName) >= $g_iLibIcon2First Then $filename = $g_sLibIconPath2
 	;Return GUICtrlCreateIcon($filename, $iconName, $left, $top, $width, $height, $style, $exStyle)
 	Static $s_hLibIcon = 0
 	Local $hLib
@@ -652,6 +653,7 @@ EndFunc   ;==>_GUICtrlCreateIcon
 ; Example .......: No
 ; ===============================================================================================================================
 Func _GUICtrlSetImage($controlID, $filename, $iconName = -1, $iconType = 1)
+	If $filename = $g_sLibIconPath And Number($iconName) >= $g_iLibIcon2First Then $filename = $g_sLibIconPath2
 
 	Local $aIconData = $g_oCtrlIconData("Icon:" & GUICtrlGetHandle($controlID))
 
