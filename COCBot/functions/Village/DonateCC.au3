@@ -59,6 +59,25 @@ Func CheckIUnderstand()
 	EndIf
 EndFunc
 
+; chat still scrolling after it opened / after the own request: the request read at y 578 was at y 327 when clicked
+; (56 "Donate Window did not open" 29 Oct, same capacity read at both places): wait until the Donate buttons stay put
+Func DonateWaitChatStill()
+	Local $sPrev = "-", $sNow, $aButton
+	For $i = 1 To 8
+		$sNow = ""
+		$aButton = QuickMIS("CNX", $g_sImgDonateButton, 250, 130, 340, 600)
+		If IsArray($aButton) Then
+			For $j = 0 To UBound($aButton) - 1
+				$sNow &= $aButton[$j][2] & "|"
+			Next
+		EndIf
+		If $sNow = $sPrev Then Return
+		$sPrev = $sNow
+		If _Sleep(300) Then Return
+	Next
+	SetDebugLog("DonateWaitChatStill: Donate buttons still moving")
+EndFunc
+
 Func DonateCC($bTest = False, $bSwitch = False, $bClanChatOpened = False)
 	Local $bDonateTroop = True
 	Local $bDonateSpell = True
@@ -98,6 +117,7 @@ Func DonateCC($bTest = False, $bSwitch = False, $bClanChatOpened = False)
 	Wend
 
 	If Not $g_bRunState Then Return
+	DonateWaitChatStill()
 	If $g_iCommandStop <> 0 And $g_iCommandStop <> 3 Then SetLog("Checking for Donate Requests in Clan Chat", $COLOR_INFO)
 
 	Local $aiSearchArray[4] = [250, 130, 340, 600], $aSearchArea = $aiSearchArray
