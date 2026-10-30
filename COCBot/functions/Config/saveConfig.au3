@@ -519,6 +519,11 @@ Func SaveConfig_600_6()
 	_Ini_Add("ClanCapital", "MinCCGoldToUpgrade", $g_iMinCCGoldToUpgrade)
 	_Ini_Add("ClanCapital", "ChkAutoUpgradeCCIgnore", $g_bChkAutoUpgradeCCIgnore)
 	_Ini_Add("ClanCapital", "ChkAutoUpgradeCCPriorArmy", $g_bChkAutoUpgradeCCPriorArmy)
+	_Ini_Add("ClanCapital", "ChkAutoUpgradeCCTreasury", $g_bChkAutoUpgradeCCTreasury)
+	_Ini_Add("ClanCapital", "ChkForgeSmartUse", $g_bChkForgeSmartUse)
+	_Ini_Add("ClanCapital", "ForgeSaveGold", $g_aiForgeSave[0])
+	_Ini_Add("ClanCapital", "ForgeSaveElix", $g_aiForgeSave[1])
+	_Ini_Add("ClanCapital", "ForgeSaveDE", $g_aiForgeSave[2])
 	_Ini_Add("ClanCapital", "ChkAutoUpgradeCCWallIgnore", $g_bChkAutoUpgradeCCWallIgnore)
 
 	;Misc Mod
@@ -1249,6 +1254,9 @@ Func SaveConfig_641_1()
 	_Ini_Add("other", "chkAddIdleTime", $g_bTrainAddRandomDelayEnable ? 1 : 0)
 	_Ini_Add("other", "txtAddDelayIdlePhaseTimeMin", $g_iTrainAddRandomDelayMin)
 	_Ini_Add("other", "txtAddDelayIdlePhaseTimeMax", $g_iTrainAddRandomDelayMax)
+	_Ini_Add("other", "CCSpamDelayMin", $g_iCCSpamDelayMin)
+	_Ini_Add("other", "CCSpamDelayMax", $g_iCCSpamDelayMax)
+	_Ini_Add("other", "DirectAttackMode", $g_iDirectAttackMode)
 EndFunc   ;==>SaveConfig_641_1
 
 Func IniWriteS($filename, $section, $key, $value)

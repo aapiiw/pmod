@@ -106,8 +106,11 @@ Func _makerequest($bTest = False, $x = 323, $y = 645)
 					If _Sleep(1000) Then Return
 					If QuickMis("BC1", $g_sImgSendRequestButton, 450, 400, 520, 470) Then
 						Click($g_iQuickMISX, $g_iQuickMISY)
+						SetLog("Fill Request with cake", $COLOR_INFO)
+					Else
+						SetLog("Cake confirm button not found", $COLOR_WARNING)
+						ClickAway()
 					EndIf
-					SetLog("Fill Request with cake", $COLOR_INFO)
 					Return
 				EndIf
 			EndIf
@@ -199,7 +202,7 @@ Func UpdateRequest()
 		Local $bTroop1Done = False, $bTroop2Done = False
 		For $iDrag = 1 To 2
 			SetLog("Check Request Troop #" & $iDrag, $COLOR_DEBUG)
-			If Not $bTroop2Done Then
+			If Not $bTroop1Done Then ; was $bTroop2Done: troop 1 was clicked again on the 2nd list page
 				If QuickMIS("BFI", $g_sImgTrainTroops & $sTroop1 & "*", 120, 260, 740, 460) Then
 					SetLog("Requesting " & $g_aCmbRequestTroop[$g_iCmbRequestTroop1][1], $COLOR_DEBUG1)
 					Click($g_iQuickMISX, $g_iQuickMISY, $g_iRequestTroopQuantity1, 0, "Click " & $sTroop1)

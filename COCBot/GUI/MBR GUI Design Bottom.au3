@@ -17,7 +17,7 @@
 Global $g_hBtnStart = 0, $g_hBtnStop = 0, $g_hBtnPause = 0, $g_hBtnResume = 0, $g_hBtnSearchMode = 0, $g_hBtnMakeScreenshot = 0, $g_hBtnHide = 0, $g_hBtnEmbed = 0, _
 	   $g_hChkBackgroundMode = 0, $g_hBtnAttackNowDB = 0, $g_hBtnAttackNowLB = 0, $g_hBtnControl = 0
 Global $g_hPicTwoArrowShield = 0, $g_hPicArrowLeft = 0, $g_hPicArrowRight = 0
-Global $g_hGrpVillage = 0
+Global $g_hGrpVillage = 0, $g_hBtnDirectAttack = 0, $g_hBtnRushAttack = 0, $g_hBtnBBSpam = 0, $g_hBtnCCSpam = 0
 Global $g_hLblResultGoldNow = 0, $g_hLblResultGoldHourNow = 0, $g_hPicResultGoldNow = 0, $g_hPicResultGoldTemp = 0
 Global $g_hLblResultElixirNow = 0, $g_hLblResultElixirHourNow = 0, $g_hPicResultElixirNow = 0, $g_hPicResultElixirTemp = 0
 Global $g_hLblResultDENow = 0, $g_hLblResultDEHourNow = 0, $g_hPicResultDENow = 0, $g_hPicResultDETemp = 0
@@ -203,6 +203,30 @@ Func CreateBottomPanel()
 	   $g_hLblVillageReportTemp = GUICtrlCreateLabel(GetTranslatedFileIni("MBR GUI Design Bottom", "LblVillageReportTemp_01", "Village Report") & @CRLF & GetTranslatedFileIni("MBR GUI Design Bottom", "LblVillageReportTemp_02", "will appear here") & @CRLF & GetTranslatedFileIni("MBR GUI Design Bottom", "LblVillageReportTemp_03", "on first run."), $x , $y + 5, 80, 45, BITOR($SS_CENTER, $BS_MULTILINE))
 
    GUICtrlCreateGroup("", -99, -99, 1, 1)
+
+	; Direct | Rush | BBSpam | CCSpam under the Village group (SpecialModes.au3)
+	Local $aBtn[4][4] = [["Direct", 38, "DirectAttack", "Direct attack: attack the village on screen now (Dead / Live Base: Train Army > Options)"], _
+			["Rush", 36, "ToggleRushAttack", "Rush Attack: attack again and again, no donate, request or upgrades, until Halt Attack. Click again = off"], _
+			["BBSpam", 43, "ToggleBBSpam", "Builder Base attacks until both BB storages are full. Click again = off"], _
+			["CCSpam", 43, "ToggleCCSpam", "Donate every CC Spam Min..Max s (Train Army > Options). Click again = off"]]
+	$x = 295
+	For $i = 0 To 3
+		Local $hBtn = GUICtrlCreateButton($aBtn[$i][0], $x, $y_bottom + 84, $aBtn[$i][1], 20)
+		GUICtrlSetFont(-1, 7)
+		_GUICtrlSetTip(-1, $aBtn[$i][3])
+		GUICtrlSetOnEvent(-1, $aBtn[$i][2])
+		Switch $i
+			Case 0
+				$g_hBtnDirectAttack = $hBtn
+			Case 1
+				$g_hBtnRushAttack = $hBtn
+			Case 2
+				$g_hBtnBBSpam = $hBtn
+			Case 3
+				$g_hBtnCCSpam = $hBtn
+		EndSwitch
+		$x += $aBtn[$i][1]
+	Next
 
 EndFunc   ;==>CreateBottomPanel
 

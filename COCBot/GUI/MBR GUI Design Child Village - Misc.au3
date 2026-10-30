@@ -293,17 +293,8 @@ Func CreateMiscNormalVillageSubTab()
 			_GUICtrlSetTip(-1, $sTxtRelocate & GetTranslatedFileIni("MBR GUI Design Child Village - Misc", "BtnCC", "Clan Castle"))
 			GUICtrlSetOnEvent(-1, "btnLocateClanCastle")
 
-	$x += 38
-		$g_hBtnLocateHeroHall = GUICtrlCreateButton("Hero Hall", $x, $y, 36, 36, $BS_ICON)
-			_GUICtrlSetImage(-1, $g_sLibIconPath, $eIcnHeroHall)
-			_GUICtrlSetTip(-1, $sTxtRelocate & "Hero Hall")
-			GUICtrlSetOnEvent(-1, "btnLocateHeroHall")
-
-	$x += 38
-		$g_hBtnLocateLaboratory = GUICtrlCreateButton(GetTranslatedFileIni("MBR GUI Design Child Village - Misc", "BtnLocateLaboratory", "Lab."), $x, $y, 36, 36, $BS_ICON)
-			_GUICtrlSetImage(-1, $g_sLibIconPath, $eIcnLaboratory)
-			_GUICtrlSetTip(-1, $sTxtRelocate & GetTranslatedFileIni("MBR GUI Design Child Village - Misc", "BtnLocateLaboratory_Info_01", "Laboratory"))
-			GUICtrlSetOnEvent(-1, "btnLab")
+	; Hero Hall (hero boost, off) and Laboratory (Build menu) locate buttons removed 31 Oct: only Town Hall (TH level, Rush TH)
+	; and Clan Castle (Treasury) positions are used
 
 	$x = $g_iSizeWGrpTab3 - 35
 		GUICtrlCreateButton(GetTranslatedFileIni("MBR GUI Design Child Village - Misc", "BtnReset", "Reset."), $x, $y, 36, 36, $BS_ICON)
@@ -815,68 +806,78 @@ EndFunc
 Global $g_lblCapitalGold = 0, $g_lblCapitalMedal = 0, $g_hCmbForgeBuilder = 0, $g_hChkEnableAutoUpgradeCC = 0, $g_hChkAutoUpgradeCCIgnore = 0, $g_hChkAutoUpgradeCCWallIgnore = 0
 Global $g_hChkEnableCollectCCGold = 0, $g_hChkStartWeekendRaid = 0, $g_hChkEnableMinGoldAUCC = 0, $g_hTxtMinCCGoldToUpgrade = 0
 Global $g_hChkEnableForgeGold = 0, $g_hChkEnableForgeElix = 0, $g_hChkEnableForgeDE = 0, $g_hChkEnableForgeBBGold = 0, $g_hChkEnableForgeBBElix = 0
-Global $g_hTxtAutoUpgradeCCLog = 0, $g_lblCapitalTrophies = 0, $g_hChkAutoUpgradeCCPriorArmy = 0
+Global $g_hTxtAutoUpgradeCCLog = 0, $g_lblCapitalTrophies = 0, $g_hChkAutoUpgradeCCPriorArmy = 0, $g_hChkAutoUpgradeCCTreasury = 0, $g_hChkForgeSmartUse = 0
+Global $g_ahTxtForgeSave[3] = [0, 0, 0]
 
 Func CreateClanCapitalTab()
 	Local $x = 15, $y = 40
-	GUICtrlCreateGroup(GetTranslatedFileIni("MBR GUI Design Child Village - Misc", "Group_ClanCapital_Stats", "Stats"), $x - 10, $y - 15, $g_iSizeWGrpTab3 - 3, 70)
-		_GUICtrlCreateIcon($g_sLibIconPath, $eIcnCapitalGold,  $x, $y, 24, 24)
-		$g_lblCapitalGold = GUICtrlCreateLabel("---", $x + 35, $y + 5, 100, -1)
+	Local $sF = "MBR GUI Design Child Village - Misc"
+	GUICtrlCreateGroup(GetTranslatedFileIni($sF, "Group_ClanCapital_Stats", "Stats"), $x - 10, $y - 15, $g_iSizeWGrpTab3 - 3, 70)
+		_GUICtrlCreateIcon($g_sLibIconPath, $eIcnCapitalGold, $x, $y, 24, 24)
+		$g_lblCapitalGold = GUICtrlCreateLabel("---", $x + 30, $y + 5, 95, -1)
 			GUICtrlSetFont(-1, 9, $FW_BOLD, Default, "Arial", $CLEARTYPE_QUALITY)
-
-		_GUICtrlCreateIcon($g_sLibIconPath, $eIcnCapitalMedal, $x + 140, $y, 24, 24)
-		$g_lblCapitalMedal = GUICtrlCreateLabel("---", $x + 175, $y + 5, 100, -1)
+		_GUICtrlCreateIcon($g_sLibIconPath, $eIcnCapitalMedal, $x + 130, $y, 24, 24)
+		$g_lblCapitalMedal = GUICtrlCreateLabel("---", $x + 160, $y + 5, 95, -1)
 			GUICtrlSetFont(-1, 9, $FW_BOLD, Default, "Arial", $CLEARTYPE_QUALITY)
-
-		_GUICtrlCreateIcon($g_sLibIconPath, $eIcnCapitalTrophy, $x + 280, $y, 24, 24)
-		$g_lblCapitalTrophies = GUICtrlCreateLabel("---", $x + 315, $y + 5, 80, -1)
+		_GUICtrlCreateIcon($g_sLibIconPath, $eIcnCapitalTrophy, $x + 260, $y, 24, 24)
+		$g_lblCapitalTrophies = GUICtrlCreateLabel("---", $x + 290, $y + 5, 95, -1)
 			GUICtrlSetFont(-1, 9, $FW_BOLD, Default, "Arial", $CLEARTYPE_QUALITY)
 		$y += 30
-		$g_hChkEnableCollectCCGold = GUICtrlCreateCheckbox(GetTranslatedFileIni("MBR GUI Design Child Village - Misc", "CollectCCGold", "Collect Clan Capital Gold"), $x, $y, -1, -1)
-		$g_hChkStartWeekendRaid = GUICtrlCreateCheckbox(GetTranslatedFileIni("MBR GUI Design Child Village - Misc", "StartWeekendRaid", "StartWeekendRaid"), $x + 180, $y, -1, -1)
+		$g_hChkEnableCollectCCGold = GUICtrlCreateCheckbox(GetTranslatedFileIni($sF, "CollectCCGold", "Collect Clan Capital Gold"), $x, $y, -1, -1)
+		$g_hChkStartWeekendRaid = GUICtrlCreateCheckbox(GetTranslatedFileIni($sF, "StartWeekendRaid", "Start Weekend Raid"), $x + 180, $y, -1, -1)
 	GUICtrlCreateGroup("", -99, -99, 1, 1)
 
+	; Forge: Save = loot kept after the craft (Gold / Elixir / Dark), Builder Base rows use the red cost check
 	$y += 45
-	GUICtrlCreateGroup(GetTranslatedFileIni("MBR GUI Design Child Village - Misc", "Group_ClanCapital_Forge", "Forge/Craft Gold"), $x - 10, $y - 15, $g_iSizeWGrpTab3 - 3, 88)
-		$g_hChkEnableForgeGold = GUICtrlCreateCheckbox(GetTranslatedFileIni("MBR GUI Design Child Village - Misc", "EnableCCGoldForgeGold", "Use Gold"), $x, $y, -1, -1)
-	$y += 20
-		$g_hChkEnableForgeElix = GUICtrlCreateCheckbox(GetTranslatedFileIni("MBR GUI Design Child Village - Misc", "EnableCCGoldForgeElix", "Use Elixir"), $x, $y, -1, -1)
-	$x += 100
-	$y -= 20
-		$g_hChkEnableForgeDE = GUICtrlCreateCheckbox(GetTranslatedFileIni("MBR GUI Design Child Village - Misc", "EnableCCGoldForgeDE", "Use Dark Elixir"), $x, $y, -1, -1)
-	$y += 20
-		$g_hChkEnableForgeBBGold = GUICtrlCreateCheckbox(GetTranslatedFileIni("MBR GUI Design Child Village - Misc", "EnableCCGoldForgeBBGold", "Use BuilderBase Gold"), $x, $y, -1, -1)
-	$x += 140
-	$y -= 20
-		$g_hChkEnableForgeBBElix = GUICtrlCreateCheckbox(GetTranslatedFileIni("MBR GUI Design Child Village - Misc", "EnableCCGoldForgeBBElix", "Use BuilderBase Elixir"), $x, $y, -1, -1)
-	$x = 15
-	$y += 48
-		GUICtrlCreateLabel(GetTranslatedFileIni("MBR GUI Design Child Village - Misc", "LblForgeUseBuilder", "Use "), $x, $y + 2, 45, 17)
-		$g_hCmbForgeBuilder = GUICtrlCreateCombo("", $x + 23, $y, 40, 18, BitOR($CBS_DROPDOWNLIST, $CBS_AUTOHSCROLL))
+	GUICtrlCreateGroup(GetTranslatedFileIni($sF, "Group_ClanCapital_Forge", "Forge/Craft Gold"), $x - 10, $y - 15, $g_iSizeWGrpTab3 - 3, 110)
+		Local $asForge[3] = ["Use Gold", "Use Elixir", "Use Dark"], $asKey[3] = ["EnableCCGoldForgeGold", "EnableCCGoldForgeElix", "EnableCCGoldForgeDE"]
+		For $i = 0 To 2
+			Local $hChk = GUICtrlCreateCheckbox(GetTranslatedFileIni($sF, $asKey[$i], $asForge[$i]), $x, $y + $i * 22, 85, -1)
+			Switch $i
+				Case 0
+					$g_hChkEnableForgeGold = $hChk
+				Case 1
+					$g_hChkEnableForgeElix = $hChk
+				Case 2
+					$g_hChkEnableForgeDE = $hChk
+			EndSwitch
+			GUICtrlCreateLabel(GetTranslatedFileIni($sF, "LblForgeSave", "Save :"), $x + 88, $y + $i * 22 + 3, 35, 17)
+			$g_ahTxtForgeSave[$i] = GUICtrlCreateInput($g_aiForgeSave[$i], $x + 125, $y + $i * 22 + 1, 70, 18, BitOR($GUI_SS_DEFAULT_INPUT, $ES_CENTER, $ES_NUMBER))
+				_GUICtrlSetTip(-1, GetTranslatedFileIni($sF, "TxtForgeSave_Info", "Forge only when this much is left after the craft cost"))
+		Next
+		$g_hChkEnableForgeBBGold = GUICtrlCreateCheckbox(GetTranslatedFileIni($sF, "EnableCCGoldForgeBBGold", "Use BB Gold"), $x + 215, $y, -1, -1)
+		$g_hChkEnableForgeBBElix = GUICtrlCreateCheckbox(GetTranslatedFileIni($sF, "EnableCCGoldForgeBBElix", "Use BB Elixir"), $x + 215, $y + 22, -1, -1)
+		$g_hChkForgeSmartUse = GUICtrlCreateCheckbox(GetTranslatedFileIni($sF, "ChkForgeSmartUse", "Smart Use of Resources"), $x + 215, $y + 44, -1, -1)
+			_GUICtrlSetTip(-1, GetTranslatedFileIni($sF, "ChkForgeSmartUse_Info", "Craft first with the resource that has the most left above its Save (Dark Elixir counted x60)"))
+		$y += 68
+		GUICtrlCreateLabel(GetTranslatedFileIni($sF, "LblForgeUseBuilder", "Use "), $x, $y + 2, 25, 17)
+		$g_hCmbForgeBuilder = GUICtrlCreateCombo("", $x + 25, $y, 40, 18, BitOR($CBS_DROPDOWNLIST, $CBS_AUTOHSCROLL))
 		GUICtrlSetData(-1, "1|2|3|4", "1")
-		_GUICtrlSetTip(-1, GetTranslatedFileIni("MBR GUI Design Child Village - Misc", "InputForgeUseBuilder", "Put How many builder to use to Forge"))
-		GUICtrlCreateLabel(GetTranslatedFileIni("MBR GUI Design Child Village - Misc", "LblForgeBuilder", "Builder for Forge"), $x + 65, $y + 2, 100, 17)
+		_GUICtrlSetTip(-1, GetTranslatedFileIni($sF, "InputForgeUseBuilder", "Put How many builder to use to Forge"))
+		GUICtrlCreateLabel(GetTranslatedFileIni($sF, "LblForgeBuilder", "Builder for Forge"), $x + 70, $y + 2, 100, 17)
 	GUICtrlCreateGroup("", -99, -99, 1, 1)
-	
-	$y += 47
-	GUICtrlCreateGroup(GetTranslatedFileIni("MBR GUI Design Child Village - Misc", "Group_ClanCapital_AutoUpgradeCC", "Auto Upgrade Clan Capital"), $x - 10, $y - 15, $g_iSizeWGrpTab3 - 3, 65)
-		$g_hChkEnableAutoUpgradeCC = GUICtrlCreateCheckbox(GetTranslatedFileIni("MBR GUI Design Child Village - Misc", "ChkEnableAutoUpgradeCC", "Enable"), $x, $y, -1, -1)
-	$x += 100	
-			_GUICtrlSetTip(-1, GetTranslatedFileIni("MBR GUI Design Child Village - Misc", "Info_ChkEnableMinGoldAUCC", "Do Upgrade only if Capital Gold > than specified"))
-	$g_hTxtMinCCGoldToUpgrade = GUICtrlCreateInput($g_iMinCCGoldToUpgrade, $x + 135, $y + 3, 45, 18, BitOR($GUI_SS_DEFAULT_INPUT, $ES_CENTER, $ES_NUMBER))
-			_GUICtrlSetTip(-1, GetTranslatedFileIni("MBR GUI Design Child Village - Misc", "MinCCGoldToUpgrade", "Set Minimum CC Gold to do AutoUpgrade"))
-	$x = 15
-	$y += 20
-		$g_hChkAutoUpgradeCCIgnore = GUICtrlCreateCheckbox(GetTranslatedFileIni("MBR GUI Design Child Village - Misc", "ChkAutoUpgradeCCIgnore", "Ignore Decoration Building"), $x, $y, -1, -1)
-		_GUICtrlSetTip(-1, GetTranslatedFileIni("MBR GUI Design Child Village - Misc", "Info_ChkAutoUpgradeCCIgnore", "Enable Ignore Upgrade for Grove, Tree, Forest, Campsite"))
-		$g_hChkAutoUpgradeCCPriorArmy = GUICtrlCreateCheckbox(GetTranslatedFileIni("MBR GUI Design Child Village - Misc", "ChkAutoUpgradeCCPriorArmy", "Prior Army Stuff"), $x + 180, $y, -1, -1)
-		_GUICtrlSetTip(-1, GetTranslatedFileIni("MBR GUI Design Child Village - Misc", "Info_ChkAutoUpgradeCCPriorArmy", "Upgrade Army Camps, Barracks, Fortress Yard, Spell Factory, Storage first"))
+
+	$y += 42
+	GUICtrlCreateGroup(GetTranslatedFileIni($sF, "Group_ClanCapital_AutoUpgradeCC", "Auto Upgrade Clan Capital"), $x - 10, $y - 15, $g_iSizeWGrpTab3 - 3, 68)
+		$g_hChkEnableAutoUpgradeCC = GUICtrlCreateCheckbox(GetTranslatedFileIni($sF, "ChkEnableAutoUpgradeCC", "Enable"), $x, $y, -1, -1)
+		$g_hChkAutoUpgradeCCTreasury = GUICtrlCreateCheckbox(GetTranslatedFileIni($sF, "ChkAutoUpgradeCCTreasury", "Capital Treasury"), $x + 75, $y, -1, -1)
+			_GUICtrlSetTip(-1, GetTranslatedFileIni($sF, "ChkAutoUpgradeCCTreasury_Info", "Contribute to the upgrades in progress first (Builder menu of the capital), then to district upgrades"))
+		$g_hChkEnableMinGoldAUCC = GUICtrlCreateCheckbox(GetTranslatedFileIni($sF, "ChkEnableMinGoldAUCC", "Only if Capital Gold >"), $x + 190, $y, -1, -1)
+			_GUICtrlSetTip(-1, GetTranslatedFileIni($sF, "Info_ChkEnableMinGoldAUCC", "Do Upgrade only if Capital Gold > than specified"))
+		$g_hTxtMinCCGoldToUpgrade = GUICtrlCreateInput($g_iMinCCGoldToUpgrade, $x + 325, $y + 1, 55, 18, BitOR($GUI_SS_DEFAULT_INPUT, $ES_CENTER, $ES_NUMBER))
+			_GUICtrlSetTip(-1, GetTranslatedFileIni($sF, "MinCCGoldToUpgrade", "Set Minimum CC Gold to do AutoUpgrade"))
+		$y += 22
+		$g_hChkAutoUpgradeCCPriorArmy = GUICtrlCreateCheckbox(GetTranslatedFileIni($sF, "ChkAutoUpgradeCCPriorArmy", "Prior Army Stuff"), $x, $y, -1, -1)
+			_GUICtrlSetTip(-1, GetTranslatedFileIni($sF, "Info_ChkAutoUpgradeCCPriorArmy", "Upgrade Army Camps, Barracks, Fortress Yard, Spell Factory, Storage first"))
+		$g_hChkAutoUpgradeCCIgnore = GUICtrlCreateCheckbox(GetTranslatedFileIni($sF, "ChkAutoUpgradeCCIgnore", "Ignore Decoration Buildings"), $x + 110, $y, -1, -1)
+			_GUICtrlSetTip(-1, GetTranslatedFileIni($sF, "Info_ChkAutoUpgradeCCIgnore", "Enable Ignore Upgrade for Grove, Tree, Forest, Campsite"))
+		$g_hChkAutoUpgradeCCWallIgnore = GUICtrlCreateCheckbox(GetTranslatedFileIni($sF, "ChkAutoUpgradeCCWallIgnore", "Ignore Walls"), $x + 280, $y, -1, -1)
 	GUICtrlCreateGroup("", -99, -99, 1, 1)
-	
-	$y += 50
+
+	$y += 35
 	$x = 0
-		$g_hTxtAutoUpgradeCCLog = GUICtrlCreateEdit("", $x, $y, $g_iSizeWGrpTab3 + 3, 120, BitOR($GUI_SS_DEFAULT_EDIT, $ES_READONLY, $ES_AUTOVSCROLL))
-		GUICtrlSetData(-1, GetTranslatedFileIni("MBR GUI Design Child Village - Misc", "TxtCCLog", "------------------------------------------------ CLAN CAPITAL LOG ------------------------------------------------"))
-		
+		$g_hTxtAutoUpgradeCCLog = GUICtrlCreateEdit("", $x, $y, $g_iSizeWGrpTab3 + 3, 100, BitOR($GUI_SS_DEFAULT_EDIT, $ES_READONLY, $ES_AUTOVSCROLL))
+		GUICtrlSetData(-1, GetTranslatedFileIni($sF, "TxtCCLog", "------------------------------------------------ CLAN CAPITAL LOG ------------------------------------------------"))
+
 EndFunc
 

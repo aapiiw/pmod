@@ -1008,7 +1008,7 @@ Global $g_bChkRushTH = False, $g_bHeroPriority = False
 Global Const $g_asAutoUpgradeOrder[5] = ["Army", "Hero", "Resource", "Defense", ""]
 Global $g_bAutoUpgradeEnabled = False, $g_bUseWallReserveBuilder = False, $g_bUseHeroBooks = False, $g_iHeroMinUpgradeTime = 0
 Global $g_bUseBuilderPotion = False, $g_bUseLabPotion = False, $g_bUsePetPotion = False, $g_ahPotionTimer[16][3] ; [account][0 research, 1 builder, 2 pet]: last use
-Global $g_ahRoutineTimer[16][6] ; [account][0 TreasuryCollect, 1 CleanYard, 5 CollectCCGold]: last run, see RoutineIntervalDue; [2] no pet to upgrade seen; [3] free magic item claimed; [4] no Lab upgrade seen
+Global $g_ahRoutineTimer[16][7] ; [account][0 TreasuryCollect, 1 CleanYard, 5 CollectCCGold, 6 Town Hall level check]: last run, see RoutineIntervalDue; [2] no pet to upgrade seen; [3] free magic item claimed; [4] no Lab upgrade seen
 Global $g_aiNoUpgradeWaitMin[16][2] ; [account][0 Lab, 1 Pet]: minutes to wait after an empty list (360 locked, 60 red cost)
 Global $g_bSkipWallReserve = False, $g_bUpgradeLowCost = False, $g_bUpgradeOtherDefenses = False, $g_bGearUpDone = False
 Global $g_iTxtSmartMinGold = 150000, $g_iTxtSmartMinElixir = 150000, $g_iTxtSmartMinDark = 1500
@@ -1358,6 +1358,9 @@ Global $g_iCmbSwitchAcc = 0 ; Group switch accounts
 Global $g_bForceSwitch = false ; use as a flag for when we want to force an account switch
 Global $g_bChkSharedPrefs = True, $g_bChkSuperCellID = False ; Accounts switch mode
 Global $g_bChkSwitchAcc = False, $g_iTotalAcc = -1
+; bottom buttons Rush / BBSpam / CCSpam / Direct (SpecialModes.au3), CC Spam delay (s), Direct Attack mode 0 Dead Base / 1 Live Base
+Global $g_bRushAttackEnabled = False, $g_bBBSpamEnabled = False, $g_bCCSpamEnabled = False, $g_bDirectAttackRunning = False
+Global $g_iCCSpamDelayMin = 30, $g_iCCSpamDelayMax = 60, $g_iDirectAttackMode = 1
 Global $g_hRequestSentTimer = 0 ; last own request sent (DonateCC waits for it in the chat)
 Global $g_bInitiateSwitchAcc = True, $g_bReMatchAcc = False, $g_bWaitForCCTroopSpell = False, $g_iNextAccount, $g_iCurAccount
 Global $g_abAccountNo[16], $g_asProfileName[16], $g_abDonateOnly[16]
@@ -2122,7 +2125,8 @@ Global $g_bBBAttacked = False ; DoAttackBB attacked or not
 
 ;ClanCapital
 Global $g_iLootCCGold = 0, $g_iLootCCMedal = 0, $g_bChkEnableMinGoldAUCC = False, $g_iMinCCGoldToUpgrade = 0, $g_bChkEnableAutoUpgradeCC = False, $g_bChkAutoUpgradeCCIgnore = False, $g_bChkAutoUpgradeCCWallIgnore = False
-Global $g_iCCTrophies = 0, $g_bChkAutoUpgradeCCPriorArmy = False
+Global $g_iCCTrophies = 0, $g_bChkAutoUpgradeCCPriorArmy = False, $g_bChkAutoUpgradeCCTreasury = True, $g_bChkForgeSmartUse = False
+Global $g_aiForgeSave[3] = [200000, 200000, 10000] ; Forge Save: Gold, Elixir, Dark Elixir kept after the craft
 Global $g_abCCGoldEmpty[16] ; per account: Capital Gold was 0 at the last capital visit and none collected since (AutoUpgradeCC skips the trip)
 Global $g_asCCPriorArmy[5] = ["Army", "Barracks", "Fortress", "Storage", "Factory"] ; Clan Capital upgrades done first (Prior Army)
 Global $g_bChkEnableCollectCCGold = False, $g_bChkEnableForgeGold = False, $g_bChkEnableForgeElix = False

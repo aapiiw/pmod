@@ -72,6 +72,7 @@ Global $g_hBtnRemoveSpells
 ; Options sub-tab
 Global $g_hSldTrainITDelay = 0, $g_hChkTrainAddRandomDelayEnable = 0, $g_hTxtAddRandomDelayMin = 0, _
 		$g_hTxtAddRandomDelayMax = 0
+Global $g_hTxtCCSpamDelayMin = 0, $g_hTxtCCSpamDelayMax = 0, $g_hRdoDirectAttackDB = 0, $g_hRdoDirectAttackLB = 0
 
 Global $g_hLblTrainITDelay = 0, $g_hLblTrainITDelayTime = 0, _
 		$g_hLblAddDelayIdlePhaseBetween = 0, $g_hLblAddDelayIdlePhaseSec = 0
@@ -206,6 +207,27 @@ Func CreateTrainOptions()
 		$g_ahPicSuperTroops[$i] = _GUICtrlCreateIcon($g_sLibIconPath, $eIcnOptions, $x + 146 + $i * 200, $y + 36, 32, 32)
 			GUICtrlSetState(-1, $GUI_HIDE)
 	Next
+	GUICtrlCreateGroup("", -99, -99, 1, 1)
+
+	; bottom buttons CCSpam and Direct (SpecialModes.au3)
+	$x = 25
+	$y = 220
+	GUICtrlCreateGroup(GetTranslatedFileIni($T, "Group_CCSpam", "CC Spam Control"), $x - 20, $y - 20, 205, 75)
+	GUICtrlCreateLabel(GetTranslatedFileIni($T, "LblCCSpamMin", "Min Delay:"), $x - 5, $y + 5, 70, -1)
+	$g_hTxtCCSpamDelayMin = GUICtrlCreateInput($g_iCCSpamDelayMin, $x + 110, $y + 2, 50, 18, BitOR($GUI_SS_DEFAULT_INPUT, $ES_CENTER, $ES_NUMBER))
+		_GUICtrlSetTip(-1, GetTranslatedFileIni($T, "TxtCCSpamDelay_Info", "CCSpam button: seconds between two donate checks (random between Min and Max)"))
+	GUICtrlCreateLabel(GetTranslatedFileIni($T, "LblCCSpamMax", "Max Delay:"), $x - 5, $y + 30, 70, -1)
+	$g_hTxtCCSpamDelayMax = GUICtrlCreateInput($g_iCCSpamDelayMax, $x + 110, $y + 27, 50, 18, BitOR($GUI_SS_DEFAULT_INPUT, $ES_CENTER, $ES_NUMBER))
+		_GUICtrlSetTip(-1, GetTranslatedFileIni($T, "TxtCCSpamDelay_Info", -1))
+	GUICtrlCreateGroup("", -99, -99, 1, 1)
+
+	$x = 235
+	GUICtrlCreateGroup(GetTranslatedFileIni($T, "Group_DirectAttack", "Direct Attack"), $x - 20, $y - 20, 205, 75)
+	$g_hRdoDirectAttackDB = GUICtrlCreateRadio(GetTranslatedFileIni($T, "RdoDirectAttackDB", "Dead Base"), $x - 5, $y + 3, -1, -1)
+		_GUICtrlSetTip(-1, GetTranslatedFileIni($T, "RdoDirectAttack_Info", "Direct button: attack settings used for the village on screen"))
+	$g_hRdoDirectAttackLB = GUICtrlCreateRadio(GetTranslatedFileIni($T, "RdoDirectAttackLB", "Active Base"), $x - 5, $y + 28, -1, -1)
+		_GUICtrlSetTip(-1, GetTranslatedFileIni($T, "RdoDirectAttack_Info", -1))
+		GUICtrlSetState(-1, $GUI_CHECKED)
 	GUICtrlCreateGroup("", -99, -99, 1, 1)
 
 EndFunc   ;==>CreateTrainOptions

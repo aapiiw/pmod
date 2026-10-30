@@ -447,15 +447,22 @@ Func AutoUpgradeByOrder($bTest = False)
 	Local $iStarted = 0, $bNotEmpty = False, $bStop = False, $bNoFilter = False, $iRet, $iExt, $aOrder[0]
 	; Rush TH until the wanted TH level: Town Hall first (no filter button for it), then the order (Upgrades to ignore,
 	; Essential buildings and the max levels of the Rush TH settings are checked for each row)
-	If AutoUpgradeRushActive() Then _ArrayAdd($aOrder, "TH")
+	; Rush TH: Town Hall, then Hero Hall and Laboratory (unlock heroes / research levels), then the order.
+	; Prioritizes Hero Upgrade: Hero before Army
+	If AutoUpgradeRushActive() Then
+		_ArrayAdd($aOrder, "TH")
+		_ArrayAdd($aOrder, "Key")
+	EndIf
+	If $g_bHeroPriority Then _ArrayAdd($aOrder, "Hero")
 	For $p = 0 To UBound($g_asAutoUpgradeOrder) - 1
+		If $g_bHeroPriority And $g_asAutoUpgradeOrder[$p] = "Hero" Then ContinueLoop
 		_ArrayAdd($aOrder, $g_asAutoUpgradeOrder[$p])
 	Next
 	For $p = 0 To UBound($aOrder) - 1
 		If Not $g_bRunState Then Return $iStarted
 		Local $sType = $aOrder[$p]
-		If $sType <> "" And $sType <> "TH" And $bNoFilter Then ContinueLoop ; filter failed once: the rest of the list is read without filter
-		If $sType <> "" And $sType <> "TH" And Not AutoUpgradeTypeWanted($sType) Then
+		If $sType <> "" And $sType <> "TH" And $sType <> "Key" And $bNoFilter Then ContinueLoop ; filter failed once: the rest of the list is read without filter
+		If $sType <> "" And $sType <> "TH" And $sType <> "Key" And Not AutoUpgradeTypeWanted($sType) Then
 			SetDebugLog("Auto Upgrade " & $sType & ": every building of this type is ignored, skip")
 			ContinueLoop
 		EndIf
@@ -505,10 +512,10 @@ EndFunc   ;==>AutoUpgradeRushActive
 ; upgraded (scroll only while the page had affordable rows that were all skipped, see BuildMenuStopScroll).
 ; Return number of upgrades started, @extended: 1 = a row to wait for (not ignored, or red cost), 2 = stop (no builder)
 Func AutoUpgradeTypePass($sType, $bTest = False)
-	Local $sFilter = $sType = "TH" ? "" : $sType ; Town Hall (Rush TH) has no filter button
+	Local $sFilter = ($sType = "TH" Or $sType = "Key") ? "" : $sType ; Town Hall (Rush TH) has no filter button
 	; wall reserve builder low cost mode: cheapest first (Cost Min sorting), the cheap rows are on the first page
 	If $g_bUpgradeLowCost Then $sFilter &= "|CostMin"
-	SetLog("Auto Upgrade: " & ($sType = "TH" ? "Town Hall (Rush TH)" : ($sType = "" ? "rest of the list (no filter)" : $sType & " (filter)")), $COLOR_INFO)
+	SetLog("Auto Upgrade: " & ($sType = "TH" ? "Town Hall (Rush TH)" : ($sType = "Key" ? "Hero Hall / Laboratory (Rush TH)" : ($sType = "" ? "rest of the list (no filter)" : $sType & " (filter)"))), $COLOR_INFO)
 	If Not OpenBuildMenu(1, False, $sFilter) Then ; tab 1 (the menu opens on the last used tab) with the filter
 		SetLog("Build menu " & ($sType = "" ? "" : "filter " & $sType & " ") & "failed, skip", $COLOR_WARNING)
 		; 4 = filter not usable (no filter button while the Town Hall is upgrading). Not 1 (row to wait for): the "" pass reads
@@ -542,6 +549,7 @@ Func AutoUpgradeTypePass($sType, $bTest = False)
 		EndIf
 		If $iScroll = 0 And $sSig = "" Then ExitLoop ; no row with a cost (only upgrades in progress, e.g. Town Hall upgrading)
 		If $sType = "TH" And $iScroll >= 2 Then ExitLoop ; Town Hall cost is one of the highest: on top of the affordable rows
+		If $sType = "Key" And $iScroll >= 3 Then ExitLoop ; Hero Hall / Laboratory costs are high too
 		If $g_bUpgradeLowCost And $iScroll >= 2 Then ExitLoop ; Cost Min: rows below are more expensive
 		If BuildMenuStopScroll($iFlags, $bAffordSeen, $bCheckNext) Or $iScroll >= 6 Then ExitLoop
 		If $iScroll > 0 And $sSig = $sLastSig Then ExitLoop ; list did not move: end reached
@@ -582,6 +590,7 @@ Func AutoUpgradeFindRow($sType, ByRef $aSkip, ByRef $sSig)
 		If StringInStr($sName, "Wall") Then $sName = "Wall"
 		If _ArraySearch($aSkip, $sName & "|" & $sRes) >= 0 Then ContinueLoop
 		If $sType = "TH" And Not StringInStr($sName, "Town Hall") Then ContinueLoop
+		If $sType = "Key" And Not (StringInStr($sName, "Hero H") Or StringInStr($sName, "Labora")) Then ContinueLoop
 		; Hero filter also lists the TH18 Guardians (Longshot, Smasher, Logger, on top): Hero pass is for the 6 heroes,
 		; Guardians (Defense group of "Upgrades to ignore") come with the rest of the list
 		If $sType = "Hero" Then
@@ -1494,6 +1503,27 @@ EndFunc   ;==>UpgradeWindowTargetLevel
 Func IsTHLevelAchieved()
 	Return Number($g_iTownHallLevel) >= Number($g_aiCmbRushTHOption[0]) + 9
 EndFunc
+
+; Town Hall level of the current account, read every 6 h from the saved Town Hall position. FirstCheck reads it only for
+; the account the bot starts on: a finished Town Hall upgrade on another account kept the old level (Rush TH target,
+; wall costs, Auto Upgrade empty list are by TH level)
+Func CheckTownHallLevel()
+	If Number($g_aiTownHallPos[0]) < 1 Or Number($g_aiTownHallPos[1]) < 1 Then Return
+	If Not RoutineIntervalDue(6, 360) Then Return
+	ClickP($g_aiTownHallPos)
+	If _Sleep(800) Then Return
+	Local $aInfo = BuildingInfo()
+	ClickAway()
+	If $aInfo[1] <> "Town Hall" Or Number($aInfo[2]) < 1 Then
+		SetLog("Town Hall level check: '" & $aInfo[1] & "' at the saved Town Hall position, next check in 6 h", $COLOR_DEBUG)
+		Return
+	EndIf
+	If Number($aInfo[2]) <> Number($g_iTownHallLevel) Then
+		SetLog("Town Hall level changed: " & $g_iTownHallLevel & " -> " & $aInfo[2], $COLOR_SUCCESS)
+		$g_iTownHallLevel = Number($aInfo[2])
+		saveConfig()
+	EndIf
+EndFunc   ;==>CheckTownHallLevel
 
 Func getMostBottomCost()
 	If Not $g_bRunState Then Return

@@ -696,7 +696,8 @@ Func runBot() ;Bot that runs everything in order
 		If CheckAndroidReboot() Then ContinueLoop
 		NotifyPendingActions()
 		chkShieldStatus()
-		
+		If SpecialModeCycle() Then ContinueLoop ; Rush / BBSpam / CCSpam buttons
+
 		If $g_bIsSearchLimit Then SetLog("Search limit hit", $COLOR_INFO)
 		If Not $g_bIsClientSyncError Then
 			If Not $g_bRunState Then Return
@@ -704,6 +705,7 @@ Func runBot() ;Bot that runs everything in order
 			SetLogCentered(" Top MainLoop ", "=", $COLOR_DEBUG)
 			checkMainScreen(False, $g_bStayOnBuilderBase, "MainLoop")
 			VillageReport()
+			CheckTownHallLevel()
 			
 			CheckClanGamesEvent()
 
@@ -711,7 +713,6 @@ Func runBot() ;Bot that runs everything in order
 			If Not $g_bRunState Then Return
 
 			If IsSearchAttackEnabled() Then ;if attack is disabled skip reporting, requesting, donating, training, and boosting
-				BoostEverything() ; 1st Check if is to use Training Potion
 
 				; ReplayShare and Boost* routines are disabled in __RunFunction, only NotifyReport is left
 				If Not $g_bRunState Then Return
@@ -926,22 +927,6 @@ Func __RunFunction($action)
 			;ReplayShare($g_bShareAttackEnableNow)
 		Case "NotifyReport"
 			NotifyReport()
-		Case "BoostBarracks"
-			;BoostBarracks()
-		Case "BoostSpellFactory"
-			;BoostSpellFactory()
-		Case "BoostWorkshop"
-			;BoostWorkshop()
-		Case "BoostKing"
-			;BoostKing()
-		Case "BoostQueen"
-			;BoostQueen()
-		Case "BoostWarden"
-			;BoostWarden()
-		Case "BoostChampion"
-			;BoostChampion()
-		Case "BoostEverything"
-			;BoostEverything()
 		Case ""
 			SetDebugLog("Function call doesn't support empty string, please review array size", $COLOR_ERROR)
 		Case Else

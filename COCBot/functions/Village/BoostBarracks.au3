@@ -95,22 +95,4 @@ Func BoostTrainBuilding($sName, $iCmbBoost, $iCmbBoostCtrl)
 	Return $bBoosted
 EndFunc   ;==>BoostTrainBuilding
 
-Func BoostEverything()
-	; Verifying existent Variables to run this routine
-	If Not AllowBoosting("Everything", $g_iCmbBoostEverything) Then Return
-
-	SetLog("Boosting Everything", $COLOR_INFO)
-	If $g_aiTownHallPos[0] = "" Or $g_aiTownHallPos[0] = -1 Then
-		LocateTownHall()
-		SaveConfig()
-		If _Sleep($DELAYBOOSTBARRACKS2) Then Return
-	EndIf
-
-	Return BoostPotion("Everything", "Town Hall", $g_aiTownHallPos, $g_iCmbBoostEverything, $g_hCmbBoostEverything) = _NowCalc()
-	$g_aiTimeTrain[0] = 0 ; reset Troop remaining time
-	$g_aiTimeTrain[1] = 0 ; reset Spells remaining time
-	$g_aiTimeTrain[2] = 0 ; reset Heroes remaining time
-
-	If _Sleep($DELAYBOOSTBARRACKS3) Then Return
-	checkMainScreen(False, $g_bStayOnBuilderBase, "BoostEverything") ; Check for errors during function
-EndFunc   ;==>BoostEverything
+; BoostEverything removed 31 Oct: Boost Everything setting no longer in the GUI (always 0 in applyConfig)

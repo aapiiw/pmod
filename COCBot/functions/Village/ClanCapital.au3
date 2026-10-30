@@ -267,6 +267,16 @@ Func ForgeClanCapitalGold($bTest = False)
 	If Not $g_bRunState Then Return
 	Local $iBuilderToAssign = Number($iBuilderToUse) - Number($iBuilder)
 	Local $aResource[5][2] = [["Gold", 240], ["Elixir", 330], ["Dark Elixir", 425], ["Builder Base Gold", 520], ["Builder Base Elixir", 610]]
+	; Smart Use: Gold / Elixir / Dark Elixir ordered by what is left above their Save (DE x60), Builder Base last
+	Local $aiForgeOrder[5] = [0, 1, 2, 3, 4]
+	If $g_bChkForgeSmartUse Then
+		Local $aSurplus[3][2] = [[$iCurrentGold - $g_aiForgeSave[0], 0], [$iCurrentElix - $g_aiForgeSave[1], 1], [($iCurrentDE - $g_aiForgeSave[2]) * 60, 2]]
+		_ArraySort($aSurplus, 1, 0, 0, 0)
+		For $k = 0 To 2
+			$aiForgeOrder[$k] = $aSurplus[$k][1]
+		Next
+		SetDebugLog("Forge Smart Use order: " & $aResource[$aiForgeOrder[0]][0] & ", " & $aResource[$aiForgeOrder[1]][0] & ", " & $aResource[$aiForgeOrder[2]][0])
+	EndIf
 	Local $aCraft = QuickMIS("CNX", $g_sImgCCGoldCraft, 120, 230, 740, 450)
 	_ArraySort($aCraft, 0, 0, 0, 1) ;sort by column 1 (x coord)
 	SetDebugLog("Count of Craft Button: " & UBound($aCraft))
@@ -280,7 +290,8 @@ Func ForgeClanCapitalGold($bTest = False)
 				ClickAway("Right")
 				Return
 			EndIf
-			For $i = 0 To UBound($aForgeType) -1
+			For $iOrd = 0 To UBound($aiForgeOrder) - 1
+				Local $i = $aiForgeOrder[$iOrd]
 				If $aForgeType[$i] = True Then ;check if ForgeType Enabled
 					SetLog("Try Forge using " & $aResource[$i][0], $COLOR_INFO)
 					Click($aResource[$i][1], 275)
@@ -295,11 +306,11 @@ Func ForgeClanCapitalGold($bTest = False)
 					Local $bSafeToForge = False
 					Switch $aResource[$i][0]
 						Case "Gold"
-							If Number($cost) + 200000 <= $iCurrentGold Then $bSafeToForge = True
+							If Number($cost) + $g_aiForgeSave[0] <= $iCurrentGold Then $bSafeToForge = True
 						Case "Elixir"
-							If Number($cost) + 200000 <= $iCurrentElix Then $bSafeToForge = True
+							If Number($cost) + $g_aiForgeSave[1] <= $iCurrentElix Then $bSafeToForge = True
 						Case "Dark Elixir"
-							If Number($cost) + 10000 <= $iCurrentDE Then $bSafeToForge = True
+							If Number($cost) + $g_aiForgeSave[2] <= $iCurrentDE Then $bSafeToForge = True
 						Case "Builder Base Gold", "Builder Base Elixir"
 							$bSafeToForge = True ; BB loot not read here, white cost = enough (red checked above); was never True
 					EndSwitch
@@ -667,7 +678,7 @@ Func AutoUpgradeCC($bTest = False)
 		Return
 	EndIf
 	If _Sleep(500) Then Return
-	If $bUpgradeFound Then
+	If $bUpgradeFound And $g_bChkAutoUpgradeCCTreasury Then ; Capital Treasury: upgrades in progress first
 		SetLog("Checking Upgrade From Capital Map", $COLOR_INFO)
 		Local $aUpgrade = FindCCExistingUpgrade() ;Find on Capital Map, should only find currently on progress building
 		If IsArray($aUpgrade) And UBound($aUpgrade) > 0 Then

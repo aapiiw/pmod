@@ -240,7 +240,7 @@ Func WallAutoAdjustMinSave()
 	Local $iCap = $g_aiMaxStorage[$iTH], $iGold = 0, $iElix = 0
 	If $iTH >= 9 Then
 		$iGold = Int($iCap * 2)
-		$iElix = Int($iCap * 3.5) - ($g_iLastWallCost > 0 ? $g_iLastWallCost : 0)
+		$iElix = Int($iCap * 4) - ($g_iLastWallCost > 0 ? $g_iLastWallCost : 0)
 	ElseIf IsTHLevelAchieved() Then
 		Return
 	ElseIf $iTH >= 7 Then

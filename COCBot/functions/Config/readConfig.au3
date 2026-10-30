@@ -574,6 +574,11 @@ Func ReadConfig_600_6()
 	IniReadS($g_iMinCCGoldToUpgrade, $g_sProfileConfigPath, "ClanCapital", "MinCCGoldToUpgrade", 5000, "int")
 	IniReadS($g_bChkAutoUpgradeCCIgnore, $g_sProfileConfigPath, "ClanCapital", "ChkAutoUpgradeCCIgnore", False, "Bool")
 	IniReadS($g_bChkAutoUpgradeCCPriorArmy, $g_sProfileConfigPath, "ClanCapital", "ChkAutoUpgradeCCPriorArmy", False, "Bool")
+	IniReadS($g_bChkAutoUpgradeCCTreasury, $g_sProfileConfigPath, "ClanCapital", "ChkAutoUpgradeCCTreasury", True, "Bool")
+	IniReadS($g_bChkForgeSmartUse, $g_sProfileConfigPath, "ClanCapital", "ChkForgeSmartUse", False, "Bool")
+	IniReadS($g_aiForgeSave[0], $g_sProfileConfigPath, "ClanCapital", "ForgeSaveGold", 200000, "int")
+	IniReadS($g_aiForgeSave[1], $g_sProfileConfigPath, "ClanCapital", "ForgeSaveElix", 200000, "int")
+	IniReadS($g_aiForgeSave[2], $g_sProfileConfigPath, "ClanCapital", "ForgeSaveDE", 10000, "int")
 	IniReadS($g_bChkAutoUpgradeCCWallIgnore, $g_sProfileConfigPath, "ClanCapital", "ChkAutoUpgradeCCWallIgnore", False, "Bool")
 
 	;Misc Mod
@@ -1410,6 +1415,9 @@ Func ReadConfig_641_1()
 	IniReadS($g_bTrainAddRandomDelayEnable, $g_sProfileConfigPath, "other", "chkAddIdleTime", $g_bTrainAddRandomDelayEnable, "Bool")
 	IniReadS($g_iTrainAddRandomDelayMin, $g_sProfileConfigPath, "other", "txtAddDelayIdlePhaseTimeMin", $g_iTrainAddRandomDelayMin, "Int")
 	IniReadS($g_iTrainAddRandomDelayMax, $g_sProfileConfigPath, "other", "txtAddDelayIdlePhaseTimeMax", $g_iTrainAddRandomDelayMax, "Int")
+	IniReadS($g_iCCSpamDelayMin, $g_sProfileConfigPath, "other", "CCSpamDelayMin", 30, "Int")
+	IniReadS($g_iCCSpamDelayMax, $g_sProfileConfigPath, "other", "CCSpamDelayMax", 60, "Int")
+	IniReadS($g_iDirectAttackMode, $g_sProfileConfigPath, "other", "DirectAttackMode", 1, "Int")
 EndFunc   ;==>ReadConfig_641_1
 
 Func IniReadS(ByRef $variable, $PrimaryInputFile, $section, $key, $defaultvalue, $valueType = Default)

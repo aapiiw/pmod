@@ -504,6 +504,9 @@ Func BuildMenuReadCost($iX, $iY)
 		If StringRegExp($sTess, "^[1-9]\d{2,8}$") And StringLen($sTess) = $iMinDigits And BuildMenuIsSubsequence($sDigits, $sTess) Then Return Number($sTess)
 		Return Number(StringReplace(StringRegExpReplace($sCost, "^(\d+) ", "${1}5", 1), " ", ""))
 	EndIf
+	; first group lost its middle digit and Tesseract the first one ("160 000" -> "1 0 000" / "60000", "110 000" -> "1 0 000" /
+	; "10000", adb 30 Oct): first template digit + Tesseract when Tesseract ends with the other template digits
+	If StringRegExp($sCost, "^[1-9] \d \d{3}$") And $iMinDigits = 6 And StringRegExp($sTess, "^\d{5}$") And StringRight($sTess, 4) = StringMid($sDigits, 2) Then Return Number(StringLeft($sDigits, 1) & $sTess)
 	If StringRegExp($sTess, "^[1-9]\d{2,8}$") Then
 		If $iMinDigits > 1 And StringLen($sTess) = $iMinDigits Then Return Number($sTess)
 		If $iMinDigits = 1 And ($sDigits = "" Or (StringLen($sTess) > StringLen($sDigits) And BuildMenuIsSubsequence($sDigits, $sTess))) Then Return Number($sTess)

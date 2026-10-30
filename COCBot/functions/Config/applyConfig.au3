@@ -491,6 +491,11 @@ Func ApplyConfig_600_6($TypeReadSave)
 			GUICtrlSetData($g_hTxtMinCCGoldToUpgrade, $g_iMinCCGoldToUpgrade)
 			GUICtrlSetState($g_hChkAutoUpgradeCCIgnore, $g_bChkAutoUpgradeCCIgnore ? $GUI_CHECKED : $GUI_UNCHECKED)
 			GUICtrlSetState($g_hChkAutoUpgradeCCPriorArmy, $g_bChkAutoUpgradeCCPriorArmy ? $GUI_CHECKED : $GUI_UNCHECKED)
+			GUICtrlSetState($g_hChkAutoUpgradeCCTreasury, $g_bChkAutoUpgradeCCTreasury ? $GUI_CHECKED : $GUI_UNCHECKED)
+			GUICtrlSetState($g_hChkForgeSmartUse, $g_bChkForgeSmartUse ? $GUI_CHECKED : $GUI_UNCHECKED)
+			For $i = 0 To 2
+				GUICtrlSetData($g_ahTxtForgeSave[$i], $g_aiForgeSave[$i])
+			Next
 			GUICtrlSetState($g_hChkAutoUpgradeCCWallIgnore, $g_bChkAutoUpgradeCCWallIgnore ? $GUI_CHECKED : $GUI_UNCHECKED)
 
 			;Misc Mod
@@ -677,6 +682,11 @@ Func ApplyConfig_600_6($TypeReadSave)
 			$g_iMinCCGoldToUpgrade = Number(GUICtrlRead($g_hTxtMinCCGoldToUpgrade))
 			$g_bChkAutoUpgradeCCIgnore = (GUICtrlRead($g_hChkAutoUpgradeCCIgnore) = $GUI_CHECKED)
 			$g_bChkAutoUpgradeCCPriorArmy = (GUICtrlRead($g_hChkAutoUpgradeCCPriorArmy) = $GUI_CHECKED)
+			$g_bChkAutoUpgradeCCTreasury = (GUICtrlRead($g_hChkAutoUpgradeCCTreasury) = $GUI_CHECKED)
+			$g_bChkForgeSmartUse = (GUICtrlRead($g_hChkForgeSmartUse) = $GUI_CHECKED)
+			For $i = 0 To 2
+				$g_aiForgeSave[$i] = Number(GUICtrlRead($g_ahTxtForgeSave[$i]))
+			Next
 			$g_bChkAutoUpgradeCCWallIgnore = (GUICtrlRead($g_hChkAutoUpgradeCCWallIgnore) = $GUI_CHECKED)
 
 			;Misc Mod
@@ -2085,6 +2095,9 @@ Func ApplyConfig_641_1($TypeReadSave)
 			GUICtrlSetState($g_hChkTrainAddRandomDelayEnable, $g_bTrainAddRandomDelayEnable ? $GUI_CHECKED : $GUI_UNCHECKED)
 			GUICtrlSetData($g_hTxtAddRandomDelayMin, $g_iTrainAddRandomDelayMin)
 			GUICtrlSetData($g_hTxtAddRandomDelayMax, $g_iTrainAddRandomDelayMax)
+			GUICtrlSetData($g_hTxtCCSpamDelayMin, $g_iCCSpamDelayMin)
+			GUICtrlSetData($g_hTxtCCSpamDelayMax, $g_iCCSpamDelayMax)
+			GUICtrlSetState($g_iDirectAttackMode = 0 ? $g_hRdoDirectAttackDB : $g_hRdoDirectAttackLB, $GUI_CHECKED)
 			chkAddDelayIdlePhaseEnable()
 		Case "Save"
 			; Train click timing
@@ -2093,6 +2106,9 @@ Func ApplyConfig_641_1($TypeReadSave)
 			$g_bTrainAddRandomDelayEnable = (GUICtrlRead($g_hChkTrainAddRandomDelayEnable) = $GUI_CHECKED)
 			$g_iTrainAddRandomDelayMin = Int(GUICtrlRead($g_hTxtAddRandomDelayMin))
 			$g_iTrainAddRandomDelayMax = Int(GUICtrlRead($g_hTxtAddRandomDelayMax))
+			$g_iCCSpamDelayMin = Int(GUICtrlRead($g_hTxtCCSpamDelayMin))
+			$g_iCCSpamDelayMax = Int(GUICtrlRead($g_hTxtCCSpamDelayMax))
+			$g_iDirectAttackMode = (GUICtrlRead($g_hRdoDirectAttackDB) = $GUI_CHECKED) ? 0 : 1
 	EndSwitch
 EndFunc   ;==>ApplyConfig_641_1
 
