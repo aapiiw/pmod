@@ -451,9 +451,11 @@ Func AutoUpgradeByOrder($bTest = False)
 	; Prioritizes Hero Upgrade: Hero before Army
 	If AutoUpgradeRushActive() Then
 		_ArrayAdd($aOrder, "TH")
-		; buildings the next Town Hall needs (Eagle / Inferno Artillery, Guardians) are Defense rows below pricier defenses
-		; (Inferno Artillery 10 000 000 on page 3-4 at TH17, adb 31 Oct): Defense filter pass that takes only them
-		If Number($g_iTownHallLevel) >= 16 And Number($g_iTownHallLevel) <= 18 Then _ArrayAdd($aOrder, "Gate")
+		; buildings the next Town Hall needs (Eagle / Inferno Artillery, Guardians): rows below pricier defenses (Inferno
+		; Artillery 10 000 000 on page 3-4 at TH17, adb 31 Oct) and in no Type filter (user): whole list without filter.
+		; Not found (max for this TH level) = not searched again for 6 h on this account
+		Local $hGate = $g_ahRoutineTimer[CurAccountIndex()][6]
+		If Number($g_iTownHallLevel) >= 16 And Number($g_iTownHallLevel) <= 18 And ($hGate = 0 Or __TimerDiff($hGate) > 6 * 3600000) Then _ArrayAdd($aOrder, "Gate")
 		_ArrayAdd($aOrder, "Key")
 	EndIf
 	If $g_bHeroPriority Then _ArrayAdd($aOrder, "Hero")
@@ -515,10 +517,12 @@ EndFunc   ;==>AutoUpgradeRushActive
 ; upgraded (scroll only while the page had affordable rows that were all skipped, see BuildMenuStopScroll).
 ; Return number of upgrades started, @extended: 1 = a row to wait for (not ignored, or red cost), 2 = stop (no builder)
 Func AutoUpgradeTypePass($sType, $bTest = False)
-	Local $sFilter = ($sType = "TH" Or $sType = "Key") ? "" : ($sType = "Gate" ? "Defense" : $sType) ; Town Hall (Rush TH) has no filter button
+	Local $sFilter = ($sType = "TH" Or $sType = "Key") ? "" : $sType ; Town Hall (Rush TH) has no filter button
+	; gate buildings (user 31 Oct): TH16 Eagle Artillery = Defense filter, TH17 Inferno Artillery = no filter, TH18 Guardians = Hero
+	If $sType = "Gate" Then $sFilter = Number($g_iTownHallLevel) = 16 ? "Defense" : (Number($g_iTownHallLevel) = 18 ? "Hero" : "")
 	; wall reserve builder low cost mode: cheapest first (Cost Min sorting), the cheap rows are on the first page
 	If $g_bUpgradeLowCost Then $sFilter &= "|CostMin"
-	SetLog("Auto Upgrade: " & ($sType = "TH" ? "Town Hall (Rush TH)" : ($sType = "Key" ? "Hero Hall / Laboratory (Rush TH)" : ($sType = "Gate" ? "buildings the next Town Hall needs (Rush TH, Defense filter)" : ($sType = "" ? "rest of the list (no filter)" : $sType & " (filter)")))), $COLOR_INFO)
+	SetLog("Auto Upgrade: " & ($sType = "TH" ? "Town Hall (Rush TH)" : ($sType = "Key" ? "Hero Hall / Laboratory (Rush TH)" : ($sType = "Gate" ? "buildings the next Town Hall needs (Rush TH)" : ($sType = "" ? "rest of the list (no filter)" : $sType & " (filter)")))), $COLOR_INFO)
 	If Not OpenBuildMenu(1, False, $sFilter) Then ; tab 1 (the menu opens on the last used tab) with the filter
 		SetLog("Build menu " & ($sType = "" ? "" : "filter " & $sType & " ") & "failed, skip", $COLOR_WARNING)
 		; 4 = filter not usable (no filter button while the Town Hall is upgrading). Not 1 (row to wait for): the "" pass reads
@@ -526,10 +530,11 @@ Func AutoUpgradeTypePass($sType, $bTest = False)
 		Return SetExtended(4, 0)
 	EndIf
 	BuildMenuReadLoot(False)
-	Local $iStarted = 0, $iExt = 0, $aSkip[0], $bAffordSeen = False, $bCheckNext = False, $iScroll = 0, $sSig = "", $sLastSig = ""
+	Local $iStarted = 0, $iExt = 0, $aSkip[0], $bAffordSeen = False, $bCheckNext = False, $iScroll = 0, $sSig = "", $sLastSig = "", $bGateSeen = False
 	While $g_bRunState
 		Local $aRow = AutoUpgradeFindRow($sType, $aSkip, $sSig)
 		Local $iFlags = @extended
+		If BitAND($iFlags, 16) Then $bGateSeen = True
 		If BitAND($iFlags, 8) Then $iExt = BitOR($iExt, 1)
 		If IsArray($aRow) Then
 			Local $iRet = AutoUpgradeRow($aRow, $bTest)
@@ -554,12 +559,21 @@ Func AutoUpgradeTypePass($sType, $bTest = False)
 		If $sType = "TH" And $iScroll >= 2 Then ExitLoop ; Town Hall cost is one of the highest: on top of the affordable rows
 		If $sType = "Key" And $iScroll >= 3 Then ExitLoop ; Hero Hall / Laboratory costs are high too
 		If $g_bUpgradeLowCost And $iScroll >= 2 Then ExitLoop ; Cost Min: rows below are more expensive
-		If BuildMenuStopScroll($iFlags, $bAffordSeen, $bCheckNext) Or $iScroll >= 6 Then ExitLoop
+		If $sType = "Gate" Then ; whole list: the red / skipped rows above it say nothing about it
+			If BitAND($iFlags, 16) Then ExitLoop ; gate row seen (not affordable now)
+			If $iScroll >= 8 Then ExitLoop
+		ElseIf BuildMenuStopScroll($iFlags, $bAffordSeen, $bCheckNext) Or $iScroll >= 6 Then
+			ExitLoop
+		EndIf
 		If $iScroll > 0 And $sSig = $sLastSig Then ExitLoop ; list did not move: end reached
 		$sLastSig = $sSig
 		BuildMenuScrollDown()
 		$iScroll += 1
 	WEnd
+	If $sType = "Gate" And Not $bGateSeen And $g_bRunState Then
+		$g_ahRoutineTimer[CurAccountIndex()][6] = __TimerInit()
+		SetLog("Rush TH: no building the next Town Hall needs in the Build menu (done / max), next search in 6 h", $COLOR_INFO)
+	EndIf
 	Return SetExtended($iExt, $iStarted)
 EndFunc   ;==>AutoUpgradeTypePass
 
@@ -583,6 +597,10 @@ Func AutoUpgradeFindRow($sType, ByRef $aSkip, ByRef $sSig)
 		Local $sRes = $aIcon[$i][0], $iX = Number($aIcon[$i][1]), $iY = Number($aIcon[$i][2])
 		If BuildMenuIsRedCost($iX, $iY) Then
 			$iFlags = BitOR($iFlags, BitAND($iFlags, 2) ? 5 : 4, 8)
+			If $sType = "Gate" Then ; gate row there but not affordable: stop the search (16), no 6 h skip
+				Local $aRed = getBuildingName($g_iXFindUpgrade, $iY - 20, $iX - $g_iXFindUpgrade - 80, 18)
+				If RushTHGateRow($aRed[0]) Then $iFlags = BitOR($iFlags, 16)
+			EndIf
 			ContinueLoop
 		EndIf
 		$iFlags = BitOR($iFlags, 2)
@@ -595,6 +613,7 @@ Func AutoUpgradeFindRow($sType, ByRef $aSkip, ByRef $sSig)
 		If $sType = "TH" And Not StringInStr($sName, "Town Hall") And Not RushTHGateRow($sName) Then ContinueLoop
 		If $sType = "Key" And Not (StringInStr($sName, "Hero H") Or StringInStr($sName, "Labora")) Then ContinueLoop
 		If $sType = "Gate" And Not RushTHGateRow($sName) Then ContinueLoop
+		If $sType = "Gate" Then $iFlags = BitOR($iFlags, 16)
 		; Hero filter also lists the TH18 Guardians (Longshot, Smasher, Logger, on top): Hero pass is for the 6 heroes,
 		; Guardians (Defense group of "Upgrades to ignore") come with the rest of the list
 		If $sType = "Hero" Then
