@@ -449,7 +449,8 @@ Func AutoUpgradeByOrder($bTest = False)
 	; Essential buildings and the max levels of the Rush TH settings are checked for each row)
 	; Rush TH: Town Hall, then Hero Hall and Laboratory (unlock heroes / research levels), then the order.
 	; Prioritizes Hero Upgrade: Hero before Army
-	If AutoUpgradeRushActive() Then
+	; upgrade deadline: Town Hall / gate / Hero Hall / Laboratory take days, the deadline drops them anyway: no Rush passes
+	If AutoUpgradeRushActive() And UpgradeDeadlineLeft() < 0 Then
 		_ArrayAdd($aOrder, "TH")
 		; buildings the next Town Hall needs (Eagle / Inferno Artillery, Guardians): rows below pricier defenses (Inferno
 		; Artillery 10 000 000 on page 3-4 at TH17, adb 31 Oct) and in no Type filter (user): whole list without filter.
@@ -521,7 +522,8 @@ Func AutoUpgradeTypePass($sType, $bTest = False)
 	; gate buildings (user 31 Oct): TH16 Eagle Artillery = Defense filter, TH17 Inferno Artillery = no filter, TH18 Guardians = Hero
 	If $sType = "Gate" Then $sFilter = Number($g_iTownHallLevel) = 16 ? "Defense" : (Number($g_iTownHallLevel) = 18 ? "Hero" : "")
 	; wall reserve builder low cost mode: cheapest first (Cost Min sorting), the cheap rows are on the first page
-	If $g_bUpgradeLowCost Then $sFilter &= "|CostMin"
+	; upgrade deadline (user 31 Oct): cheapest first too, cheap upgrades are the short ones
+	If $g_bUpgradeLowCost Or UpgradeDeadlineLeft() >= 0 Then $sFilter &= "|CostMin"
 	SetLog("Auto Upgrade: " & ($sType = "TH" ? "Town Hall (Rush TH)" : ($sType = "Key" ? "Hero Hall / Laboratory (Rush TH)" : ($sType = "Gate" ? "buildings the next Town Hall needs (Rush TH)" : ($sType = "" ? "rest of the list (no filter)" : $sType & " (filter)")))), $COLOR_INFO)
 	If Not OpenBuildMenu(1, False, $sFilter) Then ; tab 1 (the menu opens on the last used tab) with the filter
 		SetLog("Build menu " & ($sType = "" ? "" : "filter " & $sType & " ") & "failed, skip", $COLOR_WARNING)
@@ -558,7 +560,7 @@ Func AutoUpgradeTypePass($sType, $bTest = False)
 		If $iScroll = 0 And $sSig = "" Then ExitLoop ; no row with a cost (only upgrades in progress, e.g. Town Hall upgrading)
 		If $sType = "TH" And $iScroll >= 2 Then ExitLoop ; Town Hall cost is one of the highest: on top of the affordable rows
 		If $sType = "Key" And $iScroll >= 3 Then ExitLoop ; Hero Hall / Laboratory costs are high too
-		If $g_bUpgradeLowCost And $iScroll >= 2 Then ExitLoop ; Cost Min: rows below are more expensive
+		If ($g_bUpgradeLowCost Or UpgradeDeadlineLeft() >= 0) And $iScroll >= 2 Then ExitLoop ; Cost Min: rows below are more expensive (longer)
 		If $sType = "Gate" Then ; whole list: the red / skipped rows above it say nothing about it
 			If BitAND($iFlags, 16) Then ExitLoop ; gate row seen (not affordable now)
 			If $iScroll >= 8 Then ExitLoop
