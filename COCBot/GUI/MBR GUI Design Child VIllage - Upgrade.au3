@@ -367,14 +367,15 @@ Func CreateAutoUpgradeSubTab()
 	
 	$x = 25
 	$y = 90
-	GUICtrlCreateGroup(GetTranslatedFileIni("MBR GUI Design - AutoUpgrade", "Group_02", "Upgrades to ignore"), $x - 20, $y, $g_iSizeWGrpTab3, 220)
+	; lists 130 px high (scroll): room for the deadline row and a bigger log (31 Oct)
+	GUICtrlCreateGroup(GetTranslatedFileIni("MBR GUI Design - AutoUpgrade", "Group_02", "Upgrades to ignore"), $x - 20, $y, $g_iSizeWGrpTab3, 174)
 		; one check box per building, names from $g_asUpgradeIgnore, in 2 lists side by side by group (column header = group):
 		; left Town Hall / heroes / army / resources, right defenses / traps. One column scrolled down (report mode): the old
 		; multi column list (scrolled sideways) hid the last row of each column behind the scroll bar with display scaling
 		Local $iLvW = Int(($g_iSizeWGrpTab3 - 21) / 2), $iColW = $iLvW - _WinAPI_GetSystemMetrics($SM_CXVSCROLL) - 6
-		$g_hLvUpgradesToIgnore = GUICtrlCreateListView(GetTranslatedFileIni("MBR GUI Design - AutoUpgrade", "LvIgnoreMain", "TH / Hero / Army / Resource"), 12, $y + 15, $iLvW, 176, BitOR($LVS_REPORT, $LVS_SINGLESEL, $LVS_NOSORTHEADER), BitOR($LVS_EX_CHECKBOXES, $WS_EX_CLIENTEDGE))
+		$g_hLvUpgradesToIgnore = GUICtrlCreateListView(GetTranslatedFileIni("MBR GUI Design - AutoUpgrade", "LvIgnoreMain", "TH / Hero / Army / Resource"), 12, $y + 15, $iLvW, 130, BitOR($LVS_REPORT, $LVS_SINGLESEL, $LVS_NOSORTHEADER), BitOR($LVS_EX_CHECKBOXES, $WS_EX_CLIENTEDGE))
 		_GUICtrlListView_SetColumnWidth(GUICtrlGetHandle($g_hLvUpgradesToIgnore), 0, $iColW)
-		$g_hLvUpgradesToIgnore2 = GUICtrlCreateListView(GetTranslatedFileIni("MBR GUI Design - AutoUpgrade", "LvIgnoreDefense", "Defense / Trap"), 18 + $iLvW, $y + 15, $iLvW, 176, BitOR($LVS_REPORT, $LVS_SINGLESEL, $LVS_NOSORTHEADER), BitOR($LVS_EX_CHECKBOXES, $WS_EX_CLIENTEDGE))
+		$g_hLvUpgradesToIgnore2 = GUICtrlCreateListView(GetTranslatedFileIni("MBR GUI Design - AutoUpgrade", "LvIgnoreDefense", "Defense / Trap"), 18 + $iLvW, $y + 15, $iLvW, 130, BitOR($LVS_REPORT, $LVS_SINGLESEL, $LVS_NOSORTHEADER), BitOR($LVS_EX_CHECKBOXES, $WS_EX_CLIENTEDGE))
 		_GUICtrlListView_SetColumnWidth(GUICtrlGetHandle($g_hLvUpgradesToIgnore2), 0, $iColW)
 		For $i = 0 To UBound($g_asUpgradeIgnore) - 1
 			$g_hChkUpgradesToIgnore[$i] = GUICtrlCreateListViewItem(GetTranslatedFileIni("MBR Global GUI Design Names Buildings", $g_asUpgradeIgnore[$i][0], $g_asUpgradeIgnore[$i][0]), _
@@ -382,15 +383,15 @@ Func CreateAutoUpgradeSubTab()
 		Next
 		; Reset (nothing ignored) and one button per group: ignore the whole group, or nothing of it when all are ignored
 		For $b = 0 To UBound($g_asIgnoreGroupBtn) - 1
-			$g_hBtnIgnoreGroup[$b] = GUICtrlCreateButton($g_asIgnoreGroupBtn[$b][0], 12 + $b * 68, $y + 194, 64, 20)
+			$g_hBtnIgnoreGroup[$b] = GUICtrlCreateButton($g_asIgnoreGroupBtn[$b][0], 12 + $b * 68, $y + 148, 64, 20)
 				GUICtrlSetOnEvent(-1, "btnIgnoreGroup")
 				_GUICtrlSetTip(-1, $b = 0 ? "Uncheck all (nothing ignored)" : "Ignore all " & $g_asIgnoreGroupBtn[$b][0] & " upgrades, click again to ignore none of them")
 		Next
-		$y += 200
+		$y += 154
 	GUICtrlCreateGroup("", -99, -99, 1, 1)
 	
 	$x = 20
-	$y += 28
+	$y += 26
 	$g_hChkRushTH = GUICtrlCreateCheckbox(GetTranslatedFileIni("MBR Global GUI Design Names Traps", "Rush TH", "Rush TH"), $x, $y, -1, -1)
 		GUICtrlSetOnEvent(-1, "chkRushTH")
 		_GUICtrlSetTip(-1, "Toggle to Make RushTH, Wont Ugrade Defense Or colletor")
@@ -405,12 +406,14 @@ Func CreateAutoUpgradeSubTab()
 	
 	$x = 20
 	$y += 24
-		GUICtrlCreateLabel(GetTranslatedFileIni("MBR GUI Design - AutoUpgrade", "LblUpgradeDeadline", "Upgrades must end before (yyyy-mm-dd hh:mm, empty = off):"), $x, $y + 3, 280, -1)
-		$g_hTxtUpgradeDeadline = GUICtrlCreateInput("", $x + 285, $y, 110, 20, BitOR($GUI_SS_DEFAULT_INPUT, $ES_CENTER))
+		GUICtrlCreateLabel(GetTranslatedFileIni("MBR GUI Design - AutoUpgrade", "LblUpgradeDeadline", "Upgrades must end before:"), $x, $y + 3, 140, -1)
+		$g_hTxtUpgradeDeadline = GUICtrlCreateInput("", $x + 140, $y, 110, 20, BitOR($GUI_SS_DEFAULT_INPUT, $ES_CENTER))
 			_GUICtrlSetTip(-1, "Builder, hero, Laboratory and Pet House upgrades start only when they end at least 30 min before this time" & @CRLF & _
 					"(ex: 2026-11-01 15:00, builders free for an event). Upgrade time not read = skipped. Ignored after that time")
+		GUICtrlCreateLabel("yyyy-mm-dd hh:mm, empty = off", $x + 255, $y + 3, 160, -1)
 	$x = 5
-		$g_hTxtAutoUpgradeLog = GUICtrlCreateEdit("", $x, 366, $g_iSizeWGrpTab3, 36, BitOR($GUI_SS_DEFAULT_EDIT, $ES_READONLY))
+	$y += 24
+		$g_hTxtAutoUpgradeLog = GUICtrlCreateEdit("", $x, $y, $g_iSizeWGrpTab3, 402 - $y, BitOR($GUI_SS_DEFAULT_EDIT, $ES_READONLY))
 		GUICtrlSetData(-1, GetTranslatedFileIni("MBR GUI Design - AutoUpgrade", "TxtAutoUpgradeLog", "------------------------------------------------ AUTO UPGRADE LOG ------------------------------------------------"))
 
 EndFunc   ;==>CreateAutoUpgradeGUI
