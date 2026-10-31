@@ -789,20 +789,19 @@ EndFunc   ;==>IsUpgradeIgnoreChecked
 
 ; Rush TH: upgrade only Town Hall, heroes and army related buildings. The ignore list is set from the Rush TH preset of $g_asUpgradeIgnore and locked.
 Func chkRushTH()
+	$g_bIgnoreListLocked = False
 	If GUICtrlRead($g_hChkRushTH) = $GUI_CHECKED Then
 		$g_bChkRushTH = True
 		For $i = 0 To UBound($g_hChkUpgradesToIgnore) - 1
 			GUICtrlSetState($g_hChkUpgradesToIgnore[$i], $g_asUpgradeIgnore[$i][2] = 1 ? $GUI_CHECKED : $GUI_UNCHECKED)
 		Next
-		GUICtrlSetState($g_hLvUpgradesToIgnore, $GUI_DISABLE) ; list view items cannot be disabled one by one, lock the whole lists
-		GUICtrlSetState($g_hLvUpgradesToIgnore2, $GUI_DISABLE)
+		; lists stay enabled (scroll), check box clicks are blocked in GUIControl_WM_NOTIFY while locked
+		$g_bIgnoreListLocked = True
 		For $b = 0 To UBound($g_hBtnIgnoreGroup) - 1
 			GUICtrlSetState($g_hBtnIgnoreGroup[$b], $GUI_DISABLE)
 		Next
 	Else
 		$g_bChkRushTH = False
-		GUICtrlSetState($g_hLvUpgradesToIgnore, $GUI_ENABLE)
-		GUICtrlSetState($g_hLvUpgradesToIgnore2, $GUI_ENABLE)
 		For $b = 0 To UBound($g_hBtnIgnoreGroup) - 1
 			GUICtrlSetState($g_hBtnIgnoreGroup[$b], $GUI_ENABLE)
 		Next

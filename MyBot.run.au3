@@ -705,7 +705,6 @@ Func runBot() ;Bot that runs everything in order
 			SetLogCentered(" Top MainLoop ", "=", $COLOR_DEBUG)
 			checkMainScreen(False, $g_bStayOnBuilderBase, "MainLoop")
 			VillageReport()
-			CheckTownHallLevel()
 			
 			CheckClanGamesEvent()
 

@@ -439,11 +439,22 @@ Func LabUpgrade($bTest = False, $bKeepOpen = False)
 		Return False
 	EndIf
 
-	Local $aCoord = BuildMenuGoToItem(2, $aList[$iPick][3], $aList[$iPick][8], $g_sImgResIcon, $g_iXFindLabUpgrade, -23, "lab", $sFilter)
-	If Not IsArray($aCoord) Then
-		If Not $bKeepOpen Then CloseBuildMenu()
-		Return False
-	EndIf
+	Local $aCoord
+	For $iTry = 1 To 6 ; "Upgrade only when done before": a research that ends too late is dropped, next pick
+		$aCoord = BuildMenuGoToItem(2, $aList[$iPick][3], $aList[$iPick][8], $g_sImgResIcon, $g_iXFindLabUpgrade, -23, "lab", $sFilter)
+		If Not IsArray($aCoord) Then
+			If Not $bKeepOpen Then CloseBuildMenu()
+			Return False
+		EndIf
+		If UpgradeDeadlineOk($aList[$iPick][3], $aCoord[2]) Then ExitLoop
+		$aList[$iPick][7] = False
+		$iPick = LabPickUpgrade($aList)
+		If $iPick < 0 Or $iTry = 6 Then
+			SetLog("No Laboratory research ends before " & $g_sUpgradeDeadline, $COLOR_INFO)
+			If Not $bKeepOpen Then CloseBuildMenu()
+			Return False
+		EndIf
+	Next
 	Local $bRet = LaboratoryUpgrade($aList[$iPick][3], $aCoord, $aList[$iPick][5], $bTest)
 	If $bRet And Not $bTest Then LabSaveBusyTime($aCoord[2])
 	; new research of 1 day or more: potion right away (row 1 of tab 2 shows the running research)

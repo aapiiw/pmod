@@ -284,6 +284,9 @@ EndFunc
 
 Func SwitchSCID($NextAccount)
 	Local $bRet = False
+	; village name of the account we leave (normal switches only: at start the game can already be on the wanted account)
+	Local $bCheckName = Not $g_bInitiateSwitchAcc And $NextAccount <> $g_iCurAccount
+	Local $sNameBefore = $bCheckName ? SwitchNameSignature() : ""
 	
 	If Not OpenSettingPage() Then Return $bRet
 	
@@ -297,11 +300,54 @@ Func SwitchSCID($NextAccount)
 	Next
 	
 	If ClickAccountSCID($NextAccount + 1) Then
+		; the click hit the row of the account we were on (list dragged twice, qiralle profile played quazzy 05:35 31 Oct): the
+		; game does not reload and the village name stays the same -> failed, SwitchCOCAcc tries again before the profile change
+		If $sNameBefore <> "" And SwitchNameUnchanged($sNameBefore) Then
+			SetLog("Village name did not change after the account click, switch failed", $COLOR_ERROR)
+			Return False
+		EndIf
 		$bRet = True
 		SetLog("Successfully Switch to Account " & $NextAccount + 1, $COLOR_SUCCESS)
 	EndIf
 	Return $bRet
 EndFunc
+
+; white pixels of the village name (top left of the main screen), "" when no main screen or no name seen
+Func SwitchNameSignature()
+	If Not IsMainPage(1) Then Return ""
+	_CaptureRegion()
+	Local $s = "", $iPix, $iWhite = 0
+	For $y = 38 To 58 Step 2
+		For $x = 95 To 249 Step 2
+			$iPix = Dec(_GetPixelColor($x, $y, False))
+			If BitAND(BitShift($iPix, 16), 0xFF) > 200 And BitAND(BitShift($iPix, 8), 0xFF) > 200 And BitAND($iPix, 0xFF) > 200 Then
+				$s &= "1"
+				$iWhite += 1
+			Else
+				$s &= "0"
+			EndIf
+		Next
+	Next
+	Return $iWhite >= 20 ? $s : ""
+EndFunc   ;==>SwitchNameSignature
+
+; True when the main screen is back (max 60 s) with the same village name as $sBefore: <= 8 pixels differ (different
+; accounts differed by 37+ of 858 on adb screenshots 30 Oct, qruel / quirk the closest)
+Func SwitchNameUnchanged($sBefore)
+	For $i = 1 To 30
+		Local $sNow = SwitchNameSignature()
+		If $sNow <> "" Then
+			Local $iDiff = 0
+			For $k = 1 To StringLen($sBefore)
+				If StringMid($sBefore, $k, 1) <> StringMid($sNow, $k, 1) Then $iDiff += 1
+			Next
+			SetDebugLog("Village name pixels after the switch: " & $iDiff & " of " & StringLen($sBefore) & " differ")
+			Return $iDiff <= 8
+		EndIf
+		If _Sleep(2000) Then Return False
+	Next
+	Return False
+EndFunc   ;==>SwitchNameUnchanged
 
 Func ClickSCIDReload()
 	Local $bRet = False

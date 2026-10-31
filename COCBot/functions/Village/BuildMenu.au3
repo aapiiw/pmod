@@ -713,9 +713,148 @@ EndFunc   ;==>BuildMenuStopScroll
 
 ; upgrade time of the row with resource icon at $iY, in minutes (lower bound, 0 = unknown). Only read for the chosen row.
 Func BuildMenuRowTime($iY)
+	Local $iMin = BuildMenuReadTime($iY)
+	If $iMin > 0 Then Return $iMin
 	; text at y-18..y-8: y-26 h14 read only its top half ("15d 12H" -> "s", adb test 27 Oct)
 	Return BuildMenuTimeToMin(getOcrAndCapture("coc-buildtime", 755, $iY - 21, 76, 16, False))
 EndFunc   ;==>BuildMenuRowTime
+
+; upgrade time of the row with resource icon at $iY, read with the glyphs of $g_aiBuildTimeGlyph (own font, no Tesseract).
+; adb test 31 Oct, 979 rows of 12 accounts: Tesseract read 28 of 40 hand checked rows (11 not read, "12H" as "2H", "6H" as "5H"),
+; glyphs 40 of 40 and 950 rows clean (the others have no time). Return minutes, 0 = no clean time text
+Func BuildMenuReadTime($iY)
+	Local Const $iX0 = 750, $iW = 84, $iH = 20
+	If $iY - 24 < 0 Then Return 0
+	_CaptureRegion2($iX0, $iY - 24, $iX0 + $iW, $iY - 4)
+	Local $hBmp = _GDIPlus_BitmapCreateFromHBITMAP($g_hHBitmap2)
+	If @error Or $hBmp = 0 Then Return 0
+	Local $tData = _GDIPlus_BitmapLockBits($hBmp, 0, 0, $iW, $iH, $GDIP_ILMREAD, $GDIP_PXF32ARGB)
+	Local $iStridePx = DllStructGetData($tData, "Stride") / 4
+	Local $tPix = DllStructCreate("uint[" & $iStridePx * $iH & "]", DllStructGetData($tData, "Scan0"))
+	Local $aM[$iH][$iW], $abCol[$iW], $iPix, $r, $g, $b, $iMin, $iMax
+	For $y = 0 To $iH - 1
+		For $x = 0 To $iW - 1
+			$iPix = DllStructGetData($tPix, 1, $y * $iStridePx + $x + 1)
+			$r = BitAND(BitShift($iPix, 16), 0xFF)
+			$g = BitAND(BitShift($iPix, 8), 0xFF)
+			$b = BitAND($iPix, 0xFF)
+			$iMin = _Min(_Min($r, $g), $b)
+			$iMax = _Max(_Max($r, $g), $b)
+			$aM[$y][$x] = ($iMin > 200 And $iMax - $iMin < 60) ? 1 : 0
+			If $aM[$y][$x] Then $abCol[$x] = True
+		Next
+	Next
+	_GDIPlus_BitmapUnlockBits($hBmp, $tData)
+	_GDIPlus_BitmapDispose($hBmp)
+	; glyphs = column runs with text, 6+ rows high; only the group on the right (the end of a long name can reach x 750)
+	Local $aSeg[0][4], $x = $iW - 1, $iEnd, $iTop, $iBot
+	While $x >= 0
+		If Not $abCol[$x] Then
+			$x -= 1
+			ContinueLoop
+		EndIf
+		$iEnd = $x + 1
+		While $x >= 0 And $abCol[$x]
+			$x -= 1
+		WEnd
+		$iTop = -1
+		$iBot = -1
+		For $y = 0 To $iH - 1
+			For $c = $x + 1 To $iEnd - 1
+				If $aM[$y][$c] Then
+					If $iTop < 0 Then $iTop = $y
+					$iBot = $y
+					ExitLoop
+				EndIf
+			Next
+		Next
+		If $iBot - $iTop + 1 < 6 Then ContinueLoop
+		If UBound($aSeg) > 0 And $aSeg[0][0] - $iEnd > 6 Then ExitLoop
+		ReDim $aSeg[UBound($aSeg) + 1][4] ; insert in front (_ArrayInsert failed on the empty 2D array)
+		For $k = UBound($aSeg) - 1 To 1 Step -1
+			For $c = 0 To 3
+				$aSeg[$k][$c] = $aSeg[$k - 1][$c]
+			Next
+		Next
+		$aSeg[0][0] = $x + 1
+		$aSeg[0][1] = $iEnd
+		$aSeg[0][2] = $iTop
+		$aSeg[0][3] = $iBot
+	WEnd
+	Local $sText = ""
+	For $i = 0 To UBound($aSeg) - 1
+		$sText &= BuildMenuTimeGlyph($aM, Number($aSeg[$i][0]), Number($aSeg[$i][1]), Number($aSeg[$i][2]), Number($aSeg[$i][3]))
+	Next
+	If Not StringRegExp($sText, "^(\d{1,2}d(\d{1,2}h)?|\d{1,2}h(\d{1,2}m)?|\d{1,2}m(\d{1,2}s)?)$") Then
+		If $sText <> "" Then SetDebugLog("Row time glyphs '" & $sText & "' not a time")
+		Return 0
+	EndIf
+	Return BuildMenuTimeToMin(StringRegExpReplace($sText, "([dhm])(?=\d)", "$1 "))
+EndFunc   ;==>BuildMenuReadTime
+
+; nearest glyph of $g_aiBuildTimeGlyph: glyph (columns $iS .. $iE - 1, rows $iT .. $iB of $aM) scaled to 8x12 like the
+; templates, distance = different bits + 3 x (width + height difference)
+Func BuildMenuTimeGlyph(ByRef $aM, $iS, $iE, $iT, $iB)
+	Static $aiPop[256]
+	If $aiPop[255] = 0 Then
+		For $v = 0 To 255
+			$aiPop[$v] = BitAND($v, 1) + BitAND(BitShift($v, 1), 1) + BitAND(BitShift($v, 2), 1) + BitAND(BitShift($v, 3), 1) + _
+					BitAND(BitShift($v, 4), 1) + BitAND(BitShift($v, 5), 1) + BitAND(BitShift($v, 6), 1) + BitAND(BitShift($v, 7), 1)
+		Next
+	EndIf
+	Local $w = $iE - $iS, $h = $iB - $iT + 1, $aiRow[12], $v
+	For $y = 0 To 11
+		$v = 0
+		For $x = 0 To 7
+			If $aM[$iT + Int($y * $h / 12)][$iS + Int($x * $w / 8)] Then $v += BitShift(1, -$x)
+		Next
+		$aiRow[$y] = $v
+	Next
+	Local $iBest = 9999, $sBest = "", $iD
+	For $i = 0 To UBound($g_aiBuildTimeGlyph) - 1
+		$iD = 3 * (Abs($w - $g_aiBuildTimeGlyph[$i][1]) + Abs($h - $g_aiBuildTimeGlyph[$i][2]))
+		If $iD >= $iBest Then ContinueLoop
+		For $y = 0 To 11
+			$iD += $aiPop[BitXOR($aiRow[$y], $g_aiBuildTimeGlyph[$i][$y + 3])]
+		Next
+		If $iD < $iBest Then
+			$iBest = $iD
+			$sBest = $g_aiBuildTimeGlyph[$i][0]
+		EndIf
+	Next
+	Return $sBest
+EndFunc   ;==>BuildMenuTimeGlyph
+
+; "Upgrade only when done before" ($g_sUpgradeDeadline "yyyy-mm-dd hh:mm", "" = off): minutes left, -1 = off or passed
+Func UpgradeDeadlineLeft()
+	If $g_sUpgradeDeadline = "" Then Return -1
+	Local $a = StringRegExp($g_sUpgradeDeadline, "^(\d{4})-(\d{2})-(\d{2})\s+(\d{1,2}):(\d{2})$", $STR_REGEXPARRAYMATCH)
+	If Not IsArray($a) Then Return -1
+	Local $iLeft = _DateDiff("n", _NowCalc(), $a[0] & "/" & $a[1] & "/" & $a[2] & " " & StringFormat("%02d", $a[3]) & ":" & $a[4] & ":00")
+	Return $iLeft > 0 ? $iLeft : -1
+EndFunc   ;==>UpgradeDeadlineLeft
+
+; True when the upgrade of $sName (time in minutes, -1 = not read) may start: no deadline, or done 30 min before it.
+; Time OCR (Tesseract) misses ~20% of the rows ("6d" -> "d", "16H" -> '') and can lose the hours ("10d 14H" -> "10d 141"):
+; only a clean read is trusted, anything else is skipped while the deadline is on (adb test 31 Oct, 40 rows: 28 right)
+Func UpgradeDeadlineOk($sName, $iMin)
+	Local $iLeft = UpgradeDeadlineLeft()
+	If $iLeft < 0 Then Return True
+	If $iMin <= 0 Then
+		SetLog($sName & ": upgrade time not read, skip (upgrades must end before " & $g_sUpgradeDeadline & ")", $COLOR_INFO)
+		Return False
+	EndIf
+	If $iMin > $iLeft - 30 Then
+		SetLog($sName & ": upgrade " & Int($iMin / 60) & "h " & Mod($iMin, 60) & "m ends after " & $g_sUpgradeDeadline & ", skip", $COLOR_INFO)
+		Return False
+	EndIf
+	Return True
+EndFunc   ;==>UpgradeDeadlineOk
+
+; row time for the deadline: only clean "1d", "4d 2H", "8H", "30m 0s" texts, else 0 (unknown)
+Func BuildMenuRowTimeStrict($iY)
+	Return BuildMenuReadTime($iY) ; own glyphs: 40 of 40 (Tesseract 28 of 40 and could drop a "1": "12H" -> "2H")
+EndFunc   ;==>BuildMenuRowTimeStrict
 
 ; drags inside the list (slow enough to not fling, start point between texts so no row is clicked), about 7 rows
 Func BuildMenuScrollDown()
@@ -839,7 +978,7 @@ Func BuildMenuGoToItem($iTab, $sName, $iPage, $sIconDir, $iNameX, $iNameDy, $sTy
 		Local $aPage = BuildMenuReadPage($sIconDir, $iNameX, $iNameDy, $sType)
 		For $i = 0 To UBound($aPage) - 1
 			If $aPage[$i][3] = $sName Then
-				Local $aRet[3] = [$aPage[$i][1], $aPage[$i][2], BuildMenuRowTime($aPage[$i][2])]
+				Local $aRet[3] = [$aPage[$i][1], $aPage[$i][2], UpgradeDeadlineLeft() < 0 ? BuildMenuRowTime($aPage[$i][2]) : BuildMenuRowTimeStrict($aPage[$i][2])]
 				Return $aRet
 			EndIf
 		Next

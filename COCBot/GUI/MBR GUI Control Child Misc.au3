@@ -907,3 +907,12 @@ Func btnCloseDailyRunRoutine()
 		$i += 1
 	WEnd
 EndFunc
+
+; Clan Capital Auto Upgrade options locked while Auto Upgrade Clan Capital is off (like the Walls tab)
+Func chkEnableAutoUpgradeCC()
+	Local $iState = GUICtrlRead($g_hChkEnableAutoUpgradeCC) = $GUI_CHECKED ? $GUI_ENABLE : $GUI_DISABLE
+	For $h In StringSplit($g_hChkAutoUpgradeCCTreasury & "|" & $g_hChkEnableMinGoldAUCC & "|" & $g_hTxtMinCCGoldToUpgrade & "|" & $g_hChkAutoUpgradeCCPriorArmy & "|" & _
+			$g_hChkAutoUpgradeCCIgnore & "|" & $g_hChkAutoUpgradeCCWallIgnore, "|", $STR_NOCOUNT)
+		GUICtrlSetState(Number($h), $iState)
+	Next
+EndFunc   ;==>chkEnableAutoUpgradeCC

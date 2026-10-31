@@ -109,6 +109,11 @@ Func PetUpgrade($bTest = False)
 		CloseBuildMenu()
 		Return False
 	EndIf
+	; "Upgrade only when done before": the pet list is short, a pet upgrade that ends too late = no pet upgrade now
+	If Not UpgradeDeadlineOk($sPet, $aCoord[2]) Then
+		CloseBuildMenu()
+		Return False
+	EndIf
 	SetLog("Upgrade " & $sPet & ", cost: " & _NumberFormat($aList[$iPick][5]) & " DE", $COLOR_ACTION)
 	ClickP($aCoord)
 	If _Sleep(1500) Then Return False

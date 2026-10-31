@@ -68,6 +68,7 @@ Func UpgradeHeroes($bTest = False)
 		Local $aCoord = BuildMenuGoToItem(1, $sHero, $aList[$iRow][8], $g_sImgResourceIcon, $g_iXFindUpgrade, -22, "hero", $sFilter)
 		_ArrayAdd($aDone, $sHero)
 		If Not IsArray($aCoord) Then ContinueLoop
+		If Not UpgradeDeadlineOk($sHero, $aCoord[2]) Then ContinueLoop
 		SetLog("Upgrade " & $sHero & ", cost: " & _NumberFormat($aList[$iRow][5]) & " " & $aList[$iRow][0], $COLOR_ACTION)
 		ClickP($aCoord) ; opens hero upgrade window
 		If _Sleep(1500) Then Return False

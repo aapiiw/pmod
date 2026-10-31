@@ -37,8 +37,12 @@ Func Collect($bOnlyCollector = False)
 				If _Sleep($DELAYCOLLECT2) Then Return
 			EndIf
 		Next
+		; the clicked collector stays selected, its bottom bar covers the builder counter: "Bad OCR read Free/Total Builders"
+		; in EndGainCost's VillageReport (14 of 23 on 31 Oct)
+		ClickAway()
+		If _Sleep(300) Then Return
 	EndIf
-	
+
 	EndGainCost("Collect")
 	Return True
 EndFunc   ;==>Collect

@@ -491,6 +491,7 @@ Func ApplyConfig_600_6($TypeReadSave)
 			GUICtrlSetData($g_hTxtMinCCGoldToUpgrade, $g_iMinCCGoldToUpgrade)
 			GUICtrlSetState($g_hChkAutoUpgradeCCIgnore, $g_bChkAutoUpgradeCCIgnore ? $GUI_CHECKED : $GUI_UNCHECKED)
 			GUICtrlSetState($g_hChkAutoUpgradeCCPriorArmy, $g_bChkAutoUpgradeCCPriorArmy ? $GUI_CHECKED : $GUI_UNCHECKED)
+			chkEnableAutoUpgradeCC()
 			GUICtrlSetState($g_hChkAutoUpgradeCCTreasury, $g_bChkAutoUpgradeCCTreasury ? $GUI_CHECKED : $GUI_UNCHECKED)
 			GUICtrlSetState($g_hChkForgeSmartUse, $g_bChkForgeSmartUse ? $GUI_CHECKED : $GUI_UNCHECKED)
 			For $i = 0 To 2
@@ -1065,6 +1066,7 @@ Func ApplyConfig_auto($TypeReadSave)
 			GUICtrlSetState($g_hChkRushTH, $g_bChkRushTH ? $GUI_CHECKED : $GUI_UNCHECKED)
 			GUICtrlSetState($g_hUseWallReserveBuilder, $g_bUseWallReserveBuilder ? $GUI_CHECKED : $GUI_UNCHECKED)
 			GUICtrlSetState($g_hUseBuilderPotion, $g_bUseBuilderPotion ? $GUI_CHECKED : $GUI_UNCHECKED)
+			GUICtrlSetData($g_hTxtUpgradeDeadline, $g_sUpgradeDeadline)
 			For $y = 0 To UBound($g_aiCmbRushTHOption) - 1
 				_GUICtrlComboBox_SetCurSel($g_ahCmbRushTHOption[$y], $g_aiCmbRushTHOption[$y])
 			Next
@@ -1076,6 +1078,7 @@ Func ApplyConfig_auto($TypeReadSave)
 			GUICtrlSetState($g_hUseHeroBooks, $g_bUseHeroBooks ? $GUI_CHECKED : $GUI_UNCHECKED)
 			GUICtrlSetData($g_hHeroMinUpgradeTime, $g_iHeroMinUpgradeTime)
 			GUICtrlSetState($g_hUpgradeOtherDefenses, $g_bUpgradeOtherDefenses ? $GUI_CHECKED : $GUI_UNCHECKED)
+			$g_bIgnoreListLocked = False ; Rush TH lock of the previous profile, chkRushTH locks again
 			For $i = 0 To UBound($g_iChkUpgradesToIgnore) - 1
 				GUICtrlSetState($g_hChkUpgradesToIgnore[$i], $g_iChkUpgradesToIgnore[$i] = 1 ? $GUI_CHECKED : $GUI_UNCHECKED)
 			Next
@@ -1091,6 +1094,7 @@ Func ApplyConfig_auto($TypeReadSave)
 			$g_bChkRushTH = (GUICtrlRead($g_hChkRushTH) = $GUI_CHECKED)
 			$g_bUseWallReserveBuilder = (GUICtrlRead($g_hUseWallReserveBuilder) = $GUI_CHECKED)
 			$g_bUseBuilderPotion = (GUICtrlRead($g_hUseBuilderPotion) = $GUI_CHECKED)
+			$g_sUpgradeDeadline = StringStripWS(GUICtrlRead($g_hTxtUpgradeDeadline), $STR_STRIPLEADING + $STR_STRIPTRAILING)
 			For $y = 0 To UBound($g_aiCmbRushTHOption) - 1
 				$g_aiCmbRushTHOption[$y] = _GUICtrlComboBox_GetCurSel($g_ahCmbRushTHOption[$y])
 			Next

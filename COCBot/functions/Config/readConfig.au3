@@ -827,6 +827,7 @@ Func ReadConfig_auto()
 	IniReadS($g_bChkRushTH, $g_sProfileConfigPath, "Auto Upgrade", "ChkRushTH", True, "Bool")
 	IniReadS($g_bUseWallReserveBuilder, $g_sProfileConfigPath, "Auto Upgrade", "UseWallReserveBuilder", True, "Bool")
 	IniReadS($g_bUseBuilderPotion, $g_sProfileConfigPath, "Auto Upgrade", "UseBuilderPotion", False, "Bool")
+	$g_sUpgradeDeadline = StringStripWS(IniRead($g_sProfileConfigPath, "Auto Upgrade", "UpgradeDeadline", ""), $STR_STRIPLEADING + $STR_STRIPTRAILING)
 
 	Local $str = ""
 	$str = StringSplit(IniRead($g_sProfileConfigPath, "Auto Upgrade", "RushTHOption", "5|13|7|4|3"), "|", $STR_NOCOUNT)

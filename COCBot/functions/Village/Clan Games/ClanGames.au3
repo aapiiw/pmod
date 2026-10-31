@@ -549,6 +549,13 @@ EndFunc
 
 Func IsClanGamesWindow($bOnlyPurge = False)
 	Local $sState, $bRet = False
+	; Clan Games ended (reward time, ~1 week): the window was opened 2x per account cycle for nothing (31 Oct), skip 12 h
+	Local Static $ahEnded[16] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+	Local $iAcc = CurAccountIndex()
+	If $ahEnded[$iAcc] <> 0 And __TimerDiff($ahEnded[$iAcc]) < 12 * 3600000 Then
+		SetDebugLog("Clan Games ended (seen " & Round(__TimerDiff($ahEnded[$iAcc]) / 60000) & " min ago), window not opened")
+		Return False
+	EndIf
 
 	If QuickMIS("BC1", $g_sImgCaravan, 200, 55, 330, 155) Then
 		SetLog("Caravan available! Entering Clan Games", $COLOR_SUCCESS)
@@ -569,6 +576,7 @@ Func IsClanGamesWindow($bOnlyPurge = False)
 			Case "Ended"
 				$bRet = False
 				If $g_bCollectCGReward Then CollectCGReward()
+				$ahEnded[$iAcc] = __TimerInit()
 		EndSwitch
 	Else
 		SetLog("Caravan not available", $COLOR_WARNING)

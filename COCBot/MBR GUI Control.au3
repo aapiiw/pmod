@@ -715,6 +715,17 @@ Func GUIControl_WM_NOTIFY($hWind, $iMsg, $wParam, $lParam)
 
 	Local $bCheckEmbeddedShield = True
 
+	; Rush TH: Upgrades to ignore lists stay scrollable, but their check boxes keep the Rush TH preset (block the change)
+	If $g_bIgnoreListLocked And $g_hLvUpgradesToIgnore <> 0 And ($nID = $g_hLvUpgradesToIgnore Or $nID = $g_hLvUpgradesToIgnore2) Then
+		Local $tNMLV = DllStructCreate("hwnd hWndFrom;uint_ptr IDFrom;int Code;int Item;int SubItem;uint NewState;uint OldState;uint Changed", $lParam)
+		If DllStructGetData($tNMLV, "Code") = $LVN_ITEMCHANGING And BitAND(DllStructGetData($tNMLV, "Changed"), $LVIF_STATE) _
+				And BitAND(BitXOR(DllStructGetData($tNMLV, "NewState"), DllStructGetData($tNMLV, "OldState")), 0xF000) Then
+			$g_bTogglePauseAllowed = $wasAllowed
+			SetCriticalMessageProcessing($wasCritical)
+			Return True
+		EndIf
+	EndIf
+
 	Switch $nID
 		Case $g_hSldAdditionalClickDelay
 			sldAdditionalClickDelay()

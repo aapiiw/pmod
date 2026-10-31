@@ -860,6 +860,7 @@ Func CreateClanCapitalTab()
 	$y += 42
 	GUICtrlCreateGroup(GetTranslatedFileIni($sF, "Group_ClanCapital_AutoUpgradeCC", "Auto Upgrade Clan Capital"), $x - 10, $y - 15, $g_iSizeWGrpTab3 - 3, 68)
 		$g_hChkEnableAutoUpgradeCC = GUICtrlCreateCheckbox(GetTranslatedFileIni($sF, "ChkEnableAutoUpgradeCC", "Enable"), $x, $y, -1, -1)
+			GUICtrlSetOnEvent(-1, "chkEnableAutoUpgradeCC")
 		$g_hChkAutoUpgradeCCTreasury = GUICtrlCreateCheckbox(GetTranslatedFileIni($sF, "ChkAutoUpgradeCCTreasury", "Capital Treasury"), $x + 75, $y, -1, -1)
 			_GUICtrlSetTip(-1, GetTranslatedFileIni($sF, "ChkAutoUpgradeCCTreasury_Info", "Contribute to the upgrades in progress first (Builder menu of the capital), then to district upgrades"))
 		$g_hChkEnableMinGoldAUCC = GUICtrlCreateCheckbox(GetTranslatedFileIni($sF, "ChkEnableMinGoldAUCC", "Only if Capital Gold >"), $x + 190, $y, -1, -1)

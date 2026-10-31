@@ -289,7 +289,10 @@ Func _VillageSearch($bTest = False, $bDoClanGames = False) ;Control for searchin
 			If Not $bMeasured Then
 				If _Sleep(1000) Then Return
 				$bMeasured = CheckZoomOut()
-				If Not $bMeasured Then VillageSearchSaveImage(True)
+				If Not $bMeasured Then
+					VillageSearchSaveImage(True) ; screenshots of unknown sceneries: stone / tree files can be made from them
+					$bMeasured = VillageSizeFallback()
+				EndIf
 			EndIf
 
 			If $bMeasured Then

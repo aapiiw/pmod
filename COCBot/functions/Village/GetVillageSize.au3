@@ -129,11 +129,37 @@ Func GetVillageSize($bOnBuilderBase = $g_bStayOnBuilderBase, $sStonePrefix = "st
 		$aResult[10] = $g_sCurrentScenery
 
 		$g_aVillageSize = $aResult
+		; enemy village measured: kept for scenery without stone / tree files (VillageSizeFallback)
+		If Not $bOwnVillage Then
+			Local $aLast[8] = [$aResult, $z, $x, $y, $g_InnerDiamondLeft, $g_InnerDiamondRight, $g_InnerDiamondTop, $g_InnerDiamondBottom]
+			$g_aLastEnemyVillageSize = $aLast
+		EndIf
 		ConvertInternalExternArea()
 		Return FuncReturn($aResult)
 	EndIf
 	FuncReturn()
 EndFunc   ;==>GetVillageSize
+
+; enemy village of a scenery without stone / tree files (26 "Dead Base Found BUT Measure Failed" in 2 days, Oct 2026): the
+; search screen shows every village at the same zoom and place, so the last measured enemy village size is used
+; Return True when a measured village was available
+Func VillageSizeFallback()
+	If Not IsArray($g_aLastEnemyVillageSize) Then Return False
+	Local $a = $g_aLastEnemyVillageSize
+	$g_iZoomFactor = $a[1]
+	$g_ixOffset = $a[2]
+	$g_iyOffset = $a[3]
+	setVillageOffset($a[2], $a[3], $a[1])
+	$g_InnerDiamondLeft = $a[4]
+	$g_InnerDiamondRight = $a[5]
+	$g_InnerDiamondTop = $a[6]
+	$g_InnerDiamondBottom = $a[7]
+	$g_aVillageSize = $a[0]
+	$g_sCurrentScenery = "Unknown (last measured size)"
+	ConvertInternalExternArea()
+	SetLog("Scenery not known, attack with the last measured village size (zoom " & Round($a[1], 3) & ")", $COLOR_INFO)
+	Return True
+EndFunc   ;==>VillageSizeFallback
 
 Func FindStone($sDirectory = $g_sImgZoomOutDir, $sStonePrefix = "stone")
 	Local $stone = [0, 0, 0, 0, 0, ""]

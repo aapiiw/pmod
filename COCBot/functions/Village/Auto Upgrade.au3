@@ -451,6 +451,9 @@ Func AutoUpgradeByOrder($bTest = False)
 	; Prioritizes Hero Upgrade: Hero before Army
 	If AutoUpgradeRushActive() Then
 		_ArrayAdd($aOrder, "TH")
+		; buildings the next Town Hall needs (Eagle / Inferno Artillery, Guardians) are Defense rows below pricier defenses
+		; (Inferno Artillery 10 000 000 on page 3-4 at TH17, adb 31 Oct): Defense filter pass that takes only them
+		If Number($g_iTownHallLevel) >= 16 And Number($g_iTownHallLevel) <= 18 Then _ArrayAdd($aOrder, "Gate")
 		_ArrayAdd($aOrder, "Key")
 	EndIf
 	If $g_bHeroPriority Then _ArrayAdd($aOrder, "Hero")
@@ -461,8 +464,8 @@ Func AutoUpgradeByOrder($bTest = False)
 	For $p = 0 To UBound($aOrder) - 1
 		If Not $g_bRunState Then Return $iStarted
 		Local $sType = $aOrder[$p]
-		If $sType <> "" And $sType <> "TH" And $sType <> "Key" And $bNoFilter Then ContinueLoop ; filter failed once: the rest of the list is read without filter
-		If $sType <> "" And $sType <> "TH" And $sType <> "Key" And Not AutoUpgradeTypeWanted($sType) Then
+		If $sType <> "" And $sType <> "TH" And $sType <> "Key" And $sType <> "Gate" And $bNoFilter Then ContinueLoop ; filter failed once: the rest of the list is read without filter
+		If $sType <> "" And $sType <> "TH" And $sType <> "Key" And $sType <> "Gate" And Not AutoUpgradeTypeWanted($sType) Then
 			SetDebugLog("Auto Upgrade " & $sType & ": every building of this type is ignored, skip")
 			ContinueLoop
 		EndIf
@@ -512,10 +515,10 @@ EndFunc   ;==>AutoUpgradeRushActive
 ; upgraded (scroll only while the page had affordable rows that were all skipped, see BuildMenuStopScroll).
 ; Return number of upgrades started, @extended: 1 = a row to wait for (not ignored, or red cost), 2 = stop (no builder)
 Func AutoUpgradeTypePass($sType, $bTest = False)
-	Local $sFilter = ($sType = "TH" Or $sType = "Key") ? "" : $sType ; Town Hall (Rush TH) has no filter button
+	Local $sFilter = ($sType = "TH" Or $sType = "Key") ? "" : ($sType = "Gate" ? "Defense" : $sType) ; Town Hall (Rush TH) has no filter button
 	; wall reserve builder low cost mode: cheapest first (Cost Min sorting), the cheap rows are on the first page
 	If $g_bUpgradeLowCost Then $sFilter &= "|CostMin"
-	SetLog("Auto Upgrade: " & ($sType = "TH" ? "Town Hall (Rush TH)" : ($sType = "Key" ? "Hero Hall / Laboratory (Rush TH)" : ($sType = "" ? "rest of the list (no filter)" : $sType & " (filter)"))), $COLOR_INFO)
+	SetLog("Auto Upgrade: " & ($sType = "TH" ? "Town Hall (Rush TH)" : ($sType = "Key" ? "Hero Hall / Laboratory (Rush TH)" : ($sType = "Gate" ? "buildings the next Town Hall needs (Rush TH, Defense filter)" : ($sType = "" ? "rest of the list (no filter)" : $sType & " (filter)")))), $COLOR_INFO)
 	If Not OpenBuildMenu(1, False, $sFilter) Then ; tab 1 (the menu opens on the last used tab) with the filter
 		SetLog("Build menu " & ($sType = "" ? "" : "filter " & $sType & " ") & "failed, skip", $COLOR_WARNING)
 		; 4 = filter not usable (no filter button while the Town Hall is upgrading). Not 1 (row to wait for): the "" pass reads
@@ -589,8 +592,9 @@ Func AutoUpgradeFindRow($sType, ByRef $aSkip, ByRef $sSig)
 		Local $sName = $aName[0]
 		If StringInStr($sName, "Wall") Then $sName = "Wall"
 		If _ArraySearch($aSkip, $sName & "|" & $sRes) >= 0 Then ContinueLoop
-		If $sType = "TH" And Not StringInStr($sName, "Town Hall") Then ContinueLoop
+		If $sType = "TH" And Not StringInStr($sName, "Town Hall") And Not RushTHGateRow($sName) Then ContinueLoop
 		If $sType = "Key" And Not (StringInStr($sName, "Hero H") Or StringInStr($sName, "Labora")) Then ContinueLoop
+		If $sType = "Gate" And Not RushTHGateRow($sName) Then ContinueLoop
 		; Hero filter also lists the TH18 Guardians (Longshot, Smasher, Logger, on top): Hero pass is for the 6 heroes,
 		; Guardians (Defense group of "Upgrades to ignore") come with the rest of the list
 		If $sType = "Hero" Then
@@ -622,6 +626,7 @@ Func AutoUpgradeFindRow($sType, ByRef $aSkip, ByRef $sSig)
 			EndIf
 			If AutoUpgradeMinSave($sRes) > 0 And Not CheckResourceForDoUpgrade($sName, $iCost, $sRes) Then ContinueLoop
 		EndIf
+		If UpgradeDeadlineLeft() >= 0 And Not UpgradeDeadlineOk($sName, BuildMenuRowTimeStrict($iY)) Then ContinueLoop
 		Local $aRet[6] = [$sRes, $iX, $iY, $sName, $iCost, $sName & "|" & $sRes]
 		Return SetExtended($iFlags, $aRet)
 	Next
@@ -1005,6 +1010,12 @@ Func CheckIgnoreUpgrade($sUpgradeName = "", $bUpgradeLowCost = False)
 	If $bMustIgnoreUpgrade And $g_bChkRushTH And $g_bUpgradeOnlyTHLevelAchieve And IsTHLevelAchieved() Then
 		$bMustIgnoreUpgrade = False
 		SetDebugLog("[RushTH] TH level achieved, " & $sUpgradeName & " allowed")
+	EndIf
+
+	; buildings the next Town Hall level needs (Rush TH gate) are upgraded although Rush TH ignores defenses
+	If $bMustIgnoreUpgrade And AutoUpgradeRushActive() And RushTHGateRow($sUpgradeName) Then
+		$bMustIgnoreUpgrade = False
+		SetLog("[RushTH] " & $sUpgradeName & " needed for the next Town Hall level, allowed", $COLOR_DEBUG1)
 	EndIf
 
 	; Rush TH ignores defenses, but "Essential Building" selected in Rush TH setting must still be upgraded
@@ -1500,6 +1511,21 @@ Func UpgradeWindowTargetLevel()
 EndFunc   ;==>UpgradeWindowTargetLevel
 
 ; Town Hall reached the Rush TH wanted level (option index + 9), False when TH level is unknown
+; buildings the game asks before the next Town Hall upgrade (user, 31 Oct): TH16 -> 17 Eagle Artillery level 7,
+; TH17 -> 18 Inferno Artillery 5 upgrades (stars), TH18 -> 19 (expected next month) the Guardians Longshot / Smasher / Logger.
+; Their rows only show while they can be upgraded, so the Town Hall pass (Rush TH) takes them before the rest
+Func RushTHGateRow($sName)
+	Switch Number($g_iTownHallLevel)
+		Case 16
+			Return StringInStr($sName, "Eagle Art") > 0
+		Case 17
+			Return StringInStr($sName, "Inferno Art") > 0
+		Case 18
+			Return StringInStr($sName, "Longshot") > 0 Or StringInStr($sName, "Smasher") > 0 Or StringInStr($sName, "Logger") > 0
+	EndSwitch
+	Return False
+EndFunc   ;==>RushTHGateRow
+
 Func IsTHLevelAchieved()
 	Return Number($g_iTownHallLevel) >= Number($g_aiCmbRushTHOption[0]) + 9
 EndFunc

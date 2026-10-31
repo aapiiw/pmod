@@ -235,6 +235,7 @@
 #include "functions\Village\Auto Upgrade.au3"
 #include "functions\Village\UpgradeWall.au3"
 #include "functions\Village\Notify.au3"
+#include "functions\Village\BuildMenuTimeGlyphs.au3"
 #include "functions\Village\BuildMenu.au3"
 #include "functions\Village\Laboratory.au3"
 #include "functions\Village\ReplayShare.au3"

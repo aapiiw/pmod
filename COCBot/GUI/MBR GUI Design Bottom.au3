@@ -89,7 +89,7 @@ Func CreateBottomPanel()
 			GUICtrlSetOnEvent(-1, "chkBackground")
 			GUICtrlSetState(-1, (($g_bAndroidAdbScreencap = True) ? ($GUI_CHECKED) : ($GUI_UNCHECKED)))
 		
-		$g_hBtnControl = GUICtrlCreateButton("Edit", $x + 245, $y + 70, 35, 20)
+		$g_hBtnControl = GUICtrlCreateButton("Edit", $x + 245, $y_bottom + 84, 35, 20) ; same row as Direct / Rush / BBSpam / CCSpam
 			GUICtrlSetState(-1, $GUI_HIDE)
 			GUICtrlSetOnEvent(-1, "ToggleControl")
 	GUICtrlCreateGroup("", -99, -99, 1, 1)

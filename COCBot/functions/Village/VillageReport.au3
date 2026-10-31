@@ -39,6 +39,16 @@ Func VillageReport($bBypass = False, $bSuppressLog = False)
 		$g_aiCurrentLoot[$eLootElixir] = getResourcesMainScreen(690, 59)
 		$g_aiCurrentLoot[$eLootDarkElixir] = getResourcesMainScreen(690, 96)
 		$g_iGemAmount = getResourcesMainScreen(730, 133)
+		; storage info tooltip (after ClickAway of the Town Hall level check) covers DE / gems for ~1 s: "[D]: [GEM]:" after
+		; every account switch (31 Oct). Read once more
+		If $g_aiCurrentLoot[$eLootElixir] = "" Or $g_aiCurrentLoot[$eLootDarkElixir] = "" Or $g_iGemAmount = "" Then
+			If _Sleep(1500) Then Return
+			_CaptureRegion2()
+			$g_aiCurrentLoot[$eLootGold] = getResourcesMainScreen(690, 22)
+			$g_aiCurrentLoot[$eLootElixir] = getResourcesMainScreen(690, 59)
+			$g_aiCurrentLoot[$eLootDarkElixir] = getResourcesMainScreen(690, 96)
+			$g_iGemAmount = getResourcesMainScreen(730, 133)
+		EndIf
 		If Not $bSuppressLog Then SetLog("[Builder]:" & $g_iFreeBuilderCount & "/" & $g_iTotalBuilderCount, $COLOR_SUCCESS)
 		If Not $bSuppressLog Then SetLog("[G]:" & _NumberFormat($g_aiCurrentLoot[$eLootGold]) & " [E]:" & _NumberFormat($g_aiCurrentLoot[$eLootElixir]) & " [D]:" & _NumberFormat($g_aiCurrentLoot[$eLootDarkElixir]) & " [GEM]:" & _NumberFormat($g_iGemAmount), $COLOR_SUCCESS)
 	Else

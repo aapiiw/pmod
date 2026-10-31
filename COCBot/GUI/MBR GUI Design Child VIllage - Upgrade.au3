@@ -89,6 +89,8 @@ Func CreateVillageUpgrade()
 
 EndFunc   ;==>CreateVillageUpgrade
 
+Global $g_hTxtUpgradeDeadline = 0
+Global $g_bIgnoreListLocked = False ; Rush TH: Upgrades to ignore check boxes locked (scroll still works)
 Global $g_hChkLabUpgradeOrder = 0, $g_hBtnRemoveLabUpgradeOrder = 0, $g_hBtnSetLabUpgradeOrder = 0, $g_hUpgradeAnyTroops = 0
 
 Func CreateLaboratorySubTab()
@@ -401,8 +403,14 @@ Func CreateAutoUpgradeSubTab()
 	$g_hUseBuilderPotion = GUICtrlCreateCheckbox(GetTranslatedFileIni("MBR GUI Design - AutoUpgrade", "ChkUseBuilderPotion", "Use Builder Potion"), $x + 145, $y, 105, -1)
 		_GUICtrlSetTip(-1, "Use a Builder Potion (Magic Items) when no builder is free and the first upgrade in progress has 1 day or more left")
 	
+	$x = 20
+	$y += 24
+		GUICtrlCreateLabel(GetTranslatedFileIni("MBR GUI Design - AutoUpgrade", "LblUpgradeDeadline", "Upgrades must end before (yyyy-mm-dd hh:mm, empty = off):"), $x, $y + 3, 280, -1)
+		$g_hTxtUpgradeDeadline = GUICtrlCreateInput("", $x + 285, $y, 110, 20, BitOR($GUI_SS_DEFAULT_INPUT, $ES_CENTER))
+			_GUICtrlSetTip(-1, "Builder, hero, Laboratory and Pet House upgrades start only when they end at least 30 min before this time" & @CRLF & _
+					"(ex: 2026-11-01 15:00, builders free for an event). Upgrade time not read = skipped. Ignored after that time")
 	$x = 5
-		$g_hTxtAutoUpgradeLog = GUICtrlCreateEdit("", $x, 340, $g_iSizeWGrpTab3, 62, BitOR($GUI_SS_DEFAULT_EDIT, $ES_READONLY))
+		$g_hTxtAutoUpgradeLog = GUICtrlCreateEdit("", $x, 366, $g_iSizeWGrpTab3, 36, BitOR($GUI_SS_DEFAULT_EDIT, $ES_READONLY))
 		GUICtrlSetData(-1, GetTranslatedFileIni("MBR GUI Design - AutoUpgrade", "TxtAutoUpgradeLog", "------------------------------------------------ AUTO UPGRADE LOG ------------------------------------------------"))
 
 EndFunc   ;==>CreateAutoUpgradeGUI

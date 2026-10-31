@@ -1007,6 +1007,8 @@ Global $g_bChkRushTH = False, $g_bHeroPriority = False
 ; walls, Town Hall...). "Resource" pass takes storages only (drills, collectors and mines are in the last pass)
 Global Const $g_asAutoUpgradeOrder[5] = ["Army", "Hero", "Resource", "Defense", ""]
 Global $g_bAutoUpgradeEnabled = False, $g_bUseWallReserveBuilder = False, $g_bUseHeroBooks = False, $g_iHeroMinUpgradeTime = 0
+Global $g_aLastEnemyVillageSize = 0 ; [GetVillageSize result, zoom, x offset, y offset, inner diamond L, R, T, B] of the last measured enemy village
+Global $g_sUpgradeDeadline = "" ; "yyyy-mm-dd hh:mm": builder / Lab / Pet upgrades only when they end before it ("" = off)
 Global $g_bUseBuilderPotion = False, $g_bUseLabPotion = False, $g_bUsePetPotion = False, $g_ahPotionTimer[16][3] ; [account][0 research, 1 builder, 2 pet]: last use
 Global $g_ahRoutineTimer[16][7] ; [account][0 TreasuryCollect, 1 CleanYard, 5 CollectCCGold, 6 Town Hall level check]: last run, see RoutineIntervalDue; [2] no pet to upgrade seen; [3] free magic item claimed; [4] no Lab upgrade seen
 Global $g_aiNoUpgradeWaitMin[16][2] ; [account][0 Lab, 1 Pet]: minutes to wait after an empty list (360 locked, 60 red cost)
