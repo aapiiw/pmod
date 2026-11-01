@@ -280,18 +280,76 @@ Func BuildMenuHelperDue($iHelper)
 	Return $h = 0 Or __TimerDiff($h) >= 3600000
 EndFunc   ;==>BuildMenuHelperDue
 
-; Research / Builder Potion from the Magic Item button of the open Build menu (tab 2 lab / tab 1 builders) when the first
-; running upgrade has 1 day or more left ("d" in its time, row 1). $iKind: 0 research, 1 builder, 2 pet (tab 4). One try per
-; hour per account (a potion lasts 1 hour). Returns True when used.
+; potion of the open Build menu tab running: the camera moves to the building of the tab (Builder Hut / Laboratory / Pet
+; House) and a dark bubble with its boost time and the potion icon sits at x 385-480, y 286-305 (qiralle 1 Nov, all 3
+; potions on). Dark bubble rows y 286 / 305 (x 398-440, 86 px): 72-84 with a potion, 0-48 on 74 captures without one
+; (12 accounts x tabs 1/2/4); white text px (x 392-452, y 289-302): 167-196. The time in the bubble is not read (glyphs of
+; the list font read it wrong). Camera may still move after the tab change: 3 tries
+Func BuildMenuPotionActive()
+	For $iTry = 1 To 3
+		_CaptureRegion()
+		Local $iDark = 0, $iWhite = 0, $iPix, $iMin, $iMax
+		For $y = 286 To 305 Step 19
+			For $x = 398 To 440
+				$iPix = Dec(_GetPixelColor($x, $y, False))
+				If _Max(_Max(BitAND(BitShift($iPix, 16), 0xFF), BitAND(BitShift($iPix, 8), 0xFF)), BitAND($iPix, 0xFF)) < 110 Then $iDark += 1
+			Next
+		Next
+		If $iDark >= 65 Then
+			For $y = 289 To 302
+				For $x = 392 To 452
+					$iPix = Dec(_GetPixelColor($x, $y, False))
+					$iMin = _Min(_Min(BitAND(BitShift($iPix, 16), 0xFF), BitAND(BitShift($iPix, 8), 0xFF)), BitAND($iPix, 0xFF))
+					$iMax = _Max(_Max(BitAND(BitShift($iPix, 16), 0xFF), BitAND(BitShift($iPix, 8), 0xFF)), BitAND($iPix, 0xFF))
+					If $iMin > 150 And $iMax - $iMin < 60 Then $iWhite += 1
+				Next
+			Next
+			SetDebugLog("Potion bubble: dark " & $iDark & "/86, white " & $iWhite)
+			If $iWhite >= 120 Then Return True
+		EndIf
+		If $iTry < 3 And _Sleep(400) Then Return False
+	Next
+	Return False
+EndFunc   ;==>BuildMenuPotionActive
+
+; next potion try of $iKind on this account: 60 min after a use (the potion runs 1 h), 6 h after "no potion in Magic
+; Items", 45 min after any other miss (time below the limit, button not found) = the next visit (an account is visited
+; every ~53 min; a 1 h wait after every try skipped every 2nd visit)
+Func PotionDue($iKind)
+	Local $iAcc = CurAccountIndex(), $h = $g_ahPotionTimer[$iAcc][$iKind]
+	Return $h = 0 Or __TimerDiff($h) >= $g_aiPotionWaitMin[$iAcc][$iKind] * 60000
+EndFunc   ;==>PotionDue
+
+Func PotionWait($iKind, $iMin)
+	Local $iAcc = CurAccountIndex()
+	$g_ahPotionTimer[$iAcc][$iKind] = __TimerInit()
+	$g_aiPotionWaitMin[$iAcc][$iKind] = $iMin
+EndFunc   ;==>PotionWait
+
+; Research / Builder / Pet Potion from the Magic Item button of the open Build menu (tab 2 lab / tab 1 builders / tab 4
+; pets) when the first running upgrade (row 1 = ends first) has enough time left: Builder 9 h (10x for 1 h), Research /
+; Pet 23 h (24x) (user 1 Nov). $iKind: 0 research, 1 builder, 2 pet. Returns True when used.
 Func BuildMenuUsePotion($iKind)
 	Local $aDir[3] = [$g_sImgResearchPotion, $g_sImgBuilderPotion, $g_sImgPetPotion], $aName[3] = ["Research", "Builder", "Pet"]
+	Local $aMinLeft[3] = [1380, 540, 1380]
 	Local $sDir = $aDir[$iKind], $sName = $aName[$iKind]
 	Local $sButtonDir = $iKind = 2 ? $g_sImgBuilderPotion : $sDir ; Pet Potion: no button image of its own (same Magic Item button)
-	Local $iAcc = CurAccountIndex(), $h = $g_ahPotionTimer[$iAcc][$iKind]
-	If $h <> 0 And __TimerDiff($h) < 3600000 Then Return False
+	If Not PotionDue($iKind) Then Return False
 	If Not IsBuildMenuOpen() Then Return False
-	$g_ahPotionTimer[$iAcc][$iKind] = __TimerInit()
-	If Not QuickMIS("BFI", $g_sImgAUpgradeHour & "Day*", 776, 65, 830, 80) Then
+	PotionWait($iKind, 45) ; any miss below: next visit
+	; a potion of this kind already running (used by hand or before a bot restart): not again, look next visit
+	If BuildMenuPotionActive() Then
+		SetLog($sName & " Potion already running, next check in 45 min", $COLOR_INFO)
+		Return False
+	EndIf
+	; time of the first running upgrade; not read -> the "d" icon rule (1 day+)
+	Local $iLeft = BuildMenuBusyTime()
+	If $iLeft > 0 Then
+		If $iLeft < $aMinLeft[$iKind] Then
+			SetLog($sName & " Potion: running upgrade ends in " & Int($iLeft / 60) & "h " & Mod($iLeft, 60) & "m (< " & Int($aMinLeft[$iKind] / 60) & " h), not used", $COLOR_DEBUG2)
+			Return False
+		EndIf
+	ElseIf Not QuickMIS("BFI", $g_sImgAUpgradeHour & "Day*", 776, 65, 830, 80) Then
 		SetLog($sName & " Potion: running upgrade ends in less than 1 day, not used", $COLOR_DEBUG2)
 		Return False
 	EndIf
@@ -309,7 +367,8 @@ Func BuildMenuUsePotion($iKind)
 				Click(650, 510, 1, 0, "Use " & $sName & " Potion")
 				If WaitforPixel(430, 430, 431, 430, "2E93D0", 20, 2) Then
 					Click(430, 430, 1, 0, "Confirm " & $sName & " Potion")
-					SetLog($sName & " Potion used (1 day or more left)", $COLOR_SUCCESS)
+					SetLog($sName & " Potion used (" & Int($aMinLeft[$iKind] / 60) & " h or more left)", $COLOR_SUCCESS)
+					PotionWait($iKind, 60) ; potion running
 					$bRet = True
 				Else
 					SetLog($sName & " Potion: confirm button not found", $COLOR_DEBUG2)
@@ -318,7 +377,8 @@ Func BuildMenuUsePotion($iKind)
 				SetLog($sName & " Potion: Use button not found", $COLOR_DEBUG2)
 			EndIf
 		Else
-			SetLog("No " & $sName & " Potion in Magic Items", $COLOR_INFO)
+			SetLog("No " & $sName & " Potion in Magic Items, next look in 6 h", $COLOR_INFO)
+			PotionWait($iKind, 360)
 		EndIf
 		If _Sleep(500) Then Return $bRet
 		ClickAway("Left") ; close the Magic Items window

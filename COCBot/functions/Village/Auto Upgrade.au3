@@ -23,6 +23,15 @@ Func AutoUpgrade($bTest = False, $bUpgradeLowCost = False)
 	Return $Result
 EndFunc
 
+; all builders busy (Goblin Builder not counted): Builder Potion when the first running upgrade has 10 h+ left
+Func AutoUpgradeBuilderPotion()
+	If Not $g_bUseBuilderPotion Or $g_iFreeBuilderCount <> 0 Or Not PotionDue(1) Then Return False
+	If Not OpenBuildMenu(1) Then Return False
+	Local $bRet = BuildMenuUsePotion(1)
+	CloseBuildMenu()
+	Return $bRet
+EndFunc   ;==>AutoUpgradeBuilderPotion
+
 Func AutoUpgradeCheckResource()
 	
 	Local $sBuilderInfo = getBuildersOnMenu()
@@ -134,14 +143,7 @@ Func SearchUpgrade($bTest = False, $bUpgradeLowCost = False)
 	If Not $bTest And Not $bUpgradeLowCost And $g_iTotalBuilderCount > 0 And $g_iFreeBuilderCount - WallReservedBuilder() - ReservedBuildersForHeroes() < 1 Then
 		SetLog("No free builder (free " & $g_iFreeBuilderCount & ", kept for wall " & WallReservedBuilder() & "), skip Auto Upgrade", $COLOR_INFO)
 		If CheckBuilderApprentice() Or IsBuildMenuOpen() Then CloseBuildMenu() ; apprentice speeds up an ongoing upgrade
-		; all builders busy: Builder Potion when the first running upgrade has 1 day or more left
-		If $g_bUseBuilderPotion And $g_iFreeBuilderCount = 0 And Not $bTest Then
-			Local $h = $g_ahPotionTimer[CurAccountIndex()][1]
-			If ($h = 0 Or __TimerDiff($h) >= 3600000) And OpenBuildMenu(1) Then
-				BuildMenuUsePotion(1)
-				CloseBuildMenu()
-			EndIf
-		EndIf
+		If Not $bTest Then AutoUpgradeBuilderPotion()
 		Return False
 	EndIf
 	PlaceUnplacedBuilding()
@@ -654,7 +656,7 @@ Func AutoUpgradeFindRow($sType, ByRef $aSkip, ByRef $sSig)
 				SetLog($sName & ": " & _NumberFormat($iCost) & " " & $sRes & ", above the low cost limit of the wall reserve builder", $COLOR_DEBUG1)
 				ContinueLoop
 			EndIf
-			If AutoUpgradeMinSave($sRes) > 0 And Not CheckResourceForDoUpgrade($sName, $iCost, $sRes) Then ContinueLoop
+			If AutoUpgradeMinSave($sRes) > 0 And AutoUpgradeLootKnown($sRes) And Not CheckResourceForDoUpgrade($sName, $iCost, $sRes) Then ContinueLoop
 		EndIf
 		If UpgradeDeadlineLeft() >= 0 And Not UpgradeDeadlineOk($sName, BuildMenuRowTimeStrict($iY)) Then ContinueLoop
 		Local $aRet[6] = [$sRes, $iX, $iY, $sName, $iCost, $sName & "|" & $sRes]
@@ -698,6 +700,22 @@ Func AutoUpgradeMinSave($sRes)
 	EndSwitch
 	Return 0
 EndFunc   ;==>AutoUpgradeMinSave
+
+; loot of $sRes for the Min Save check: not read by the village report (qath 1 Nov 20:46: [D]: '' -> "-120000 < 1500",
+; every DE hero refused with 277 937 DE) -> read it from the open Build menu (top center). Still unknown -> False: the row
+; cost is white (affordable), only the Min Save is not checked
+Func AutoUpgradeLootKnown($sRes)
+	Local $i = ($sRes = "Gold" ? $eLootGold : ($sRes = "Elix" ? $eLootElixir : $eLootDarkElixir))
+	If Number($g_aiCurrentLoot[$i]) > 0 Then Return True
+	Local $aOld[3] = [$g_aiCurrentLoot[$eLootGold], $g_aiCurrentLoot[$eLootElixir], $g_aiCurrentLoot[$eLootDarkElixir]]
+	BuildMenuReadLoot(False, False)
+	If Number($g_aiCurrentLoot[$eLootGold]) <= 0 Then $g_aiCurrentLoot[$eLootGold] = $aOld[0]
+	If Number($g_aiCurrentLoot[$eLootElixir]) <= 0 Then $g_aiCurrentLoot[$eLootElixir] = $aOld[1]
+	If Number($g_aiCurrentLoot[$eLootDarkElixir]) <= 0 Then $g_aiCurrentLoot[$eLootDarkElixir] = $aOld[2]
+	If Number($g_aiCurrentLoot[$i]) > 0 Then Return True
+	SetLog($sRes & " not read, Min Save not checked (row cost is affordable)", $COLOR_DEBUG1)
+	Return False
+EndFunc   ;==>AutoUpgradeLootKnown
 
 ; wall reserve builder used while the first upgrade ends in more than 12 h: only cheap upgrades
 Func AutoUpgradeLowCostOk($sRes, $iCost)

@@ -1041,7 +1041,11 @@ Func VillageUpgrades($bReport = True)
 	If $sKey = $g_sVillageUpgradeKey Then Return
 	$g_sVillageUpgradeKey = $sKey
 	If $bReport Then VillageReport(True, True)
-	If $g_iFreeBuilderCount < 1 Then Return
+	; all builders busy: Auto Upgrade (with its Builder Potion check) was never reached, the potion was never used
+	If $g_iFreeBuilderCount < 1 Then
+		AutoUpgradeBuilderPotion()
+		Return
+	EndIf
 	Setlog("Your Account have FREE BUILDER", $COLOR_INFO)
 	If Not $g_bRunState Then Return
 
@@ -1165,7 +1169,10 @@ Func FirstCheckRoutine()
 			If AttackWithRetry("2nd", 3) Then CheckMainScreen()
 			If Not $g_bRunState Then Return
 		EndIf
-		
+
+		; loot of the 2nd attack and builders freed during the visit: upgrade before the switch (else ~50 min later, next visit)
+		VillageUpgrades()
+		If Not $g_bRunState Then Return
 		RequestCC()
 		checkSwitchAcc() ;switch to next account
 	EndIf

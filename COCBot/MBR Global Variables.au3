@@ -1009,7 +1009,8 @@ Global Const $g_asAutoUpgradeOrder[5] = ["Army", "Hero", "Resource", "Defense", 
 Global $g_bAutoUpgradeEnabled = False, $g_bUseWallReserveBuilder = False, $g_bUseHeroBooks = False, $g_iHeroMinUpgradeTime = 0
 Global $g_aLastEnemyVillageSize = 0 ; [GetVillageSize result, zoom, x offset, y offset, inner diamond L, R, T, B] of the last measured enemy village
 Global $g_sUpgradeDeadline = "" ; "yyyy-mm-dd hh:mm": builder / Lab / Pet upgrades only when they end before it ("" = off)
-Global $g_bUseBuilderPotion = False, $g_bUseLabPotion = False, $g_bUsePetPotion = False, $g_ahPotionTimer[16][3] ; [account][0 research, 1 builder, 2 pet]: last use
+Global $g_bUseBuilderPotion = False, $g_bUseLabPotion = False, $g_bUsePetPotion = False, $g_ahPotionTimer[16][3] ; [account][0 research, 1 builder, 2 pet]: last try, see PotionDue
+Global $g_aiPotionWaitMin[16][3] ; minutes to wait after that try (60 used, 360 none in Magic Items, 45 other miss)
 Global $g_ahRoutineTimer[16][9] ; [account][0 TreasuryCollect, 1 CleanYard, 5 CollectCCGold, 6 Rush TH gate row not found (6 h skip), 7 Gem Box, 8 DonateCC]: last run, see RoutineIntervalDue; [2] no pet to upgrade seen; [3] free magic item claimed; [4] no Lab upgrade seen
 Global $g_bDonateNewChat = False ; red chat notification seen: DonateCC runs even inside its 3 min interval
 Global $g_sVillageUpgradeKey = "" ; account|attack count of the last VillageUpgrades run (once per account and attack)

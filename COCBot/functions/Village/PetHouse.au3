@@ -24,7 +24,7 @@ Func PetUpgrade($bTest = False)
 	; (Laboratory check) showing a free Pet House win over it
 	Local $bPetFree = BuildMenuCountersFresh(False) And $g_aiBuildMenuCounter[4][0] > 0
 	; Pet Potion due (not tried in the last hour): the Build menu is opened to use it while the Pet House is busy
-	Local $bPotion = $g_bUsePetPotion And ($g_ahPotionTimer[CurAccountIndex()][2] = 0 Or __TimerDiff($g_ahPotionTimer[CurAccountIndex()][2]) >= 3600000)
+	Local $bPotion = $g_bUsePetPotion And PotionDue(2)
 	If Not $bTest And Not $bPetFree And Not $bPotion And $g_sPetUpgradeTime <> "" And _DateDiff("n", _NowCalc(), $g_sPetUpgradeTime) > 0 Then
 		SetLog("Pet upgrade in progress, next check after " & $g_sPetUpgradeTime, $COLOR_INFO)
 		Return False
@@ -139,8 +139,8 @@ Func PetUpgrade($bTest = False)
 	GUICtrlSetState($g_hPicPetGreen, $GUI_SHOW)
 	PetSaveBusyTime($aCoord[2])
 	ClickAway()
-	; new pet upgrade of 1 day or more: potion right away (row 1 of tab 4 shows the running upgrade)
-	If $g_bUsePetPotion And $aCoord[2] >= 1440 And OpenBuildMenu(4) Then
+	; new pet upgrade of 23 h or more: potion right away (row 1 of tab 4 shows the running upgrade)
+	If $g_bUsePetPotion And $aCoord[2] >= 1380 And OpenBuildMenu(4) Then
 		If BuildMenuUsePotion(2) Then $g_sPetUpgradeTime = ""
 	EndIf
 	CloseBuildMenu()

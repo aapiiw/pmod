@@ -457,8 +457,8 @@ Func LabUpgrade($bTest = False, $bKeepOpen = False)
 	Next
 	Local $bRet = LaboratoryUpgrade($aList[$iPick][3], $aCoord, $aList[$iPick][5], $bTest)
 	If $bRet And Not $bTest Then LabSaveBusyTime($aCoord[2])
-	; new research of 1 day or more: potion right away (row 1 of tab 2 shows the running research)
-	If $bRet And Not $bTest And $g_bUseLabPotion And $aCoord[2] >= 1440 And OpenBuildMenu(2) Then
+	; new research of 23 h or more: potion right away (row 1 of tab 2 shows the running research)
+	If $bRet And Not $bTest And $g_bUseLabPotion And $aCoord[2] >= 1380 And OpenBuildMenu(2) Then
 		If BuildMenuUsePotion(0) Then $g_sLabUpgradeTime = ""
 	EndIf
 	CloseBuildMenu()
@@ -506,10 +506,9 @@ Func LabFilterType()
 	Return $sKind & (($sRes = "Elixir" Or $sRes = "Dark") ? "|" & $sRes : "")
 EndFunc   ;==>LabFilterType
 
-; Research Potion try due on this account (not tried in the last hour)
+; Research Potion try due on this account (PotionDue, BuildMenu.au3)
 Func LabPotionDue()
-	Local $h = $g_ahPotionTimer[CurAccountIndex()][0]
-	Return $h = 0 Or __TimerDiff($h) >= 3600000
+	Return PotionDue(0)
 EndFunc   ;==>LabPotionDue
 
 ; remember when lab should be free again ($iMin = lower bound read in Build menu, 0 = unknown)
