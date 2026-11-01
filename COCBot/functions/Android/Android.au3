@@ -4196,12 +4196,6 @@ Func HideAndroidWindow($bHide = True, $sSource = "Unknown")
 		$iPosX = $g_iFrmBotPosX + 472
 		$iPosY = $g_iFrmBotPosY
 	EndIf
-	; saved Android window position of the profile first (user 31 Oct: emulator windows stay where they were put, not next
-	; to the bot window)
-	If $g_iAndroidPosX <> $g_WIN_POS_DEFAULT And $g_iAndroidPosY <> $g_WIN_POS_DEFAULT And $g_iAndroidPosX > -30000 And $g_iAndroidPosY > -30000 Then
-		$iPosX = $g_iAndroidPosX
-		$iPosY = $g_iAndroidPosY
-	EndIf
 	
 	If $bHide Then
 		_MoveAndroidWinToDesktop(1, $g_hAndroidWindow)

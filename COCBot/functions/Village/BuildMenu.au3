@@ -848,6 +848,7 @@ Func UpgradeDeadlineOk($sName, $iMin)
 		SetLog($sName & ": upgrade " & Int($iMin / 60) & "h " & Mod($iMin, 60) & "m ends after " & $g_sUpgradeDeadline & ", skip", $COLOR_INFO)
 		Return False
 	EndIf
+	SetLog($sName & ": upgrade " & Int($iMin / 60) & "h " & Mod($iMin, 60) & "m ends before " & $g_sUpgradeDeadline, $COLOR_INFO)
 	Return True
 EndFunc   ;==>UpgradeDeadlineOk
 

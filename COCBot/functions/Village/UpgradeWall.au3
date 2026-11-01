@@ -31,7 +31,9 @@ Func UpgradeWall($bTest = False)
 	If Not $g_bRunState Then Return
 	
 	If $g_iFreeBuilderCount > 0 Then $GoUpgrade = True
-	If $g_bChkOnly1Builder And $g_iFreeBuilderCount > 1 And Not $bTest Then
+	; upgrade deadline on: builder upgrades end after it and are skipped, the free builders stay free (qurlk 1 Nov: storages
+	; full, halt attack, 'Auto Upgrade: no upgrade started' then walls skipped by this check every cycle)
+	If $g_bChkOnly1Builder And $g_iFreeBuilderCount > 1 And Not $bTest And UpgradeDeadlineLeft() < 0 Then
 		SetLog("Have more than 1 builder, Upgrade Walls skipped", $COLOR_DEBUG2)
 		Return
 	EndIf

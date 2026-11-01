@@ -78,7 +78,10 @@ Func _checkMainScreen($bSetLog = Default, $bBuilderBase = $g_bStayOnBuilderBase,
 	If $bLocated Then 
 		; not before the first account switch: the game can be on another account than the profile (bot started on qath
 		; with macia open 29 Oct: request and donate done for macia with the settings of qath)
-		If Not (ProfileSwitchAccountEnabled() And $g_bInitiateSwitchAcc) And CheckDonateNotifCounter() Then RequestCC()
+		If Not (ProfileSwitchAccountEnabled() And $g_bInitiateSwitchAcc) And CheckDonateNotifCounter() Then
+			$g_bDonateNewChat = True
+			RequestCC()
+		EndIf
 		If _Sleep(1000) Then Return
 		If $g_bStayOnBuilderBase <> $bBuilderBase Then SwitchBetweenBases("Main")
 	EndIf

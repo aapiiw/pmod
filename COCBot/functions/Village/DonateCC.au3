@@ -111,6 +111,17 @@ Func DonateCC($bTest = False, $bSwitch = False, $bClanChatOpened = False)
 
 	If Not $bDonate Then Return
 
+	; DonateCC ran on every RequestCC (~7x per account visit, 689 checks / 381 donations 31 Oct night, ~4 s each with
+	; nothing to donate): once per 3 min per account, a red chat notification checks at once
+	If Not $bTest Then
+		Local $bNewChat = $g_bDonateNewChat
+		$g_bDonateNewChat = False
+		If Not RoutineIntervalDue(8, 3) Then
+			If Not $bNewChat Then Return
+			$g_ahRoutineTimer[CurAccountIndex()][8] = __TimerInit()
+		EndIf
+	EndIf
+
 	;Opens clan tab
 	If $bClanChatOpened Then ; RequestCC opened the chat and checked "I Understand" already: no wait
 		SetLog("DonateCC while RequestCC", $COLOR_INFO)

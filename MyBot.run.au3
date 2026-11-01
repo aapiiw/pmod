@@ -847,7 +847,7 @@ Func __RunFunction($action)
 	If Not $g_bRunState Then Return
 	; routines currently disabled (CoC UI changed), skip them before daily run counting
 	Switch $action
-		Case "SellMagicItem", "UpgradeBuilding", "AutoUpgrade", "UpgradeLow", "UpgradeWall"
+		Case "SellMagicItem", "UpgradeBuilding", "UpgradeLow"
 			Broken($action)
 			Return
 	EndSwitch
@@ -911,6 +911,8 @@ Func __RunFunction($action)
 			EndIf
 		Case "CollectFreeMagicItems"
 			CollectFreeMagicItems()
+		Case "AutoUpgrade", "UpgradeWall"
+			VillageUpgrades()
 		Case "DailyChallenge"
 			DailyChallenges()
 		Case "AutoUpgradeCC"
@@ -1004,30 +1006,8 @@ Func FirstCheck()
 	If _Sleep(50) Then Return
 	If Not $g_bRunState Then Return
 
-	If $g_iFreeBuilderCount > 0 Then
-		Setlog("Your Account have FREE BUILDER", $COLOR_INFO)
-		If Not $g_bRunState Then Return
-
-		; Auto Upgrade first: buildings (army, hero, storage...) get the resources, walls take what is left
-		If $g_bAutoUpgradeEarly Then
-			SetLog("Check Auto Upgrade Early", $COLOR_INFO)
-			If $g_bUseWallReserveBuilder And WallReservedBuilder() = 1 And $g_iFreeBuilderCount = 1 Then
-				AutoUpgrade(False, True)
-			Else
-				AutoUpgrade()
-			EndIf
-		EndIf
-
-		If Not $g_bRunState Then Return
-		If $g_bAutoUpgradeWallsEnable Then
-			SetLog("Check Upgrade Wall", $COLOR_INFO)
-			UpgradeWall() ; reads the village again (builders, loot) before and after
-		Else
-			VillageReport()
-		EndIf
-		If _Sleep(50) Then Return
-		If Not $g_bRunState Then Return
-	EndIf
+	VillageUpgrades(False)
+	If Not $g_bRunState Then Return
 
 	If T420() Then
 		SetLog("Test420 Done!", $COLOR_SUCCESS)
@@ -1049,6 +1029,42 @@ Func FirstCheck()
 		FirstCheckRoutine()
 	EndIf
 EndFunc   ;==>FirstCheck
+
+; Auto Upgrade then walls, once per account and attack: FirstCheck (before the 1st attack) and the routines after each
+; attack (AutoUpgrade / UpgradeWall in the func lists were Broken: the loot of the 1st attack waited for the next visit)
+Global $g_sVillageUpgradeKey = ""
+Func VillageUpgrades($bReport = True)
+	Local $iAttacks = 0
+	For $i = 0 To UBound($g_aiAttackedVillageCount) - 1
+		$iAttacks += $g_aiAttackedVillageCount[$i]
+	Next
+	Local $sKey = $g_iCurAccount & "|" & $iAttacks
+	If $sKey = $g_sVillageUpgradeKey Then Return
+	$g_sVillageUpgradeKey = $sKey
+	If $bReport Then VillageReport(True, True)
+	If $g_iFreeBuilderCount < 1 Then Return
+	Setlog("Your Account have FREE BUILDER", $COLOR_INFO)
+	If Not $g_bRunState Then Return
+
+	; Auto Upgrade first: buildings (army, hero, storage...) get the resources, walls take what is left
+	If $g_bAutoUpgradeEarly Then
+		SetLog("Check Auto Upgrade Early", $COLOR_INFO)
+		If $g_bUseWallReserveBuilder And WallReservedBuilder() = 1 And $g_iFreeBuilderCount = 1 Then
+			AutoUpgrade(False, True)
+		Else
+			AutoUpgrade()
+		EndIf
+	EndIf
+
+	If Not $g_bRunState Then Return
+	If $g_bAutoUpgradeWallsEnable Then
+		SetLog("Check Upgrade Wall", $COLOR_INFO)
+		UpgradeWall() ; reads the village again (builders, loot) before and after
+	Else
+		VillageReport()
+	EndIf
+	If _Sleep(50) Then Return
+EndFunc   ;==>VillageUpgrades
 
 Func FirstCheckRoutine()
 	Local $sText = ""
@@ -1095,6 +1111,7 @@ Func FirstCheckRoutine()
 			Setlog("[" & $count + 1 & "] Extra Attack", $COLOR_INFO)
 			If AttackMain() Then
 				Setlog("[" & $count + 1 & "] Extra Attack Success", $COLOR_SUCCESS)
+				VillageUpgrades() ; attack, upgrade, attack...
 			Else
 				Setlog("[" & $count + 1 & "] Extra Attack Failed", $COLOR_DEBUG2)
 			EndIf

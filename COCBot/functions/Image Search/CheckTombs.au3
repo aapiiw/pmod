@@ -102,7 +102,9 @@ Func ClickRemoveObstacle($bTest = False, $BuilderBase = False)
 EndFunc
 
 Func RemoveGembox()
-	If Not $g_bChkGemsBox Then Return 
+	If Not $g_bChkGemsBox Then Return
+	; ~14 s per check, one real Gem Box in 125 checks (Oct 2026): once per 4 h per account
+	If Not RoutineIntervalDue(7, 240) Then Return
 	Local $bRemoved = False
 	SetLog("Check for Remove Gem Box", $COLOR_INFO)
 	Local $aGembox = QuickMIS("CNX", $g_sImgGemBox, $g_OuterDiamondLeft, $g_OuterDiamondTop, $g_OuterDiamondRight, $g_OuterDiamondBottom)

@@ -332,7 +332,8 @@ Func SwitchNameSignature()
 EndFunc   ;==>SwitchNameSignature
 
 ; True when the main screen is back (max 60 s) with the same village name as $sBefore: <= 8 pixels differ (different
-; accounts differed by 37+ of 858 on adb screenshots 30 Oct, qruel / quirk the closest)
+; accounts differed by 37+ of 858 on adb screenshots 30 Oct, qruel / quirk the closest). No main screen in 60 s = True too
+; (was "changed": quartz / quazzy profiles played qath 22:05 / 22:18 31 Oct, the click did not load another account)
 Func SwitchNameUnchanged($sBefore)
 	For $i = 1 To 30
 		Local $sNow = SwitchNameSignature()
@@ -346,7 +347,8 @@ Func SwitchNameUnchanged($sBefore)
 		EndIf
 		If _Sleep(2000) Then Return False
 	Next
-	Return False
+	SetLog("No main screen 70 s after the account click", $COLOR_ERROR)
+	Return True
 EndFunc   ;==>SwitchNameUnchanged
 
 Func ClickSCIDReload()
