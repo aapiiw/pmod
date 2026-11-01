@@ -286,7 +286,19 @@ Func SwitchSCID($NextAccount)
 	Local $bRet = False
 	; village name of the account we leave (normal switches only: at start the game can already be on the wanted account)
 	Local $bCheckName = Not $g_bInitiateSwitchAcc And $NextAccount <> $g_iCurAccount
-	Local $sNameBefore = $bCheckName ? SwitchNameSignature() : ""
+	Local $sNameBefore = ""
+	If $bCheckName Then
+		; retry of the same switch: compare with the village we left, the screen can already show the wanted account (zone
+		; 1 Nov: qurlk loaded > 70 s = failed, every retry read qurlk before and after the click = 'did not change' forever)
+		If $g_iSwitchNameTarget = $NextAccount And $g_iSwitchNameFrom = $g_iCurAccount And $g_sSwitchNameLeft <> "" Then
+			$sNameBefore = $g_sSwitchNameLeft
+		Else
+			$sNameBefore = SwitchNameSignature()
+			$g_sSwitchNameLeft = $sNameBefore
+			$g_iSwitchNameTarget = $NextAccount
+			$g_iSwitchNameFrom = $g_iCurAccount
+		EndIf
+	EndIf
 	
 	If Not OpenSettingPage() Then Return $bRet
 	
@@ -307,6 +319,8 @@ Func SwitchSCID($NextAccount)
 			Return False
 		EndIf
 		$bRet = True
+		$g_sSwitchNameLeft = ""
+		$g_iSwitchNameTarget = -1
 		SetLog("Successfully Switch to Account " & $NextAccount + 1, $COLOR_SUCCESS)
 	EndIf
 	Return $bRet
@@ -346,6 +360,8 @@ Func SwitchNameUnchanged($sBefore)
 			Return $iDiff <= 8
 		EndIf
 		If _Sleep(2000) Then Return False
+		; a window after the load (event news...) hides the main screen: close it once, half way
+		If $i = 15 Then checkMainScreen(False, False, "SwitchNameUnchanged")
 	Next
 	SetLog("No main screen 70 s after the account click", $COLOR_ERROR)
 	Return True
