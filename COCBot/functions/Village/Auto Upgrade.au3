@@ -459,11 +459,18 @@ Func AutoUpgradeByOrder($bTest = False)
 		If Number($g_iTownHallLevel) >= 16 And Number($g_iTownHallLevel) <= 18 And ($hGate = 0 Or __TimerDiff($hGate) > 6 * 3600000) Then _ArrayAdd($aOrder, "Gate")
 		_ArrayAdd($aOrder, "Key")
 	EndIf
-	If $g_bHeroPriority Then _ArrayAdd($aOrder, "Hero")
-	For $p = 0 To UBound($g_asAutoUpgradeOrder) - 1
-		If $g_bHeroPriority And $g_asAutoUpgradeOrder[$p] = "Hero" Then ContinueLoop
-		_ArrayAdd($aOrder, $g_asAutoUpgradeOrder[$p])
-	Next
+	If UpgradeDeadlineLeft() >= 0 Then
+		; deadline on: one Cost Min pass over the whole list (no Type filter, ignore lists are off). Type passes read the
+		; same rows again and the "rest" pass after the Hero pass showed heroes on top (zone 1 Nov 09:42: Hero / Army /
+		; Resource / Defense / rest = 5 filter changes for one upgrade check)
+		_ArrayAdd($aOrder, "")
+	Else
+		If $g_bHeroPriority Then _ArrayAdd($aOrder, "Hero")
+		For $p = 0 To UBound($g_asAutoUpgradeOrder) - 1
+			If $g_bHeroPriority And $g_asAutoUpgradeOrder[$p] = "Hero" Then ContinueLoop
+			_ArrayAdd($aOrder, $g_asAutoUpgradeOrder[$p])
+		Next
+	EndIf
 	For $p = 0 To UBound($aOrder) - 1
 		If Not $g_bRunState Then Return $iStarted
 		Local $sType = $aOrder[$p]
@@ -561,7 +568,8 @@ Func AutoUpgradeTypePass($sType, $bTest = False)
 		If $iScroll = 0 And $sSig = "" Then ExitLoop ; no row with a cost (only upgrades in progress, e.g. Town Hall upgrading)
 		If $sType = "TH" And $iScroll >= 2 Then ExitLoop ; Town Hall cost is one of the highest: on top of the affordable rows
 		If $sType = "Key" And $iScroll >= 3 Then ExitLoop ; Hero Hall / Laboratory costs are high too
-		If ($g_bUpgradeLowCost Or UpgradeDeadlineLeft() >= 0) And $iScroll >= 2 Then ExitLoop ; Cost Min: rows below are more expensive (longer)
+		; Cost Min: cheapest first, cheap is mostly short (deadline) - nothing on page 1 -> 2 more pages at most
+		If ($g_bUpgradeLowCost Or UpgradeDeadlineLeft() >= 0) And $iScroll >= 2 Then ExitLoop
 		If $sType = "Gate" Then ; whole list: the red / skipped rows above it say nothing about it
 			If BitAND($iFlags, 16) Then ExitLoop ; gate row seen (not affordable now)
 			If $iScroll >= 8 Then ExitLoop
