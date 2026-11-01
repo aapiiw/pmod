@@ -366,7 +366,7 @@ EndFunc
 Func AutoUpgradeFilterPasses($bNoFilter = False)
 	Local $aNone[1] = [""], $aPass[0]
 	; ignored rows can still be upgraded with these options: the full list is needed
-	If $bNoFilter Or $g_bUpgradeOtherDefenses Then Return $aNone
+	If $bNoFilter Or $g_bUpgradeOtherDefenses Or UpgradeIgnoreOff() Then Return $aNone
 	If $g_bChkRushTH Then
 		For $k = 0 To UBound($g_aichkEssentialUpgrade) - 1
 			If $g_aichkEssentialUpgrade[$k] = 1 Then Return $aNone
@@ -499,6 +499,7 @@ EndFunc   ;==>AutoUpgradeByOrder
 ; True when a building of Build menu Type $sType is not ignored in "Upgrades to ignore" (group -> type: $g_asUpgradeIgnoreFilter).
 ; "Resource" pass is for storages (and Builder's Hut) only
 Func AutoUpgradeTypeWanted($sType)
+	If UpgradeIgnoreOff() Then Return True
 	For $i = 0 To UBound($g_asUpgradeIgnore) - 1
 		If $g_iChkUpgradesToIgnore[$i] = 1 Then ContinueLoop
 		If $sType = "Resource" And Not (StringInStr($g_asUpgradeIgnore[$i][1], "Storage") Or StringInStr($g_asUpgradeIgnore[$i][1], "Builder")) Then ContinueLoop
@@ -666,6 +667,7 @@ Func AutoUpgradeIsNewRow($iY)
 EndFunc   ;==>AutoUpgradeIsNewRow
 
 Func AutoUpgradeResourceIgnored($sRes)
+	If UpgradeIgnoreOff() Then Return False
 	Switch $sRes
 		Case "Gold"
 			Return $g_iChkResourcesToIgnore[0] = 1
@@ -1008,7 +1010,9 @@ Func CheckResourceForDoUpgrade($BuildingName, $Cost, $CostType)
 	SetLog("Checking: " & $BuildingName & ", Cost: " & $Cost & " " & $CostType, $COLOR_INFO)
 	SetLog("Is Enough " & $CostType & " ? " & String($bSufficentResourceToUpgrade), $bSufficentResourceToUpgrade ? $COLOR_SUCCESS : $COLOR_ERROR)
 	
-	If $g_iChkResourcesToIgnore[0] = 1 And $CostType = "Gold" Then 
+	If UpgradeIgnoreOff() Then
+		; deadline on: resources to ignore are not used
+	ElseIf $g_iChkResourcesToIgnore[0] = 1 And $CostType = "Gold" Then
 		$bSufficentResourceToUpgrade = False
 		SetLog("Resource Gold, set to Ignored", $COLOR_DEBUG2)
 	ElseIf $g_iChkResourcesToIgnore[1] = 1 And $CostType = "Elix" Then 
@@ -1022,7 +1026,17 @@ Func CheckResourceForDoUpgrade($BuildingName, $Cost, $CostType)
 	Return $bSufficentResourceToUpgrade
 EndFunc
 
+; "Upgrades to ignore" / "Resources to ignore" are not used while the upgrade deadline is on (user 1 Nov: before the
+; deadline every short upgrade, zone ignored traps / collectors / heroes / defenses and started nothing)
+Func UpgradeIgnoreOff()
+	Return UpgradeDeadlineLeft() >= 0
+EndFunc   ;==>UpgradeIgnoreOff
+
 Func CheckIgnoreUpgrade($sUpgradeName = "", $bUpgradeLowCost = False)
+	If UpgradeIgnoreOff() Then
+		SetLog("CheckIgnoreUpgrade: " & $sUpgradeName & ", deadline on, ignore list not used", $COLOR_DEBUG1)
+		Return False
+	EndIf
 	Local $bMustIgnoreUpgrade = False
 	Local $iIgnore = UpgradeIgnoreIndex($sUpgradeName)
 	If $iIgnore >= 0 Then $bMustIgnoreUpgrade = ($g_iChkUpgradesToIgnore[$iIgnore] = 1)
@@ -1117,6 +1131,7 @@ Func DoUpgrade($bTest = False, $bUpgradeLowCost = False, $upgradeName = "")
 		Case Else
 			$bMustIgnoreResource = False
 	EndSwitch
+	If UpgradeIgnoreOff() Then $bMustIgnoreResource = False
 
 	; check if the resource of the upgrade must be ignored
 	If $bMustIgnoreResource = True Then

@@ -4188,13 +4188,27 @@ Func HideAndroidWindow($bHide = True, $sSource = "Unknown")
 	Local $iXMid = $iWinWidth/2
 	
 	If WinGetAndroidHandle() = 0 Then Return
-	
+	; DPI aware before the move: not aware, Windows scaled the move (200% display: x 472 -> 944, 1 Nov) and WinGetPos did
+	; not match it; the bot becomes DPI aware ~40 s after launch anyway (MuMu is DPI aware)
+	If Not CheckDpiAwareness(True) Then CheckDpiAwareness(False, True, True)
+
 	If $g_iFrmBotPosX > $iXMid Then
 		$iPosX = $g_iFrmBotPosX - $g_iGAME_WIDTH - 5
 		$iPosY = $g_iFrmBotPosY
 	Else
 		$iPosX = $g_iFrmBotPosX + 472
 		$iPosY = $g_iFrmBotPosY
+	EndIf
+	; bot and Android window rects in the coordinates of this process: before SetProcessDPIAware (Android pid not known
+	; yet at launch) Windows scales them, 200% display moved MuMu-1 to x 944 instead of 472 (1 Nov)
+	Local $aBot = WinGetPos($g_hFrmBot), $aAndroid = WinGetPos($g_hAndroidWindow)
+	If IsArray($aBot) And IsArray($aAndroid) And $aBot[0] > -30000 Then
+		If $aBot[0] > $iXMid Then
+			$iPosX = $aBot[0] - $aAndroid[2] + 2
+		Else
+			$iPosX = $aBot[0] + $aBot[2] - 2
+		EndIf
+		$iPosY = $aBot[1]
 	EndIf
 	
 	If $bHide Then

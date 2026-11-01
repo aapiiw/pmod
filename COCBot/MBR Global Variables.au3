@@ -1012,6 +1012,7 @@ Global $g_sUpgradeDeadline = "" ; "yyyy-mm-dd hh:mm": builder / Lab / Pet upgrad
 Global $g_bUseBuilderPotion = False, $g_bUseLabPotion = False, $g_bUsePetPotion = False, $g_ahPotionTimer[16][3] ; [account][0 research, 1 builder, 2 pet]: last use
 Global $g_ahRoutineTimer[16][9] ; [account][0 TreasuryCollect, 1 CleanYard, 5 CollectCCGold, 6 Rush TH gate row not found (6 h skip), 7 Gem Box, 8 DonateCC]: last run, see RoutineIntervalDue; [2] no pet to upgrade seen; [3] free magic item claimed; [4] no Lab upgrade seen
 Global $g_bDonateNewChat = False ; red chat notification seen: DonateCC runs even inside its 3 min interval
+Global $g_sVillageUpgradeKey = "" ; account|attack count of the last VillageUpgrades run (once per account and attack)
 Global $g_aiNoUpgradeWaitMin[16][2] ; [account][0 Lab, 1 Pet]: minutes to wait after an empty list (360 locked, 60 red cost)
 Global $g_bSkipWallReserve = False, $g_bUpgradeLowCost = False, $g_bUpgradeOtherDefenses = False, $g_bGearUpDone = False
 Global $g_iTxtSmartMinGold = 150000, $g_iTxtSmartMinElixir = 150000, $g_iTxtSmartMinDark = 1500

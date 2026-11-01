@@ -746,6 +746,32 @@ Func BuildMenuReadTime($iY)
 	Next
 	_GDIPlus_BitmapUnlockBits($hBmp, $tData)
 	_GDIPlus_BitmapDispose($hBmp)
+	; only the top text band (rows with white next to each other): the cost of the row reaches the bottom rows of short
+	; times, "1m 0s" over "1 000" joined the columns of m / s with the cost digits and read '103' (zone 1 Nov)
+	Local $iBandT = -1, $iBandB = -1, $bRow
+	For $y = 0 To $iH - 1
+		$bRow = False
+		For $x = 0 To $iW - 1
+			If $aM[$y][$x] Then
+				$bRow = True
+				ExitLoop
+			EndIf
+		Next
+		If $bRow And $iBandT < 0 Then $iBandT = $y
+		If $bRow Then $iBandB = $y
+		If Not $bRow And $iBandT >= 0 Then ExitLoop
+	Next
+	If $iBandT < 0 Then Return 0
+	For $x = 0 To $iW - 1
+		$abCol[$x] = False
+		For $y = 0 To $iH - 1
+			If $y < $iBandT Or $y > $iBandB Then
+				$aM[$y][$x] = 0
+			ElseIf $aM[$y][$x] Then
+				$abCol[$x] = True
+			EndIf
+		Next
+	Next
 	; glyphs = column runs with text, 6+ rows high; only the group on the right (the end of a long name can reach x 750)
 	Local $aSeg[0][4], $x = $iW - 1, $iEnd, $iTop, $iBot
 	While $x >= 0

@@ -509,11 +509,18 @@ Func DonateSiegeType($iSiegeIndex, $aiDonateButton)
 	If $g_bDebugSetLog Then SetLog("donate : " & $g_asSiegeMachineNames[$iSiegeIndex], $COLOR_ERROR)
 	If $g_bDebugSetLog Then SetLog("coordinate : " & _ArrayToString($aSLot), $COLOR_ERROR)
 
-	ClickP($aSlot, 1, 200, "Donate " & $g_asSiegeMachineNames[$iSiegeIndex])
-	$g_aiDonateSiegeMachines[$iSiegeIndex] += 1
-	$g_aiDonateStatsSieges[$iSiegeIndex][0] += 1
+	; was always 1: qath 1 Nov request window 'Siege Machine: 0/2' got 1 Stone Slammer, 1 slot left empty -> fill the free
+	; siege slots (the request count is 1 also when its OCR read nothing)
+	Local $iQuant = $g_iTotalDonateSiegeMachineCapacity
+	For $i = 1 To $iQuant
+		ClickP($aSlot, 1, 200, "Donate " & $g_asSiegeMachineNames[$iSiegeIndex])
+		If _Sleep(300) Then Return
+	Next
+	$g_aiDonateSiegeMachines[$iSiegeIndex] += $iQuant
+	$g_aiDonateStatsSieges[$iSiegeIndex][0] += $iQuant
+	$g_iTotalDonateSiegeMachineCapacity -= $iQuant
 
-	SetLog("Donating 1 " & ($g_asSiegeMachineNames[$iSiegeIndex]), $COLOR_SUCCESS)
+	SetLog("Donating " & $iQuant & " " & ($g_asSiegeMachineNames[$iSiegeIndex]), $COLOR_SUCCESS)
 	$g_bDonated = True
 	
 	If Not $g_bNewSystemToDonate Then

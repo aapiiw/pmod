@@ -1032,7 +1032,6 @@ EndFunc   ;==>FirstCheck
 
 ; Auto Upgrade then walls, once per account and attack: FirstCheck (before the 1st attack) and the routines after each
 ; attack (AutoUpgrade / UpgradeWall in the func lists were Broken: the loot of the 1st attack waited for the next visit)
-Global $g_sVillageUpgradeKey = ""
 Func VillageUpgrades($bReport = True)
 	Local $iAttacks = 0
 	For $i = 0 To UBound($g_aiAttackedVillageCount) - 1
