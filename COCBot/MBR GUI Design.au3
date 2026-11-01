@@ -533,6 +533,9 @@ Func CheckDpiAwareness($bCheckOnlyIfAlreadyAware = False, $bForceDpiAware = Fals
 			EndIf
 			SetDebugLog("SetProcessDPIAware called: " & @error & ((UBound($aResult) = 0) ? ("") : (", " & $aResult[0])))
 			If $bWasEmbedded Then AndroidEmbed(True)
+			; Android window was placed before (scaled by Windows: 200% display x 472 -> 944, 1 Nov): place it again now in
+			; real pixels. Forcing DPI awareness at launch instead made the bot GUI tiny
+			If Not $bWasEmbedded And Not $g_bIsHidden And IsHWnd($g_hAndroidWindow) Then HideAndroidWindow(False, "DPI aware")
 		EndIf
 
 	EndIf

@@ -4188,9 +4188,6 @@ Func HideAndroidWindow($bHide = True, $sSource = "Unknown")
 	Local $iXMid = $iWinWidth/2
 	
 	If WinGetAndroidHandle() = 0 Then Return
-	; DPI aware before the move: not aware, Windows scaled the move (200% display: x 472 -> 944, 1 Nov) and WinGetPos did
-	; not match it; the bot becomes DPI aware ~40 s after launch anyway (MuMu is DPI aware)
-	If Not CheckDpiAwareness(True) Then CheckDpiAwareness(False, True, True)
 
 	If $g_iFrmBotPosX > $iXMid Then
 		$iPosX = $g_iFrmBotPosX - $g_iGAME_WIDTH - 5
