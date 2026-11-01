@@ -95,6 +95,12 @@ Func UpgradeWallBuildMenu()
 				SetLog("Wall row cost " & _NumberFormat($aList[$i][5]) & " is not a wall cost, row ignored", $COLOR_WARNING)
 				ContinueLoop
 			EndIf
+			; a "Wall" row of this cost selected another building before (zone 1 Nov: "Wall 2 000 000" between Giant Bomb
+			; 2 000 000 and 900 000, real walls 10 000 000)
+			If Number($aList[$i][5]) > 0 And Number($aList[$i][5]) = $g_aiWallBadCost[CurAccountIndex()] Then
+				SetLog("Wall row cost " & _NumberFormat($aList[$i][5]) & " was not a wall last time, row ignored", $COLOR_DEBUG1)
+				ContinueLoop
+			EndIf
 			$iWallRows += 1
 			$iRow = $i
 			If WallCostFits(Number($aList[$i][5])) Then ExitLoop
@@ -108,10 +114,8 @@ Func UpgradeWallBuildMenu()
 		SetLog("No affordable wall in Build menu, skip", $COLOR_INFO)
 		Return False
 	EndIf
-	If Number($aList[$iRow][5]) > 0 And Number($aList[$iRow][5]) <> $g_iLastWallCost Then
-		$g_iLastWallCost = Number($aList[$iRow][5])
-		WallAutoAdjustMinSave() ; Elixir Min Save uses the wall cost
-	EndIf
+	; the wall cost (and the Elixir Min Save made from it) is taken after the selected building is a verified wall: a
+	; misread "Wall" row set it to 2 000 000 and the Min Save to 24 000 000, the real 10 000 000 walls were skipped
 	SetLog("Wall from Build menu: x" & $aList[$iRow][4] & ", cost " & _NumberFormat($aList[$iRow][5]) & " " & $aList[$iRow][0], $COLOR_INFO)
 	; resource check before the wall is selected (camera move + wall window cost ~10 s): same rule as DoUpgradeWall,
 	; loot minus wall Min Save, resource type of the GUI (0 Gold, 1 Elixir, 2 Elixir then Gold)
@@ -159,8 +163,13 @@ Func UpgradeWallBuildMenu()
 	EndIf
 	If $aInfo[1] <> "Wall" Then
 		SetLog("Wall: selected building is '" & $aInfo[1] & "', not a wall, skip", $COLOR_WARNING)
+		If $aInfo[1] <> "" And Number($aList[$iRow][5]) > 0 Then $g_aiWallBadCost[CurAccountIndex()] = Number($aList[$iRow][5])
 		ClickAway()
 		Return False
+	EndIf
+	If Number($aList[$iRow][5]) > 0 And Number($aList[$iRow][5]) <> $g_iLastWallCost Then
+		$g_iLastWallCost = Number($aList[$iRow][5])
+		WallAutoAdjustMinSave() ; Elixir Min Save uses the wall cost
 	EndIf
 	Local $iWallCost = Number($aList[$iRow][5])
 	If $iWallCost = 0 Then ; cost not read in the list: cost of the selected wall level
