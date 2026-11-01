@@ -688,7 +688,7 @@ Func runBot() ;Bot that runs everything in order
 		ZoomOut(True) ;after switch need ZoomOut
 	EndIf
 
-	FirstCheck()
+	If Not ($g_bRushAttackEnabled Or $g_bBBSpamEnabled Or $g_bCCSpamEnabled) Then FirstCheck()
 
 	While 1
 		$g_bRestart = False

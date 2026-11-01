@@ -17,6 +17,8 @@ Func SpecialModeCycle()
 	Else
 		Return False
 	EndIf
+	; mode ended (clicked off or done): back to the normal account rotation, else the bot stays on this account
+	If $g_bRunState And ProfileSwitchAccountEnabled() Then checkSwitchAcc()
 	Return True
 EndFunc   ;==>SpecialModeCycle
 

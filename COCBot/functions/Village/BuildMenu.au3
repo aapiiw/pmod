@@ -1065,7 +1065,8 @@ Func BuildMenuGoToItem($iTab, $sName, $iPage, $sIconDir, $iNameX, $iNameDy, $sTy
 		Local $aPage = BuildMenuReadPage($sIconDir, $iNameX, $iNameDy, $sType)
 		For $i = 0 To UBound($aPage) - 1
 			If $aPage[$i][3] = $sName Then
-				Local $aRet[3] = [$aPage[$i][1], $aPage[$i][2], UpgradeDeadlineLeft() < 0 ? BuildMenuRowTime($aPage[$i][2]) : BuildMenuRowTimeStrict($aPage[$i][2])]
+				Local $sTime = (UpgradeDeadlineLeft() < 0) ? BuildMenuRowTime($aPage[$i][2]) : BuildMenuRowTimeStrict($aPage[$i][2])
+				Local $aRet[3] = [$aPage[$i][1], $aPage[$i][2], $sTime]
 				Return $aRet
 			EndIf
 		Next

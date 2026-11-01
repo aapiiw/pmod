@@ -87,6 +87,11 @@ Func CheckSwitchAcc()
 	If Not $g_bRunState Then Return
 	Local $aActiveAccount = _ArrayFindAll($abAccountNo, True)
 	If UBound($aActiveAccount) <= 1 Then Return
+	; Rush / BB Spam / CC Spam stay on this account (runBot loop runs the mode, switch again once it turns itself off)
+	If $g_bRushAttackEnabled Or $g_bBBSpamEnabled Or $g_bCCSpamEnabled Then
+		SetLog("Special mode on, staying in this account", $COLOR_INFO)
+		Return
+	EndIf
 
 	Local $aDonateAccount = _ArrayFindAll($g_abDonateOnly, True)
 	Local $bReachAttackLimit = ($g_iAttackSinceSwitch >= 2)
