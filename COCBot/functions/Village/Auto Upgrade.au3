@@ -766,6 +766,9 @@ Func AutoUpgradeRow(ByRef $aRow, $bTest = False)
 		Local $sBuilder = getBuildersOnMenu()
 		If StringInStr($sBuilder, "#") And Int(StringLeft($sBuilder, StringInStr($sBuilder, "#") - 1)) < $iFreeBefore Then Return 1
 	Next
+	; Town Hall warning dialog closes the Build menu, its counter is gone: main screen counter (qiralle 3 Nov 19:59,
+	; upgrade started - gold -7.5M, builders 0/6 - but logged as not confirmed)
+	If Not IsBuildMenuOpen() And getBuilderCount(True) And $g_iFreeBuilderCount < $iFreeBefore Then Return 1
 	SetLog($sName & ": free builder count did not go down, upgrade not confirmed", $COLOR_ERROR)
 	Return -1
 EndFunc   ;==>AutoUpgradeRow
