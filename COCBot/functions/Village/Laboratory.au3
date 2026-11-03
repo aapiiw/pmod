@@ -407,8 +407,38 @@ Func LabUpgrade($bTest = False, $bKeepOpen = False)
 	Local $bAnyOnly = Not $g_bLabUpgradeOrderEnable And $g_iCmbLaboratory = 0
 	; order: stop as soon as the 1st upgrade of the order is seen and affordable (it is picked anyway), the rest of the
 	; order was read down to its last name before. The pick is then found again by page (BuildMenuGoToItem scrolls up)
-	Local $aList = BuildMenuCollect($g_sImgResIcon, $g_iXFindLabUpgrade, -23, "lab", $aStop, $bAnyOnly ? 1 : 12, "", "LabCollectStop")
-	If $bAnyOnly And LabPickUpgrade($aList, False) < 0 Then $aList = BuildMenuCollect($g_sImgResIcon, $g_iXFindLabUpgrade, -23, "lab", $aStop)
+	Local $aList, $asRowFilter[0], $bGrouped = False
+	; mixed order of 2-3 filter groups: each group read with its filter (short lists), groups after the one with the
+	; affordable 1st upgrade of the order are not read. A filter that fails: whole list as before
+	Local $aGroups = LabFilterGroups()
+	If $sFilter = "" And UBound($aGroups) >= 2 Then
+		Local $aAll[0][9]
+		$bGrouped = True
+		For $sGroup In $aGroups
+			If Not OpenBuildMenu(2, False, $sGroup) Then
+				$bGrouped = False
+				ExitLoop
+			EndIf
+			SetLog("Laboratory filter: " & $sGroup, $COLOR_INFO)
+			Local $aPart = BuildMenuCollect($g_sImgResIcon, $g_iXFindLabUpgrade, -23, "lab", $aStop, 12, "", "LabCollectStop")
+			For $i = 0 To UBound($aPart) - 1
+				Local $aRow[1][9] = [[$aPart[$i][0], $aPart[$i][1], $aPart[$i][2], $aPart[$i][3], $aPart[$i][4], $aPart[$i][5], $aPart[$i][6], $aPart[$i][7], $aPart[$i][8]]]
+				_ArrayAdd($aAll, $aRow)
+				_ArrayAdd($asRowFilter, $sGroup, 0, "^", @CRLF, $ARRAYFILL_FORCE_SINGLEITEM)
+			Next
+			If LabCollectStop($aAll) Then ExitLoop
+		Next
+		If $bGrouped Then
+			$aList = $aAll
+		ElseIf Not OpenBuildMenu(2) Then
+			Return False
+		EndIf
+	EndIf
+	If Not $bGrouped Then
+		ReDim $asRowFilter[0]
+		$aList = BuildMenuCollect($g_sImgResIcon, $g_iXFindLabUpgrade, -23, "lab", $aStop, $bAnyOnly ? 1 : 12, "", "LabCollectStop")
+		If $bAnyOnly And LabPickUpgrade($aList, False) < 0 Then $aList = BuildMenuCollect($g_sImgResIcon, $g_iXFindLabUpgrade, -23, "lab", $aStop)
+	EndIf
 	If UBound($aList) = 0 Then
 		; all locked ("Upgrade Laboratory to Level N"): 6 h; red cost (not enough resource yet): 1 h
 		$g_aiNoUpgradeWaitMin[CurAccountIndex()][0] = $g_bBuildMenuRedSeen ? 60 : 360
@@ -425,9 +455,10 @@ Func LabUpgrade($bTest = False, $bKeepOpen = False)
 	Next
 
 	Local $iPick = LabPickUpgrade($aList)
-	If $iPick < 0 And $g_bUpgradeAnyTroops And (IsArray($aStop) Or $sFilter <> "") Then ; list stopped at the selected upgrades or filtered: "Upgrade Any" needs the rest
-		If $sFilter <> "" Then
+	If $iPick < 0 And $g_bUpgradeAnyTroops And (IsArray($aStop) Or $sFilter <> "" Or $bGrouped) Then ; list stopped at the selected upgrades or filtered: "Upgrade Any" needs the rest
+		If $sFilter <> "" Or $bGrouped Then
 			$sFilter = ""
+			$bGrouped = False
 			If Not OpenBuildMenu(2) Then Return False ; filter off, list back on top
 		EndIf
 		$aList = BuildMenuCollect($g_sImgResIcon, $g_iXFindLabUpgrade, -23, "lab")
@@ -441,7 +472,7 @@ Func LabUpgrade($bTest = False, $bKeepOpen = False)
 
 	Local $aCoord
 	For $iTry = 1 To 6 ; "Upgrade only when done before": a research that ends too late is dropped, next pick
-		$aCoord = BuildMenuGoToItem(2, $aList[$iPick][3], $aList[$iPick][8], $g_sImgResIcon, $g_iXFindLabUpgrade, -23, "lab", $sFilter)
+		$aCoord = BuildMenuGoToItem(2, $aList[$iPick][3], $aList[$iPick][8], $g_sImgResIcon, $g_iXFindLabUpgrade, -23, "lab", $bGrouped ? $asRowFilter[$iPick] : $sFilter)
 		If Not IsArray($aCoord) Then
 			If Not $bKeepOpen Then CloseBuildMenu()
 			Return False
@@ -469,7 +500,23 @@ EndFunc   ;==>LabUpgrade
 ; Troops / Spells / Siege, "" for "Any", no selection or mixed kinds.
 ; All of one resource too: "|Elixir" / "|Dark" added (resource button, shorter list). Siege is Elixir only: no resource button
 Func LabFilterType()
-	Local $aIdx[0], $sKind = "", $sThis, $sRes = "", $sThisRes
+	Local $aIdx = LabSelectedIdx(), $sKind = "", $sRes = "", $aPart
+	If UBound($aIdx) = 0 Then Return ""
+	For $i In $aIdx
+		If $i <= 0 Or $i >= UBound($g_avLabTroops) Then Return ""
+		$aPart = StringSplit(LabFilterOf($i), "|", $STR_NOCOUNT)
+		If $sKind = "" Then $sKind = $aPart[0]
+		If $sKind <> $aPart[0] Then Return ""
+		Local $sThisRes = UBound($aPart) > 1 ? $aPart[1] : "-"
+		If $sRes = "" Then $sRes = $sThisRes
+		If $sRes <> $sThisRes Then $sRes = "-"
+	Next
+	Return $sKind & (($sRes = "Elixir" Or $sRes = "Dark") ? "|" & $sRes : "")
+EndFunc   ;==>LabFilterType
+
+; selected Lab upgrades (order list or single selection), $g_avLabTroops indexes in priority order
+Func LabSelectedIdx()
+	Local $aIdx[0]
 	If $g_bLabUpgradeOrderEnable Then
 		For $z = 0 To UBound($g_aCmbLabUpgradeOrder) - 1
 			If $g_aCmbLabUpgradeOrder[$z] >= 0 Then _ArrayAdd($aIdx, $g_aCmbLabUpgradeOrder[$z] + 1)
@@ -477,34 +524,40 @@ Func LabFilterType()
 	ElseIf $g_iCmbLaboratory > 0 Then
 		_ArrayAdd($aIdx, $g_iCmbLaboratory)
 	EndIf
-	If UBound($aIdx) = 0 Then Return ""
+	Return $aIdx
+EndFunc   ;==>LabSelectedIdx
+
+; Build menu filter of one Lab upgrade: "Troops|Elixir", "Troops|Dark", "Spells|Elixir", "Spells|Dark", "Spells" (Any
+; Spell), "Siege" (Elixir only: no resource button)
+Func LabFilterOf($i)
+	Local $sKind = "Troops"
+	If $i = $g_iLabAnySpell Then Return "Spells"
+	If $i = $g_iLabAnySiege Then Return "Siege"
+	If StringRight($g_avLabTroops[$i][3], 5) = "Spell" Then
+		$sKind = "Spells"
+	ElseIf StringInStr("|WallW|BattleB|StoneS|SiegeB|LogL|FlameF|BattleD|TroopL|SkyW|", "|" & $g_avLabTroops[$i][2] & "|") Then
+		Return "Siege"
+	EndIf
+	; dark troops / spells as listed with the Dark resource button in game (emulator, Oct 2026)
+	If StringInStr("|Mini|Hogs|Valk|Gole|Witc|Lava|Bowl|IceG|Hunt|AppWard|Druid|Furnace|RuinW|PSpell|ESpell|HaSpell|SkSpell|BtSpell|OgSpell|IbSpell|AgSpell|", "|" & $g_avLabTroops[$i][2] & "|") Then Return $sKind & "|Dark"
+	Return $sKind & "|Elixir"
+EndFunc   ;==>LabFilterOf
+
+; mixed order (user 3 Nov: mostly troops Elixir + Dark, or Elixir spells): one filter per group in order of the first
+; upgrade of each group. Empty when a selection needs the whole list ("Any") or there are more than 3 groups
+Func LabFilterGroups()
+	Local $aIdx = LabSelectedIdx(), $aGroups[0]
 	For $i In $aIdx
-		If $i <= 0 Or $i >= UBound($g_avLabTroops) Then Return ""
-		If $i = $g_iLabAnySpell Then
-			$sThis = "Spells"
-		ElseIf $i = $g_iLabAnySiege Then
-			$sThis = "Siege"
-		ElseIf StringRight($g_avLabTroops[$i][3], 5) = "Spell" Then
-			$sThis = "Spells"
-		ElseIf StringInStr("|WallW|BattleB|StoneS|SiegeB|LogL|FlameF|BattleD|TroopL|SkyW|", "|" & $g_avLabTroops[$i][2] & "|") Then
-			$sThis = "Siege"
-		Else
-			$sThis = "Troops"
+		If $i <= 0 Or $i >= UBound($g_avLabTroops) Then
+			Local $aNone[0]
+			Return $aNone
 		EndIf
-		If $sKind = "" Then $sKind = $sThis
-		If $sKind <> $sThis Then Return ""
-		; dark troops / spells as listed with the Dark resource button in game (emulator, Oct 2026)
-		$sThisRes = "Elixir"
-		If $i = $g_iLabAnySpell Or $sThis = "Siege" Then
-			$sThisRes = "-"
-		ElseIf StringInStr("|Mini|Hogs|Valk|Gole|Witc|Lava|Bowl|IceG|Hunt|AppWard|Druid|Furnace|RuinW|PSpell|ESpell|HaSpell|SkSpell|BtSpell|OgSpell|IbSpell|AgSpell|", "|" & $g_avLabTroops[$i][2] & "|") Then
-			$sThisRes = "Dark"
-		EndIf
-		If $sRes = "" Then $sRes = $sThisRes
-		If $sRes <> $sThisRes Then $sRes = "-"
+		Local $sF = LabFilterOf($i)
+		If _ArraySearch($aGroups, $sF) < 0 Then _ArrayAdd($aGroups, $sF, 0, "^", @CRLF, $ARRAYFILL_FORCE_SINGLEITEM)
 	Next
-	Return $sKind & (($sRes = "Elixir" Or $sRes = "Dark") ? "|" & $sRes : "")
-EndFunc   ;==>LabFilterType
+	If UBound($aGroups) > 3 Then ReDim $aGroups[0]
+	Return $aGroups
+EndFunc   ;==>LabFilterGroups
 
 ; Research Potion try due on this account (PotionDue, BuildMenu.au3)
 Func LabPotionDue()

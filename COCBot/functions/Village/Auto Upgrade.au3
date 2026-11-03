@@ -773,6 +773,15 @@ EndFunc   ;==>AutoUpgradeRow
 ; Town Hall "before you upgrade" warning after the upgrade click
 Func AutoUpgradeContinueTH()
 	If _Sleep(800) Then Return
+	; "Before you upgrade..." (qiralle TH15 -> 16, adb 3 Nov 2026): orange Cancel at 340,532 and green Continue at 512,532.
+	; The Continue images of the old window are not found on it (12:00 attempt not confirmed)
+	If _ColorCheck(_GetPixelColor(340, 545, True), Hex(0xEA6C2F, 6), 25) And _ColorCheck(_GetPixelColor(512, 545, True), Hex(0x82CB2C, 6), 25) _
+			And _ColorCheck(_GetPixelColor(512, 520, True), Hex(0xCEEF76, 6), 25) Then
+		SetLog("Town Hall upgrade warning: Continue", $COLOR_INFO)
+		Click(512, 532, 1, 0, "Continue Town Hall upgrade")
+		If _Sleep(800) Then Return
+		Return
+	EndIf
 	Local $aBtn = findButton("Continue", Default, 1, True)
 	If IsArray($aBtn) And UBound($aBtn, 1) = 2 Then
 		SetLog("Town Hall upgrade warning: Continue", $COLOR_INFO)

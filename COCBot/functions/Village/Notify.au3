@@ -624,17 +624,17 @@ Func NotifyPushMessageToBoth($Message, $Source = "")
 EndFunc   ;==>NotifyPushMessageToBoth
 
 ; before the account switch: builder / laboratory / pet house left idle on this account (the next visit is ~1 h later).
-; Free counts of the Build menu (Goblin Builder / Researcher not counted), menu opened when the counters are older than
-; 10 min. One message per account and kind until it is busy again (no repeat every visit)
+; Free counts of the Build menu (Goblin Builder / Researcher not counted), menu opened again here.
+; One message per account and kind until it is busy again (no repeat every visit)
 Func NotifyIdle()
 	Static $aiSent[16][3] ; [account][0 builder, 1 lab, 2 pet] = free count already sent
 	If Not $g_bNotifyTGEnable Or $g_sNotifyTGToken = "" Then Return
 	If Not ($g_bNotifyAlertBulderIdle Or $g_bNotifyAlertLaboratoryIdle Or $g_bNotifyAlertPetIdle) Then Return
-	If Not BuildMenuCountersFresh(False, 600) Then
-		If Not OpenBuildMenu(1) Then Return
-		CloseBuildMenu()
-		If Not BuildMenuCountersFresh(False, 60) Then Return
-	EndIf
+	; counters read again now: older ones can be from before an upgrade launched in this visit (qurlk 3 Nov 10:47:
+	; read 1/6 at 10:47:32, Barbarian King launched 10:47:35, idle sent from the old read)
+	If Not OpenBuildMenu(1) Then Return
+	CloseBuildMenu()
+	If Not BuildMenuCountersFresh(False, 60) Then Return
 	Local $iAcc = CurAccountIndex(), $sText = ""
 	Local $iBuilder = BuildMenuCounterFree(1) < 0 ? -1 : _Max(0, BuildMenuCounterFree(1) - WallReservedBuilder())
 	Local $aiFree[3] = [$iBuilder, BuildMenuCounterFree(2), BuildMenuCounterFree(4)]

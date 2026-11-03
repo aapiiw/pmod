@@ -881,13 +881,13 @@ Func __RunFunction($action)
 		Case "CollectLootCart"
 			CollectLootCart()
 		Case "TreasuryCollect"
-			If RoutineIntervalDue(0, 60) Then TreasuryCollect()
+			If RoutineIntervalDue(0, 360) Then TreasuryCollect() ; 6 h: 3 Nov logs 16 collected in 106 runs, ~18 s each
 		Case "CollectCookie"
 			CollectCookie()
 		Case "Collect"
 			Collect() ; collect mine, pump, drill
 		Case "CleanYard"
-			If RoutineIntervalDue(1, 60) Then CleanYard()
+			If RoutineIntervalDue(1, 360) Then CleanYard() ; 6 h: 3 Nov logs yard clean in 84 of 105 runs (~19 s each), obstacles come every ~8 h
 		Case "DonateCC"
 			DonateCC()
 		Case "RequestCC"

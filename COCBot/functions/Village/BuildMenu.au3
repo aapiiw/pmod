@@ -1060,25 +1060,44 @@ Func BuildMenuGoToItem($iTab, $sName, $iPage, $sIconDir, $iNameX, $iNameDy, $sTy
 		BuildMenuScrollDown()
 	WEnd
 	; row may move a little after scrolling: look on this page, then one page down, then up
-	Local $aMove[3] = [0, 1, -2]
+	Local $aMove[3] = [0, 1, -2], $aRet
 	For $iMove In $aMove
 		If $iMove = 1 Then BuildMenuScrollDown()
 		If $iMove = -2 Then
 			BuildMenuScrollUp()
 			BuildMenuScrollUp()
 		EndIf
-		Local $aPage = BuildMenuReadPage($sIconDir, $iNameX, $iNameDy, $sType)
-		For $i = 0 To UBound($aPage) - 1
-			If $aPage[$i][3] = $sName Then
-				Local $sTime = (UpgradeDeadlineLeft() < 0) ? BuildMenuRowTime($aPage[$i][2]) : BuildMenuRowTimeStrict($aPage[$i][2])
-				Local $aRet[3] = [$aPage[$i][1], $aPage[$i][2], $sTime]
-				Return $aRet
-			EndIf
-		Next
+		$aRet = BuildMenuFindOnPage($sName, $sIconDir, $iNameX, $iNameDy, $sType)
+		If IsArray($aRet) Then Return $aRet
+	Next
+	; same path as BuildMenuCollect: top, then $iPage - 1 drags down. A drag up from a later page does not land on the
+	; same rows in a short list (L.A.S.S.I, page 2 of the pet list: zone 2 Nov 20:56, macia 3 Nov 11:13)
+	For $i = 1 To $g_iBuildMenuPage + 1
+		BuildMenuScrollUp()
+	Next
+	$g_iBuildMenuPage = 1
+	For $i = 1 To $iPage + 1 ; read page $iPage and the one after it
+		If $i > 1 Then BuildMenuScrollDown()
+		If $i < $iPage Then ContinueLoop
+		$aRet = BuildMenuFindOnPage($sName, $sIconDir, $iNameX, $iNameDy, $sType)
+		If IsArray($aRet) Then Return $aRet
 	Next
 	SetLog("BuildMenu: " & $sName & " not found again on page " & $iPage, $COLOR_WARNING)
 	Return 0
 EndFunc   ;==>BuildMenuGoToItem
+
+; row $sName on the visible page: [icon x, icon y, upgrade time min] or 0
+Func BuildMenuFindOnPage($sName, $sIconDir, $iNameX, $iNameDy, $sType)
+	Local $aPage = BuildMenuReadPage($sIconDir, $iNameX, $iNameDy, $sType)
+	For $i = 0 To UBound($aPage) - 1
+		If $aPage[$i][3] = $sName Then
+			Local $sTime = (UpgradeDeadlineLeft() < 0) ? BuildMenuRowTime($aPage[$i][2]) : BuildMenuRowTimeStrict($aPage[$i][2])
+			Local $aRet[3] = [$aPage[$i][1], $aPage[$i][2], $sTime]
+			Return $aRet
+		EndIf
+	Next
+	Return 0
+EndFunc   ;==>BuildMenuFindOnPage
 
 ; ============================================== Builder Base ==============================================
 
