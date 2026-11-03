@@ -558,7 +558,7 @@ Func AutoUpgradeTypePass($sType, $bTest = False)
 				ContinueLoop ; list changed: read this page again
 			EndIf
 			If $iRet < 0 Then Return SetExtended(BitOR($iExt, 2), $iStarted) ; upgrade not confirmed: stop, builders unknown
-			_ArrayAdd($aSkip, $aRow[5])
+			_ArrayAdd($aSkip, $aRow[5], 0, "|", @CRLF, $ARRAYFILL_FORCE_SINGLEITEM) ; key "name|res": not split on "|"
 			If Not IsBuildMenuOpen() Then ; row opened something else and it was closed with the menu
 				If Not OpenBuildMenu(1, False, $sFilter) Then ExitLoop
 				$iScroll = 0

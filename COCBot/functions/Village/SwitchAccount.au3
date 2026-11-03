@@ -157,6 +157,7 @@ Func CheckSwitchAcc()
 	SetDebugLog("- Next Account: " & $g_asProfileName[$g_iNextAccount] & " number: " & $g_iNextAccount + 1)
 
 	If $g_iNextAccount <> $g_iCurAccount Then
+		NotifyIdle() ; Telegram: builder / lab / pet left idle on the account we leave
 		PullSharedPrefs()
 		SwitchCOCAcc($g_iNextAccount)
 	Else

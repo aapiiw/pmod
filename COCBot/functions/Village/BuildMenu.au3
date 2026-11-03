@@ -468,6 +468,11 @@ Func BuildMenuCountersFresh($bBB, $iSec = 120)
 	Return __TimerDiff($g_hBuildMenuCounterTime) < $iSec * 1000
 EndFunc   ;==>BuildMenuCountersFresh
 
+; free count of a counter tab (1 builders, 2 lab, 4 pet house), -1 = not read
+Func BuildMenuCounterFree($iTab)
+	Return $g_aiBuildMenuCounter[$iTab][0]
+EndFunc   ;==>BuildMenuCounterFree
+
 ; resources while Build menu is open (shown top center), no need to close the menu (same as dev AutoUpgradeCheckResource)
 Func BuildMenuReadLoot($bSetLog = True, $bBB = $g_bBuildMenuBB)
 	If $bBB Then

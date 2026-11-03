@@ -655,8 +655,8 @@ Func BanMsgBox()
 	Local $MsgBox
 	Local $stext = "Sorry, your account is banned!!" & @CRLF & "Bot will stop now..."
 	If TestCapture() Then Return $stext
+	PushMsg("BAN") ; once, not every loop of the message box
 	While 1
-		PushMsg("BAN")
 		_ExtMsgBoxSet(4, 1, 0x004080, 0xFFFF00, 20, "Comic Sans MS", 600)
 		$MsgBox = _ExtMsgBox(48, "Ok", "Banned", $stext, 1)
 		If $MsgBox = 1 Then Return
