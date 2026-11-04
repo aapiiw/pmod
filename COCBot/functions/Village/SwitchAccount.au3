@@ -300,6 +300,13 @@ Func SwitchSCID($NextAccount)
 			$sNameBefore = $g_sSwitchNameLeft
 		Else
 			$sNameBefore = SwitchNameSignature()
+			; read before the main screen was back (request / donate window): ~80 % of the switches were not checked (4-5 Nov),
+			; quazzy -> qiralle 01:21 5 Nov clicked quazzy again and passed
+			If $sNameBefore = "" Then
+				checkMainScreen(False, False, "SwitchSCID")
+				$sNameBefore = SwitchNameSignature()
+				If $sNameBefore = "" Then SetDebugLog("Village name not read before the switch, not checked")
+			EndIf
 			$g_sSwitchNameLeft = $sNameBefore
 			$g_iSwitchNameTarget = $NextAccount
 			$g_iSwitchNameFrom = $g_iCurAccount
@@ -323,6 +330,14 @@ Func SwitchSCID($NextAccount)
 		If $sNameBefore <> "" And SwitchNameUnchanged($sNameBefore) Then
 			SetLog("Village name did not change after the account click, switch failed", $COLOR_ERROR)
 			Return False
+		EndIf
+		; the village name of another account = wrong row clicked (list on the other page, both pages have the same grid)
+		If $bCheckName Then
+			Local $iOther = SwitchNameOfOther($NextAccount)
+			If $iOther >= 0 Then
+				SetLog("Village name is the one of " & $g_asProfileName[$iOther] & ", not " & $g_asProfileName[$NextAccount] & ": wrong account, switch failed", $COLOR_ERROR)
+				Return False
+			EndIf
 		EndIf
 		$bRet = True
 		$g_sSwitchNameLeft = ""
@@ -372,6 +387,54 @@ Func SwitchNameUnchanged($sBefore)
 	SetLog("No main screen 70 s after the account click", $COLOR_ERROR)
 	Return True
 EndFunc   ;==>SwitchNameUnchanged
+
+; pixels that differ between two village name signatures (different accounts 37+ of 858, same name <= 8)
+Func SwitchNameDiff($sA, $sB)
+	If StringLen($sA) <> StringLen($sB) Then Return 999
+	Local $iDiff = 0
+	For $k = 1 To StringLen($sA)
+		If StringMid($sA, $k, 1) <> StringMid($sB, $k, 1) Then $iDiff += 1
+	Next
+	Return $iDiff
+EndFunc   ;==>SwitchNameDiff
+
+; after the switch: village name on screen (waits for the main screen up to ~40 s). Same name as the saved one of another
+; account -> its index (wrong account). Else the name is saved for $iAcc (file in the profile folder, kept over restarts)
+; and -1 is returned. Unknown names (not saved yet) pass: the list fills while the accounts are visited
+Func SwitchNameOfOther($iAcc)
+	Local $sNow = ""
+	For $i = 1 To 20
+		$sNow = SwitchNameSignature()
+		If $sNow <> "" Then ExitLoop
+		If _Sleep(2000) Then Return -1
+	Next
+	If $sNow = "" Then Return -1
+	For $j = 0 To UBound($g_asVillageNameSig) - 1
+		If $j > $g_iTotalAcc Then ExitLoop
+		If $g_asVillageNameSig[$j] = "" Then $g_asVillageNameSig[$j] = StringStripWS(FileRead($g_sProfilePath & "\" & $g_asProfileName[$j] & "\VillageNameSig.txt"), $STR_STRIPALL)
+	Next
+	Local $iBest = -1, $iBestDiff = 999
+	For $j = 0 To UBound($g_asVillageNameSig) - 1
+		If $j > $g_iTotalAcc Then ExitLoop
+		If $j = $iAcc Or $g_asVillageNameSig[$j] = "" Then ContinueLoop
+		Local $iDiff = SwitchNameDiff($sNow, $g_asVillageNameSig[$j])
+		If $iDiff < $iBestDiff Then
+			$iBestDiff = $iDiff
+			$iBest = $j
+		EndIf
+	Next
+	SetDebugLog("Village name after the switch: closest other account " & ($iBest < 0 ? "-" : $g_asProfileName[$iBest] & " (" & $iBestDiff & " px)"))
+	If $iBest >= 0 And $iBestDiff <= 8 Then Return $iBest
+	If $g_asVillageNameSig[$iAcc] <> $sNow Then
+		$g_asVillageNameSig[$iAcc] = $sNow
+		Local $hFile = FileOpen($g_sProfilePath & "\" & $g_asProfileName[$iAcc] & "\VillageNameSig.txt", $FO_OVERWRITE)
+		If $hFile <> -1 Then
+			FileWrite($hFile, $sNow)
+			FileClose($hFile)
+		EndIf
+	EndIf
+	Return -1
+EndFunc   ;==>SwitchNameOfOther
 
 Func ClickSCIDReload()
 	Local $bRet = False

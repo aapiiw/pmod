@@ -1,0 +1,81 @@
+NOTE  |Author: Apiw
+NOTE  |Updated: [8.3.2026]
+NOTE  |
+NOTE  |[ 8 ] EDrag + [16] Loons / [ 9 ] EDrag + [10] Loons
+NOTE  |[ 4 ] Rage + [ 3 ] Freeze
+NOTE  |
+NOTE  |Clan Castle: Any Troops + Rage + Freeze
+NOTE  |Siege Machine: Stone Slammer
+NOTE  |
+NOTE  |Attack Drop: External Edges
+      |                                                                                                                                                                       |
+      |EXTR. GOLD |EXTR.ELIXIR|EXTR. DARK |DEPO. GOLD |DEPO.ELIXIR|DEPO. DARK |TOWNHALL   |FORCED SIDE|___________|___________|___________|___________|___________|___________|
+SIDE  |0          |0          |0          |0          |0          |0          |10         |TOP-RAND   |           |           |           |           |           |           |
+      |EAGLE      |INFERNO    |XBOW       |WIZTOWER   |MORTAR     |AIRDEFENSE |GEMBOX     |GEMBOX     |           |           |           |           |           |           |
+SIDEB |0          |0          |0          |0          |0          |0          |0          |           |           |           |           |           |           |           |
+      |                                                                                                                                                                       |
+      |VECTOR_____|SIDE_______|DROP_POINTS|ADDTILES___|VERSUS_____|RANDOMX_PX_|RANDOMY_PX_|BUILDING___|___________|___________|___________|___________|___________|___________|
+MAKE  |Y          |BACK-LEFT  |10         |2          |INT-EXT    |1          |1          |           |           |           |           |           |           |           |
+MAKE  |Z          |RIGHT-FRONT|10         |2          |INT-EXT    |1          |1          |           |           |           |           |           |           |           |
+MAKE  |A          |FRONT-LEFT |10         |2          |INT-EXT    |0          |0          |           |           |           |           |           |           |           |
+MAKE  |B          |FRONT-RIGHT|10         |2          |INT-EXT    |0          |0          |           |           |           |           |           |           |           |
+      |                                                                                                                                                                       |
+MAKE  |C          |FRONT-LEFT |10         |-8         |INT-EXT    |0          |0          |           |           |           |           |           |           |           |
+MAKE  |D          |FRONT-RIGHT|10         |-8         |INT-EXT    |0          |0          |           |           |           |           |           |           |           |
+MAKE  |E          |FRONT-LEFT |10         |-16        |INT-EXT    |0          |0          |           |           |           |           |           |           |           |
+MAKE  |F          |FRONT-RIGHT|10         |-16        |INT-EXT    |0          |0          |           |           |           |           |           |           |           |
+MAKE  |G          |FRONT-LEFT |10         |-20        |INT-EXT    |0          |0          |           |           |           |           |           |           |           |
+MAKE  |H          |FRONT-RIGHT|10         |-20        |INT-EXT    |0          |0          |           |           |           |           |           |           |           |
+      |                                                                                                                                                                       |                                                                                                                                                                       |
+MAKE  |R          |LEFT-FRONT |1          |1          |IGNORE     |0          |0          |INFERNO    |           |           |           |           |           |           |
+MAKE  |S          |RIGHT-FRONT|1          |1          |IGNORE     |0          |0          |INFERNO    |           |           |           |           |           |           |
+MAKE  |T          |BACK-LEFT  |1          |1          |IGNORE     |0          |0          |EAGLE      |           |           |           |           |           |           |
+MAKE  |U          |BACK-RIGHT |1          |1          |IGNORE     |0          |0          |EAGLE      |           |           |           |           |           |           |
+MAKE  |V          |FRONT-LEFT |1          |1          |IGNORE     |0          |0          |TOWNHALL   |           |           |           |           |           |           |
+      |                                                                                                                                                                       |                                                                                                                                                                       |
+      |                                                                                                                                                                       |                                                                                                                       |           |           |           |           |
+      |VECTOR_____|INDEX______|QTY_X_VECT_|TROOPNAME__|DELAY_DROP_|DELAYCHANGE|SLEEPAFTER_|___________|___________|___________|___________|___________|___________|___________|
+DROP  |A          |9-10       |2          |Ball       |128        |0          |16-32      |           |           |           |           |           |           |           |
+DROP  |A          |10         |1          |EDrag      |128        |0          |3000-5000  |           |           |           |           |           |           |           |
+      |                                                                                                                                                                       |                                                                                                                                                                       |
+DROP  |Z          |8          |1          |King       |16         |0          |16-32      |           |           |           |           |           |           |           |
+DROP  |B          |10         |1          |Queen      |16         |0          |3000-5000  |           |           |           |           |           |           |           |
+      |                                                                                                                                                                       |                                                                                                                                                                       |
+DROP  |A-B        |7,5,3,1    |5          |EDrag      |128        |0          |16-32      |           |           |           |           |           |           |           |
+DROP  |A-B        |2-7        |7          |Ball       |128        |0          |16-32      |           |           |           |           |           |           |           |  
+      |                                                                                                                                                                       |                                                                                                                                                                       |
+DROP  |A          |1          |1          |Warden     |16         |0          |16-32      |           |           |           |           |           |           |           |
+DROP  |A          |1          |1          |MinionP    |16         |0          |16-32      |           |           |           |           |           |           |           |
+      |                                                                                                                                                                       |                                                                                                                                                                     |
+DROP  |A          |1          |1          |WallW      |16         |0          |16-32      |           |           |           |           |           |           |           |
+DROP  |A          |1          |1          |BattleB    |16         |0          |16-32      |           |           |           |           |           |           |           |
+DROP  |A          |1          |1          |StoneS     |16         |0          |16-32      |           |           |           |           |           |           |           |
+DROP  |A          |1          |1          |FlameF     |16         |0          |16-32      |           |           |           |           |           |           |           |
+DROP  |A          |1          |1          |LogL       |16         |0          |16-32      |           |           |           |           |           |           |           |
+DROP  |A          |1          |1          |SiegeB     |16         |0          |16-32      |           |           |           |           |           |           |           |
+DROP  |A          |1          |1          |TroopL     |16         |0          |16-32      |           |           |           |           |           |           |           |
+DROP  |A          |1          |1          |BattleD    |16         |0          |16-32      |           |           |           |           |           |           |           |
+DROP  |A          |1          |1          |Castle     |16         |0          |16-32      |           |           |           |           |           |           |           |
+      |                                                                                                                                                                       |                                                                                                                                                                       |
+DROP  |C          |1          |1          |RSpell     |256        |0          |128-256    |           |           |           |           |           |           |           |
+DROP  |C          |5          |1          |RSpell     |256        |0          |128-256    |           |           |           |           |           |           |           |
+DROP  |D          |4          |1          |RSpell     |256        |0          |128-256    |           |           |           |           |           |           |           |
+      |                                                                                                                                                                       |
+WAIT  |8000-10000 |           |           |           |           |           |           |           |           |           |           |           |           |           |  
+DROP  |B          |10         |1          |Champion   |16         |0          |16-32      |           |           |           |           |           |           |           |
+DROP  |A          |1          |1          |Duke       |16         |0          |16-32      |           |           |           |           |           |           |           |
+      |                                                                                                                                                                       |
+DROP  |E          |3          |1          |RSpell     |256        |0          |128-256    |           |           |           |           |           |           |           |
+DROP  |F          |2          |1          |RSpell     |256        |0          |128-256    |           |           |           |           |           |           |           |
+      |                                                                                                                                                                       |
+DROP  |R          |1          |1          |FSpell     |128        |0          |16-32      |           |           |           |           |           |           |           |
+DROP  |S          |1          |1          |FSpell     |128        |0          |16-32      |           |           |           |           |           |           |           |
+DROP  |T          |1          |1          |FSpell     |128        |0          |16-32      |           |           |           |           |           |           |           |
+DROP  |U          |1          |1          |FSpell     |128        |0          |16-32      |           |           |           |           |           |           |           |
+DROP  |V          |1          |1          |FSpell     |128        |0          |16-32      |           |           |           |           |           |           |           |
+      |                                                                                                                                                                       |
+WAIT  |5000-8000  |           |           |           |           |           |           |           |           |           |           |           |           |           |
+DROP  |A-B        |1-10       |10         |REMAIN     |128        |0          |16-32      |           |           |           |           |           |           |           | 
+DROP  |B          |10         |1          |Champion   |16         |0          |16-32      |           |           |           |           |           |           |           |
+DROP  |A          |1          |1          |Duke       |16         |0          |16-32      |           |           |           |           |           |           |           |
+DROP  |A-B        |1-10       |10         |REMAIN     |128        |0          |16-32      |           |           |           |           |           |           |           | 

@@ -22,8 +22,11 @@ BuildMBR.exe
 # image templates in imgxml are needed by the bot (some are .bmp)
 !imgxml/**/*.bmp
 
-# Exclude Global Folders
-[Ll]anguages/
+# GUI / Telegram texts of the bot language (*.ini is ignored above): without it the 219 reused texts show "-3"
+# and the bot cannot write it back (no Languages folder in a fresh clone). Other languages are not used
+![Ll]anguages/English.ini
+
+# Exclude Global Folders (Profiles: account settings, Telegram tokens, logs - copy config.ini / building.ini by hand)
 [Pp]rofiles/
 [Tt]emplates/
 [Tt]emp/
@@ -135,16 +138,6 @@ build/MBR_Compiler/.vs/*
 ![Ii]mgxml/deadbase/elix/50/*.png
 ![Ii]mgxml/deadbase/elix/100/*.png
 
-
-# ignore test strategies
-[Ss]trategies/[Tt]est*.ini
-[Ss]trategies/[Ss]trategy 2016*.ini
-# ignore csv test scripts
-CSV/Attack/[Tt]est*.csv
-CSV/THsnipe/[Tt]est*.csv
-
-
-
 ![Ii]mages/Storages/Gold/*.png
 ![Ii]mages/Storages/Elixir/*.png
 
@@ -174,10 +167,17 @@ build/au3Stripper/Au3Stripper_ 1.Log
 test*.bat
 # raw PNG template (red-X anchor for dark-scenery checkmark)
 !imgxml/Resources/BuildersBase/AutoUpgrade/GreenCheck/RedXDark_0_90.png
-CSV/Attack/Apiw Electroloon.csv
 
-# Personal screenshots / notes
-dev/
+# Personal screenshots / notes / tests; kept: watchdog (minus its run logs) and the log summary used by the agent
+dev/*
+!dev/LogSummary.bat
+!dev/watchdog/
+dev/watchdog/run/
+dev/watchdog/*.flag
+!dev/watchdog/*.bat
+!dev/ocrtest/
+dev/ocrtest/*
+!dev/ocrtest/logsum.sh
 
-CLAUDE.md
+# notes of this PC
 DEVLOG.md

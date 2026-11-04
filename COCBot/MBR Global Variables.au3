@@ -1016,6 +1016,8 @@ Global $g_bDonateNewChat = False ; red chat notification seen: DonateCC runs eve
 Global $g_sVillageUpgradeKey = "" ; account|attack count of the last VillageUpgrades run (once per account and attack)
 Global $g_aiWallBadCost[16] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] ; per account: cost of a "Wall" row that selected another building
 Global $g_sSwitchNameLeft = "", $g_iSwitchNameTarget = -1, $g_iSwitchNameFrom = -1 ; SwitchSCID: village name of the account left, kept for the retries
+Global $g_asVillageNameSig[16] ; village name pixels of each switch account (Profiles\<name>\VillageNameSig.txt), see SwitchNameOfOther
+Global $g_ahNoFreePet[16] ; timer per account: no free ready pet found for an upgrading / empty pet slot (PetFixInWindow, 2 h)
 Global $g_aiNoUpgradeWaitMin[16][2] ; [account][0 Lab, 1 Pet]: minutes to wait after an empty list (360 locked, 60 red cost)
 Global $g_bSkipWallReserve = False, $g_bUpgradeLowCost = False, $g_bUpgradeOtherDefenses = False, $g_bGearUpDone = False
 Global $g_iTxtSmartMinGold = 150000, $g_iTxtSmartMinElixir = 150000, $g_iTxtSmartMinDark = 1500

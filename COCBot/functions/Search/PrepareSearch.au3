@@ -387,7 +387,15 @@ Func PetArmyState($i)
 EndFunc   ;==>PetArmyState
 
 ; Select Hero window open on a hero: its pet empty or upgrading -> Select Pet, first usable pet. Return True when changed
-Func PetFixInWindow($sHero = "")
+; $bRemember: "no free pet" kept 2 h for this account (army card check only: right after a hero switch the list was read
+; empty while the army check found a free pet seconds later, qiralle slot 1 4 Nov 21:45 / 22:42)
+Func PetFixInWindow($sHero = "", $bRemember = False)
+	Local $iAcc = CurAccountIndex()
+	If $g_ahNoFreePet[$iAcc] <> 0 And __TimerDiff($g_ahNoFreePet[$iAcc]) < 2 * 3600000 Then
+		SetDebugLog("Hero " & $sHero & ": no free pet " & Round(__TimerDiff($g_ahNoFreePet[$iAcc]) / 60000) & " min ago, skip")
+		Return False
+	EndIf
+	If _Sleep(500) Then Return False ; window after a hero switch still moving
 	Local $L = PetWindowLeft()
 	If $L < 0 Then Return False
 	Local $c = $L + 122
@@ -400,10 +408,22 @@ Func PetFixInWindow($sHero = "")
 	If _Sleep(1000) Then Return False
 	$L = PetWindowLeft()
 	If $L < 0 Then Return False
-	Local $sLastSig = ""
-	For $iPage = 1 To 4
+	; read 1 = page 1, read 2 = page 1 again (the Select Pet list can still be drawing), reads 3-5 = pages 2-4 after a drag
+	Local $sLastSig = "", $sSig = ""
+	For $iRead = 1 To 5
+		Local $iPage = $iRead < 3 ? 1 : $iRead - 1
+		If $iRead = 2 Then
+			If _Sleep(600) Then Return False
+			$L = PetWindowLeft()
+			If $L < 0 Then Return False
+		ElseIf $iRead > 2 Then
+			If $iRead > 3 And $sSig = $sLastSig Then ExitLoop ; list did not move: end
+			$sLastSig = $sSig
+			ClickDrag($L + 270, 300, $L + 30, 300, 300) ; next pets
+			If _Sleep(800) Then Return False
+		EndIf
 		_CaptureRegion()
-		Local $sSig = ""
+		$sSig = ""
 		For $k = 0 To 3
 			Local $x = $L + 43 + 74 * $k
 			Local $iSpread = PetSpread($x - 24, 271, $x + 24, 303)
@@ -416,12 +436,9 @@ Func PetFixInWindow($sHero = "")
 				Return True
 			EndIf
 		Next
-		If $sSig = $sLastSig Then ExitLoop ; list did not move: end
-		$sLastSig = $sSig
-		ClickDrag($L + 270, 300, $L + 30, 300, 300) ; next pets
-		If _Sleep(800) Then Return False
 	Next
-	SetLog("Hero " & $sHero & ": no free ready pet", $COLOR_DEBUG2)
+	SetLog("Hero " & $sHero & ": no free ready pet" & ($bRemember ? ", next try in 2 h" : ""), $COLOR_DEBUG2)
+	If $bRemember Then $g_ahNoFreePet[$iAcc] = __TimerInit()
 	Return False
 EndFunc   ;==>PetFixInWindow
 
@@ -445,7 +462,7 @@ Func CheckPetOnArmy()
 			SetLog("Select Hero window not opened", $COLOR_DEBUG2)
 			ContinueLoop
 		EndIf
-		If PetFixInWindow("slot " & ($i + 1)) Then $bRet = True
+		If PetFixInWindow("slot " & ($i + 1), True) Then $bRet = True
 		If IsSelectHeroOpen() Then
 			Click($c, 245, 1, 0, "Close Select Pet") ; on the hero card, outside the window: closes it
 			If _Sleep(800) Then Return $bRet
