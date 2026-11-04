@@ -155,6 +155,8 @@ Func PrepareSearchCheckArmy($bTournament = False, $bTest = False)
 			; not saved to the army compo: the hero comes back when the upgrade is done
 			CheckHeroOnUpgrade()
 			If _Sleep(500) Then Return
+			CheckPetOnArmy() ; pet slot empty or pet upgrading -> a free ready pet
+			If _Sleep(300) Then Return
 			If $bTest Then Return $bRet
 			Click(695, 500, 1, 0, "ArmyOverview Attack Button")
 			If _Sleep(500) Then Return
@@ -298,6 +300,8 @@ Func CheckHeroOnUpgrade()
 			If _Sleep(1000) Then Return $bRet
 			SetLog("Switch upgrading hero to " & $aHero[$iPick][0], $COLOR_SUCCESS)
 			$bRet = True
+			; the hero put in often has no pet (or an upgrading one): window still open on it
+			PetFixInWindow($aHero[$iPick][0])
 		Else
 			SetLog("No available Hero to switch", $COLOR_DEBUG2)
 		EndIf
@@ -319,6 +323,136 @@ Func IsSelectHeroOpen()
 	Next
 	Return $iHits >= 10
 EndFunc   ;==>IsSelectHeroOpen
+
+; ======================== hero pets (army window before attack, adb quartz 4 Nov 2026) ========================
+; Army card of each hero slot: pet box at y ~446-476 under the portrait. Empty = lavender paw 8580A9 with a "+" (147 px,
+; other boxes 0); upgrading pet = gray pet with a light blue A0D0E8 wrench badge top right (34 px, other boxes 0-2).
+; Tap on the pet box opens "Select Hero" of that slot (also for a ready hero). The window moves with the slot: its left
+; edge L (first header pixel along y 160: 228 for slot 2, 386 for slot 4); top row: hero L+44, pet L+122, y 215.
+; Pet card there: empty = white (625 of 783 px), upgrading = A0D0E8 badge (76 px), else a pet in use.
+; Tap on the pet card opens "Select Pet": list of pets at L+43 + 74 k (y 295), scrolls to the left. Usable pet = colored
+; card (spread 48-126; upgrading / locked pets are gray 3-21) with an empty (white) box under it (63 of 63 px; a pet used
+; by another hero shows that hero there). A tap on it gives it to this hero (taken from nobody).
+Global Const $g_aiArmyHeroSlotX[4] = [94, 172, 251, 330]
+
+; RGB of $iPix within $iTol of $iRef
+Func PetColorNear($iPix, $iRef, $iTol)
+	Return Abs(BitAND(BitShift($iPix, 16), 0xFF) - BitAND(BitShift($iRef, 16), 0xFF)) < $iTol And _
+			Abs(BitAND(BitShift($iPix, 8), 0xFF) - BitAND(BitShift($iRef, 8), 0xFF)) < $iTol And _
+			Abs(BitAND($iPix, 0xFF) - BitAND($iRef, 0xFF)) < $iTol
+EndFunc   ;==>PetColorNear
+
+; pixels of color $iRef in a box, last _CaptureRegion frame
+Func PetCountColor($iX1, $iY1, $iX2, $iY2, $iRef, $iTol, $iStep = 1)
+	Local $n = 0
+	For $x = $iX1 To $iX2 Step $iStep
+		For $y = $iY1 To $iY2 Step $iStep
+			If PetColorNear(Dec(_GetPixelColor($x, $y, False)), $iRef, $iTol) Then $n += 1
+		Next
+	Next
+	Return $n
+EndFunc   ;==>PetCountColor
+
+; mean color spread (max - min of RGB) in a box, last frame: gray / white ~0-20, colored 30+
+Func PetSpread($iX1, $iY1, $iX2, $iY2, $iStep = 3)
+	Local $iSum = 0, $iN = 0, $iPix, $r, $g, $b
+	For $x = $iX1 To $iX2 Step $iStep
+		For $y = $iY1 To $iY2 Step $iStep
+			$iPix = Dec(_GetPixelColor($x, $y, False))
+			$r = BitAND(BitShift($iPix, 16), 0xFF)
+			$g = BitAND(BitShift($iPix, 8), 0xFF)
+			$b = BitAND($iPix, 0xFF)
+			$iSum += _Max($r, _Max($g, $b)) - _Min($r, _Min($g, $b))
+			$iN += 1
+		Next
+	Next
+	Return $iN = 0 ? 0 : $iSum / $iN
+EndFunc   ;==>PetSpread
+
+; left edge of the open Select Hero / Select Pet window (header color along y 160), -1 = not found
+Func PetWindowLeft()
+	_CaptureRegion()
+	For $x = 60 To 700
+		If PetColorNear(Dec(_GetPixelColor($x, 160, False)), 0x867D71, 12) Then Return $x
+	Next
+	Return -1
+EndFunc   ;==>PetWindowLeft
+
+; state of the pet box on army card $i (0-3): "empty", "upgrade" or "" (pet in use / hero card gray)
+Func PetArmyState($i)
+	Local $c = $g_aiArmyHeroSlotX[$i]
+	If PetCountColor($c - 16, 452, $c + 10, 476, 0x8580A9, 12) >= 60 Then Return "empty"
+	If PetCountColor($c + 14, 446, $c + 32, 464, 0xA0D0E8, 18) >= 20 Then Return "upgrade"
+	Return ""
+EndFunc   ;==>PetArmyState
+
+; Select Hero window open on a hero: its pet empty or upgrading -> Select Pet, first usable pet. Return True when changed
+Func PetFixInWindow($sHero = "")
+	Local $L = PetWindowLeft()
+	If $L < 0 Then Return False
+	Local $c = $L + 122
+	Local $sState = ""
+	If PetCountColor($c - 28, 188, $c + 28, 240, 0xFFFFFF, 21, 2) > 450 Then $sState = "empty"
+	If $sState = "" And PetCountColor($c + 4, 178, $c + 34, 204, 0xA0D0E8, 18) > 30 Then $sState = "upgrade"
+	If $sState = "" Then Return False
+	SetLog("Hero " & $sHero & ": pet " & ($sState = "empty" ? "slot empty" : "upgrading") & ", select another pet", $COLOR_INFO)
+	Click($c, 215, 1, 0, "Pet slot")
+	If _Sleep(1000) Then Return False
+	$L = PetWindowLeft()
+	If $L < 0 Then Return False
+	Local $sLastSig = ""
+	For $iPage = 1 To 4
+		_CaptureRegion()
+		Local $sSig = ""
+		For $k = 0 To 3
+			Local $x = $L + 43 + 74 * $k
+			Local $iSpread = PetSpread($x - 24, 271, $x + 24, 303)
+			Local $bFree = PetCountColor($x - 8, 324, $x + 8, 336, 0xFFFFFF, 26, 2) >= 56
+			$sSig &= Round($iSpread) & ($bFree ? "f" : "u") & "|"
+			If $iSpread >= 35 And $bFree Then
+				Click($x, 295, 1, 0, "Select pet " & ($k + 1) & " (page " & $iPage & ")")
+				If _Sleep(1000) Then Return True
+				SetLog("Hero " & $sHero & ": free pet " & ($k + 1) & " of page " & $iPage & " selected", $COLOR_SUCCESS)
+				Return True
+			EndIf
+		Next
+		If $sSig = $sLastSig Then ExitLoop ; list did not move: end
+		$sLastSig = $sSig
+		ClickDrag($L + 270, 300, $L + 30, 300, 300) ; next pets
+		If _Sleep(800) Then Return False
+	Next
+	SetLog("Hero " & $sHero & ": no free ready pet", $COLOR_DEBUG2)
+	Return False
+EndFunc   ;==>PetFixInWindow
+
+; every hero card of the army window: pet slot empty or pet upgrading -> its Select Hero window, first usable pet.
+; Heroes switched by CheckHeroOnUpgrade are fixed there already, gray (upgrading, not switched) cards are skipped
+Func CheckPetOnArmy()
+	Local $bRet = False
+	For $i = 0 To 3
+		If Not $g_bRunState Then Return $bRet
+		_CaptureRegion()
+		Local $sState = PetArmyState($i)
+		If $sState = "" Then ContinueLoop
+		Local $c = $g_aiArmyHeroSlotX[$i]
+		; gray hero card (upgrading, no ready hero to switch to): not in the attack, its pet does not matter
+		; (card color spread: gray 0, Dragon Duke 20-35, others 54-106)
+		If PetSpread($c - 20, 300, $c + 20, 380) < 8 Then ContinueLoop
+		SetLog("Hero slot " & ($i + 1) & ": pet " & ($sState = "empty" ? "slot empty" : "upgrading"), $COLOR_INFO)
+		Click($c, 455, 1, 0, "Pet box of hero slot " & ($i + 1))
+		If _Sleep(1000) Then Return $bRet
+		If Not IsSelectHeroOpen() Then
+			SetLog("Select Hero window not opened", $COLOR_DEBUG2)
+			ContinueLoop
+		EndIf
+		If PetFixInWindow("slot " & ($i + 1)) Then $bRet = True
+		If IsSelectHeroOpen() Then
+			Click($c, 245, 1, 0, "Close Select Pet") ; on the hero card, outside the window: closes it
+			If _Sleep(800) Then Return $bRet
+		EndIf
+	Next
+	Return $bRet
+EndFunc   ;==>CheckPetOnArmy
 
 ; hero portrait in color (ready) or gray (upgrading): mean RGB spread around the match, colored ~50-110, gray 0-20
 ; (checked on quartz Select Hero screen: King 97, Prince 91, upgrading Wardens 0 and 3), uses the last _CaptureRegion frame
