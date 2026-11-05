@@ -50,7 +50,7 @@ Func getBuilderCount($bSuppressLog = False, $bBuilderBase = False)
 EndFunc   ;==>getBuilderCount
 
 ; Goblin Builder (event, gems): never used. The counter shows the goblin (icon + goblin in free/total, 1/7) only while it
-; is the free one; with a real builder free it shows the builder icon and real builders only (1/6, qiralle 26 Oct 2026).
+; is the free one; with a real builder free it shows the builder icon and real builders only (1/6, 26 Oct 2026).
 ; Goblin icon: free and total lowered by 1. Returns True when lowered
 Func GoblinBuilderAdjust(ByRef $iFree, ByRef $iTotal, $sWhere)
 	If $iTotal < 2 Or Not IsGoblinCounter($sWhere) Then Return False
@@ -61,7 +61,7 @@ Func GoblinBuilderAdjust(ByRef $iFree, ByRef $iTotal, $sWhere)
 EndFunc   ;==>GoblinBuilderAdjust
 
 ; True when the counter icon is a goblin face (Goblin Builder / Goblin Researcher is the free slot).
-; Colors from qiralle, 26 Oct 2026 (same on every Build menu tab)
+; Colors read 26 Oct 2026 (same on every Build menu tab)
 Func IsGoblinCounter($sWhere)
 	Switch $sWhere
 		Case "Main" ; main screen builder counter icon (builder: FCB15B / 293110)

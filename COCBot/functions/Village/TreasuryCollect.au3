@@ -27,7 +27,7 @@ Func TreasuryCollect()
 		$TryCCAutoLocate = True
 	Else
 		; saved position first: a Clan Castle there needs no zoom check (stone search failed after attacks, ~5-20 s with
-		; zoom and drag: qruel/qarelith 28 Oct). Another building selected: zoom out, then the saved position again
+		; zoom and drag: 28 Oct). Another building selected: zoom out, then the saved position again
 		Local $BuildingInfo
 		For $iTry = 1 To 2
 			Click($g_aiClanCastlePos[0], $g_aiClanCastlePos[1])
@@ -37,7 +37,7 @@ Func TreasuryCollect()
 			ClickAway()
 			If _Sleep(300) Then Return
 			; ZoomOut also centers the village: CheckZoomOut passed at zoom 1.03 / offset 8,-4 and the 2nd click hit the
-			; Wall next to the Clan Castle again (qurlk 28 Oct 19:49, auto locate failed, Treasury skipped 6 h)
+			; Wall next to the Clan Castle again (28 Oct 19:49, auto locate failed, Treasury skipped 6 h)
 			ZoomOut()
 		Next
 		$TryCCAutoLocate = ($BuildingInfo[1] <> "Clan Castle")
@@ -105,7 +105,7 @@ Func TreasuryCollect()
 	If _Sleep(500) Then Return
 EndFunc   ;==>TreasuryCollect
 
-; saved CC position hits a building next to it (Oct 2026: qurlk saved 426,307 = Wall, CC at 455,340; TH17+ CC is
+; saved CC position hits a building next to it (Oct 2026: saved 426,307 = Wall, CC at 455,340; TH17+ CC is
 ; not found by the images): try around the saved position, the Clan Castle stays selected when found
 Func NearCCLocate()
 	Local $aOffset[8][2] = [[30, 30], [-30, -30], [30, -30], [-30, 30], [0, 35], [0, -35], [35, 0], [-35, 0]]

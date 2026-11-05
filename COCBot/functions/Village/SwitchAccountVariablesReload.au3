@@ -55,7 +55,7 @@ Func SwitchAccountVariablesReload($sType = "Load", $iAccount = $g_iCurAccount)
 	; Lab time
 	Static $asLabUpgradeTime = $asEmpty, $aiLabStatus = $aiZero, $aiLabElixirCost = $aiZero, $aiLabDElixirCost = $aiZero
 	Static $asStarLabUpgradeTime = $asEmpty
-	Static $asPetUpgradeTime = $asEmpty ; was one value for all accounts: quazzy skipped Pet with quartz's time (28 Oct)
+	Static $asPetUpgradeTime = $asEmpty ; was one value for all accounts: an account skipped Pet with the time of another (28 Oct)
 
 	; Hero State
 	Static $aiHeroAvailable = $aiZero

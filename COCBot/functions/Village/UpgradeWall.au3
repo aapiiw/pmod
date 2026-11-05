@@ -31,7 +31,7 @@ Func UpgradeWall($bTest = False)
 	If Not $g_bRunState Then Return
 	
 	If $g_iFreeBuilderCount > 0 Then $GoUpgrade = True
-	; upgrade deadline on: builder upgrades end after it and are skipped, the free builders stay free (qurlk 1 Nov: storages
+	; upgrade deadline on: builder upgrades end after it and are skipped, the free builders stay free (1 Nov: storages
 	; full, halt attack, 'Auto Upgrade: no upgrade started' then walls skipped by this check every cycle)
 	If $g_bChkOnly1Builder And $g_iFreeBuilderCount > 1 And Not $bTest And UpgradeDeadlineLeft() < 0 Then
 		SetLog("Have more than 1 builder, Upgrade Walls skipped", $COLOR_DEBUG2)
@@ -49,7 +49,7 @@ Func UpgradeWall($bTest = False)
 			$bWallUpgraded = -1
 			$bWallUpgraded = UpgradeWallBuildMenu()
 			; -1 = Build menu not usable. Never compare a Bool with -1: in AutoIt True = -1 is True (any non zero number),
-			; every Build menu upgrade ran the old village search after it (zone/qath 27 Oct)
+			; every Build menu upgrade ran the old village search after it (27 Oct)
 			Local $bMenuFailed = (Not IsBool($bWallUpgraded) And $bWallUpgraded = -1)
 			; old way (search wall image on village, ~30 s) only when the Build menu was not usable on the first try: after a
 			; Build menu wall upgrade, the 2nd loop (Elixir then Gold) went there 18 times in one night, 15 times not enough resource
@@ -74,10 +74,10 @@ Func UpgradeWallBuildMenu()
 		SetLog("Wall: Build menu not opened (village: " & (isOnMainVillage() ? "main" : "not main") & ", menu open: " & IsBuildMenuOpen() & ")", $COLOR_DEBUG1)
 		Return -1
 	EndIf
-	; walls of 2-3 levels = one row per level, most expensive first (macia 29 Oct: Wall 3 000 000 and Wall '' below it).
+	; walls of 2-3 levels = one row per level, most expensive first (29 Oct: Wall 3 000 000 and Wall '' below it).
 	; First wall row that passes Min Save is taken (stop there, like before); a wall row over Min Save no longer skips the
 	; walls: scrolling goes on to the cheaper levels (max one page past the last wall row). Going back to a row one page up
-	; missed the row (quiver 23:15 29 Oct, cost read again as no wall cost), so the scan stops as soon as a wall fits.
+	; missed the row (23:15 29 Oct, cost read again as no wall cost), so the scan stops as soon as a wall fits.
 	; loot read first (shown top center while the menu is open): the value read at the start can be old or unread (0),
 	; builders keep upgrading between routines. Unread loot = no early skip, DoUpgradeWall checks after its own report.
 	WallReadLootBM()
@@ -86,16 +86,16 @@ Func UpgradeWallBuildMenu()
 	$g_bBuildMenuWallOnly = False
 	Local $iRow = -1, $iWallRows = 0
 	For $i = 0 To UBound($aList) - 1
-		; DE icon with cost 0 = icon misread at the list bottom (quiver 28 Oct p5 'Wall : DE', 4 000 000 Gold): kept, the cost
+		; DE icon with cost 0 = icon misread at the list bottom (28 Oct p5 'Wall : DE', 4 000 000 Gold): kept, the cost
 		; then comes from the selected wall level
 		If $aList[$i][7] And ($aList[$i][3] = "Wall" Or $aList[$i][3] = "Walls") And Not ($aList[$i][0] = "DE" And Number($aList[$i][5]) > 0) Then
-			; a misread name gives "Wall" to another row (zone, Oct 2026: "Wall 1 200 000 Gold" was an Elixir Collector,
+			; a misread name gives "Wall" to another row (Oct 2026: "Wall 1 200 000 Gold" was an Elixir Collector,
 			; the 1 builder kept for walls was used): the cost must be a wall cost
 			If Number($aList[$i][5]) > 0 And _ArraySearch($g_aiWallCost, Number($aList[$i][5]), 1) < 1 Then
 				SetLog("Wall row cost " & _NumberFormat($aList[$i][5]) & " is not a wall cost, row ignored", $COLOR_WARNING)
 				ContinueLoop
 			EndIf
-			; a "Wall" row of this cost selected another building before (zone 1 Nov: "Wall 2 000 000" between Giant Bomb
+			; a "Wall" row of this cost selected another building before (1 Nov: "Wall 2 000 000" between Giant Bomb
 			; 2 000 000 and 900 000, real walls 10 000 000)
 			If Number($aList[$i][5]) > 0 And Number($aList[$i][5]) = $g_aiWallBadCost[CurAccountIndex()] Then
 				SetLog("Wall row cost " & _NumberFormat($aList[$i][5]) & " was not a wall last time, row ignored", $COLOR_DEBUG1)
@@ -148,7 +148,7 @@ Func UpgradeWallBuildMenu()
 	Local $aInfo = BuildingInfo(60, 435)
 	If $aInfo[1] = "" Then $aInfo = BuildingInfo(60, 477)
 	If $aInfo[1] = "" Then
-		; nothing selected (quiver 28 Oct, last list page, 5 rows without a readable name: list still moving): one more try
+		; nothing selected (28 Oct, last list page, 5 rows without a readable name: list still moving): one more try
 		SetLog("Wall: no building selected, click the row again", $COLOR_DEBUG1)
 		If $g_bDebugImageSave Then SaveDebugImage("WallRowClick")
 		$g_bBuildMenuWallOnly = True
@@ -212,8 +212,8 @@ Func WallCostFits($iCost)
 	Return $g_iUpgradeWallLootType <> 0 And Number($g_aiCurrentLoot[$eLootElixir]) - $g_iUpgradeWallMinElixir >= $iCost
 EndFunc   ;==>WallCostFits
 
-; loot read with the Build menu open; a value not read there ('' = 0) keeps the last village report value (qath 28 Oct
-; 22:26 Gold 16.6 M read as 0: 'can use Gold - 11 000 000', the 5 M wall skipped; quiver 23:17 Gold 16.4 M / Elixir
+; loot read with the Build menu open; a value not read there ('' = 0) keeps the last village report value (28 Oct
+; 22:26 Gold 16.6 M read as 0: 'can use Gold - 11 000 000', the 5 M wall skipped; 23:17 Gold 16.4 M / Elixir
 ; 20.8 M read as 0 in DoUpgradeWall: 'Both Gold and Elix are low' with the wall already selected)
 Func WallReadLootBM()
 	Local $iOldGold = Number($g_aiCurrentLoot[$eLootGold]), $iOldElix = Number($g_aiCurrentLoot[$eLootElixir])
@@ -242,7 +242,7 @@ EndFunc   ;==>WallLootEnough
 
 ; Auto Adjust Min Save for walls, capacity of one storage at this TH ($g_aiMaxStorage, max storage level = TH + 1), 4 storages:
 ; TH 9+: keep 2 storages of Gold, Elixir 3.5 storages minus the wall cost (Elixir wall when Elixir reaches 3.5 storages:
-; a Min Save of 3.5 storages + wall cost was above the full capacity, Elixir was never used, qath TH16 Oct 2026)
+; a Min Save of 3.5 storages + wall cost was above the full capacity, Elixir was never used, TH16 Oct 2026)
 ; TH 7-8 rushing: Gold 2 storages, Elixir Hero Hall cost + 1 storage; TH 1-6 rushing: Gold 2, Elixir 3 storages
 Func WallAutoAdjustMinSave()
 	If Not $g_bAutoAdjustSaveWall Then Return
@@ -292,7 +292,7 @@ Func DoUpgradeWall($iSelectedWallCost = 0)
 	WallAutoAdjustMinSave()
 	
 	; wall selected from the Build menu: loot read with the menu open. VillageReport closed the menu (checkObstacles
-	; "FullScreenWindow"), the buttons moved back to the center and Gold (x ~508) was outside the left area (zone 27 Oct)
+	; "FullScreenWindow"), the buttons moved back to the center and Gold (x ~508) was outside the left area (27 Oct)
 	If $iSelectedWallCost > 0 And IsBuildMenuOpen() Then
 		WallReadLootBM()
 	Else
@@ -364,7 +364,7 @@ Func DoUpgradeWall($iSelectedWallCost = 0)
 			Next
 		EndIf
 		; Build menu layout: the images were made for the old centered buttons (Gold never matched, 27 Oct; none with the Wall
-		; Ring button, zone/qurlk/qruel 28 Oct): the cost label scan replaces them when it finds a button
+		; Ring button, 28 Oct): the cost label scan replaces them when it finds a button
 		If IsBuildMenuOpen() Then
 			Local $aGoldC[2], $aElixC[2]
 			If WallButtonsByColor($aElixC, $aGoldC) Then
@@ -383,7 +383,7 @@ Func DoUpgradeWall($iSelectedWallCost = 0)
 
 		If _Sleep(50) Then Return
 		Local $iWallCost = $iSelectedWallCost > 0 ? $iSelectedWallCost : $g_aiWallCost[Number($aWallLevel[2])]
-		; cost 0 (level not read) divided the loot by 0: "Can upgrade = 9223372036854775807", Min Save ignored (qath 27 Oct)
+		; cost 0 (level not read) divided the loot by 0: "Can upgrade = 9223372036854775807", Min Save ignored (27 Oct)
 		If $iWallCost < 1 Then
 			SetLog("Wall: cost unknown (level '" & $aWallLevel[2] & "'), skip", $COLOR_WARNING)
 			ClickAway()
@@ -413,14 +413,14 @@ Func DoUpgradeWall($iSelectedWallCost = 0)
 			ClickAway()
 			Return False
 		EndIf
-		; a click on an unset button (0,0) was counted as an upgrade (zone 27 Oct: Gold button outside the search area)
+		; a click on an unset button (0,0) was counted as an upgrade (27 Oct: Gold button outside the search area)
 		Local $bUseElix = ($g_iUpgradeWallLootType = 1) Or ($g_iUpgradeWallLootType = 2 And $bCanUseElix And $iWallCanUpgradeElix > 0)
 		If ($bUseElix And $aElixButton[0] = "") Or (Not $bUseElix And $aGoldButton[0] = "") Then
 			SetLog("Wall: " & ($bUseElix ? "Elixir" : "Gold") & " upgrade button not found, skip", $COLOR_WARNING)
 			ClickAway()
 			Return False
 		EndIf
-		; Elixir then Gold with 1 Elixir wall but more Gold walls: Upgrade More with Gold (quiver 28 Oct 21:47 went to the
+		; Elixir then Gold with 1 Elixir wall but more Gold walls: Upgrade More with Gold (28 Oct 21:47 went to the
 		; old template path: Elix 1, Gold 2)
 		Local $bMoreElix = $bUseElix
 		If $g_iUpgradeWallLootType = 2 And $iWallCanUpgradeElix < 2 And $iWallCanUpgradeGold > 1 And $aGoldButton[0] <> "" Then $bMoreElix = False
@@ -554,7 +554,7 @@ Func DoUpgradeWall($iSelectedWallCost = 0)
 				EndIf
 				ClickAway()
 				; the resource button upgrades the wall at once (no confirm window): the result was left unset and the
-				; old village search ran after a Build menu upgrade (zone 27 Oct, ~30 s)
+				; old village search ran after a Build menu upgrade (27 Oct, ~30 s)
 				Return True
 			EndIf
 		EndIf
@@ -567,7 +567,7 @@ EndFunc
 
 ; $aElix / $aGold = click points (icon point - 25, + 25) like the image results
 ; Wall upgrade buttons with the Build menu open. Grid size, order and button count change per account and state (Upgrade
-; More, Wall Ring, < 10 walls left, Gold only levels; zone 28 Oct coin 207,585 / drop 271,585, BB 186,570 / 279,568), so the
+; More, Wall Ring, < 10 walls left, Gold only levels; 28 Oct coin 207,585 / drop 271,585, BB 186,570 / 279,568), so the
 ; whole button area is scanned for Gold coin / Elixir drop pixels and an icon counts only with cost text on its left (white,
 ; or red = not enough; text px >= 51 on 6 screenshots, other gold/purple spots <= 16). Click point = icon - 25, + 25.
 Func WallButtonsByColor(ByRef $aElix, ByRef $aGold)
@@ -611,7 +611,7 @@ Func WallButtonsByColor(ByRef $aElix, ByRef $aGold)
 	Next
 	Local $aBest[2] = [0, 0], $iCx, $iCy, $iText
 	For $i = 0 To $iCl - 1
-		; icon <= 10 px wide (BB level badge "35": 12), a full coin can be 12 wide (>= 17 px: macia 189,568 / quartz 370,486 28 Oct)
+		; icon <= 10 px wide (BB level badge "35": 12), a full coin can be 12 wide (>= 17 px: 189,568 / 370,486 28 Oct)
 		If $aCl[$i][1] < 4 Or $aCl[$i][7] - $aCl[$i][4] > ($aCl[$i][1] >= 12 ? 12 : 10) Then ContinueLoop
 		$iCx = Round($aCl[$i][2] / $aCl[$i][1])
 		$iCy = Round($aCl[$i][3] / $aCl[$i][1])
@@ -653,7 +653,7 @@ Func WallWhiteArm($x, $y, $dx, $dy)
 EndFunc   ;==>WallWhiteArm
 
 ; white "+" of the Upgrade More button with the Build menu open: center with 4 arms of 4-9 px and no white on the diagonals
-; (big grid 360,504 macia/qath/quiver/BB, middle column 269,504 quartz, small grid 327,533 zone; none on 230 other screenshots).
+; (big grid 360,504 main village / BB, middle column 269,504, small grid 327,533; none on 230 other screenshots).
 ; Lines are 1-2 px thick: full resolution, top row band only. $aPlus = [x, y, arm length]. Uses the last _CaptureRegion frame
 Func WallPlusSignByShape(ByRef $aPlus)
 	Local $a[4]
@@ -678,7 +678,7 @@ Func WallPlusSignByShape(ByRef $aPlus)
 	Return False
 EndFunc   ;==>WallPlusSignByShape
 
-; Upgrade More enabled = white label under the "+" (red with no other wall of this level, BB quiver 28 Oct: "No more
+; Upgrade More enabled = white label under the "+" (red with no other wall of this level, BB 28 Oct: "No more
 ; walls at that level to add to your selection"; white px 296 big grid, 177 small, 0 red). Uses the last frame
 Func WallUpgradeMoreEnabled($aPlus)
 	Local $iHits = 0
@@ -702,7 +702,7 @@ Func WallGreenAt($iX, $iY, $iHalf)
 	Return $iHits
 EndFunc   ;==>WallGreenAt
 
-; Upgrade More with the Build menu open (quiver 28 Oct adb: top row Info | Select Row | Upgrade More becomes
+; Upgrade More with the Build menu open (28 Oct adb: top row Info | Select Row | Upgrade More becomes
 ; Remove Wall | +10 Add Wall | +1 Add Wall, title "Wall (Level 15)x 2", cost doubled). +1 takes the place of Upgrade More
 ; ("+1" text ~10 px left of the "+"), +10 one column left (92 px big grid, 64 small). A disabled button has no green
 ; (+10 with < 10 walls of the level left: "Less than 10 available walls remaining", Remove Wall at x1), so each click
@@ -722,7 +722,7 @@ Func WallUpgradeMoreBM($aPlus, $sRes, $iCount, $iWallCost, $aButton)
 			$bReady = True
 			ExitLoop
 		EndIf
-		; BB qassa layout with < 10 walls left: Remove Wall | +1 | Gold upgrade (+1 one column left, no +10)
+		; BB layout with < 10 walls left: Remove Wall | +1 | Gold upgrade (+1 one column left, no +10)
 		If WallGreenAt($iX10, $iY1, $iHalf) >= 30 Then
 			; confirmed on a later frame: an enabled +10 shown before +1 (animation) would be clicked as +1
 			If _Sleep(350) Then Return False

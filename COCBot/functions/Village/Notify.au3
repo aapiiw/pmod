@@ -630,7 +630,7 @@ Func NotifyIdle()
 	Static $aiSent[16][3] ; [account][0 builder, 1 lab, 2 pet] = free count already sent
 	If Not $g_bNotifyTGEnable Or $g_sNotifyTGToken = "" Then Return
 	If Not ($g_bNotifyAlertBulderIdle Or $g_bNotifyAlertLaboratoryIdle Or $g_bNotifyAlertPetIdle) Then Return
-	; counters read again now: older ones can be from before an upgrade launched in this visit (qurlk 3 Nov 10:47:
+	; counters read again now: older ones can be from before an upgrade launched in this visit (3 Nov 10:47:
 	; read 1/6 at 10:47:32, Barbarian King launched 10:47:35, idle sent from the old read)
 	If Not OpenBuildMenu(1) Then Return
 	CloseBuildMenu()

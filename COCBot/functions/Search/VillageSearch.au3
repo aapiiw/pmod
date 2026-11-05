@@ -310,7 +310,7 @@ Func _VillageSearch($bTest = False, $bDoClanGames = False) ;Control for searchin
 				If $g_bLeagueAttack Then Exitloop
 
 				; 2 slow measures (~24 s) used up the 30 s scout time: the battle started, Next was gone and the bot looped on
-				; the same base (Next wait x10 + page errors, quazzy 28 Oct): attack it like a League base
+				; the same base (Next wait x10 + page errors, 28 Oct): attack it like a League base
 				If __TimerDiff($g_hAttackTimer) - SuspendAndroidTime() > 27000 Then
 					SetLog("Scout time over, attack this base", $COLOR_WARNING)
 					ExitLoop

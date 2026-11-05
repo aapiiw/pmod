@@ -262,7 +262,7 @@ Func GetAttackBar($bRemaining = False, $pMatchMode = $DB, $bDebug = False)
 					If QuickMIS("BFI", $g_sImgAttackBarDir & "\AmountX*", $aArmy[$i][1] - 30, 580, $aArmy[$i][1] + 40, 610) Then ;search x image
 						$xOCR = $g_iQuickMISX
 						$iAmount = getTroopCount($xOCR, 580)
-						; count not read once (zone, Oct 2026: 4 Rage Spells never used): read again, the x is there so at least 1
+						; count not read once (Oct 2026: 4 Rage Spells never used): read again, the x is there so at least 1
 						If Number($iAmount) < 1 Then $iAmount = getTroopCount($xOCR, 578)
 						If Number($iAmount) < 1 Then $iAmount = getTroopCount($xOCR - 2, 582)
 						If Number($iAmount) < 1 Then

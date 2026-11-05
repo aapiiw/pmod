@@ -37,7 +37,7 @@ Func StartClockTowerBoost($bSwitchToBB = False, $bSwitchToNV = False, $bUsePotio
 	Else ; Start Boosting
 		SetLog("Boosting Clock Tower", $COLOR_INFO)
 		Local $aXY[2] = [0, 0]
-		; the diamonds are those of the main village, not Builder Base: found towers were dropped "outside" (qurlk 350,186, 29 Oct;
+		; the diamonds are those of the main village, not Builder Base: found towers were dropped "outside" (350,186, 29 Oct;
 		; ~100 of 214 tries 28-29 Oct). Whole village area of the screen, without the buttons of the borders
 		Local $aClock = QuickMIS("CNX", $g_sImgStartCTBoost, 70, 60, 790, 580)
 		If IsArray($aClock) And UBound($aClock) > 0 Then
@@ -69,7 +69,7 @@ Func StartClockTowerBoost($bSwitchToBB = False, $bSwitchToNV = False, $bUsePotio
 					SetLog("Cannot find the Boost Button of Clock Tower", $COLOR_ERROR)
 					BBSkipTimerStart(0)
 				EndIf
-				ExitLoop ; one tower: the other points are the same tower (350,186 and 353,183 on qurlk)
+				ExitLoop ; one tower: the other points are the same tower (350,186 and 353,183)
 			Next
 		Else
 			SetLog("Clock Tower boost is not available!")

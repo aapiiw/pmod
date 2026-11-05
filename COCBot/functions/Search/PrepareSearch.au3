@@ -240,7 +240,7 @@ Func FillArmyCamp()
 EndFunc
 
 Func CheckHeroOnUpgrade()
-	; Army window (quartz, 25 Oct 2026): hero slots x 58-367, an upgrading hero is a gray card with a hammer at its top right
+	; Army window (25 Oct 2026): hero slots x 58-367, an upgrading hero is a gray card with a hammer at its top right
 	; and a red "!" next to the hero count. Tap on the hammer opens "Select Hero": top row = current hero / pet / equipment,
 	; bottom row (y ~268-330) = heroes not in the army, gray with a hammer badge when upgrading. Tap on the hammer again closes it.
 	Local $bRet = False
@@ -324,7 +324,7 @@ Func IsSelectHeroOpen()
 	Return $iHits >= 10
 EndFunc   ;==>IsSelectHeroOpen
 
-; ======================== hero pets (army window before attack, adb quartz 4 Nov 2026) ========================
+; ======================== hero pets (army window before attack, adb 4 Nov 2026) ========================
 ; Army card of each hero slot: pet box at y ~446-476 under the portrait. Empty = lavender paw 8580A9 with a "+" (147 px,
 ; other boxes 0); upgrading pet = gray pet with a light blue A0D0E8 wrench badge top right (34 px, other boxes 0-2).
 ; Tap on the pet box opens "Select Hero" of that slot (also for a ready hero). The window moves with the slot: its left
@@ -388,7 +388,7 @@ EndFunc   ;==>PetArmyState
 
 ; Select Hero window open on a hero: its pet empty or upgrading -> Select Pet, first usable pet. Return True when changed
 ; $bRemember: "no free pet" kept 2 h for this account (army card check only: right after a hero switch the list was read
-; empty while the army check found a free pet seconds later, qiralle slot 1 4 Nov 21:45 / 22:42)
+; empty while the army check found a free pet seconds later, hero slot 1, 4 Nov 21:45 / 22:42)
 Func PetFixInWindow($sHero = "", $bRemember = False)
 	Local $iAcc = CurAccountIndex()
 	If $g_ahNoFreePet[$iAcc] <> 0 And __TimerDiff($g_ahNoFreePet[$iAcc]) < 2 * 3600000 Then
@@ -472,7 +472,7 @@ Func CheckPetOnArmy()
 EndFunc   ;==>CheckPetOnArmy
 
 ; hero portrait in color (ready) or gray (upgrading): mean RGB spread around the match, colored ~50-110, gray 0-20
-; (checked on quartz Select Hero screen: King 97, Prince 91, upgrading Wardens 0 and 3), uses the last _CaptureRegion frame
+; (checked on Select Hero screen: King 97, Prince 91, upgrading Wardens 0 and 3), uses the last _CaptureRegion frame
 Func HeroPortraitColored($iX, $iY)
 	Local $iSum = 0, $iN = 0, $iPix, $r, $g, $b, $iMax, $iMin
 	For $dx = -12 To 12 Step 4

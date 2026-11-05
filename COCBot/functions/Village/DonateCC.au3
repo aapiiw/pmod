@@ -61,7 +61,7 @@ EndFunc
 
 ; chat still scrolling after it opened / after the own request: the request read at y 578 was at y 327 when clicked
 ; (56 "Donate Window did not open" 29 Oct, same capacity read at both places): wait until the Donate buttons stay put
-; own request just sent: it shows in the chat 2-5 s later and pushes the requests up (zone 21:35 29 Oct: request read at
+; own request just sent: it shows in the chat 2-5 s later and pushes the requests up (21:35 29 Oct: request read at
 ; y 579, at y 328 when clicked; screen: own "any" request "Just now" at the bottom). With Donate buttons on screen, wait
 ; until they move (own request in) or 5 s after the send, then until they stay put
 Func DonateWaitChatStill($bJustRequested = False)
@@ -509,7 +509,7 @@ Func DonateSiegeType($iSiegeIndex, $aiDonateButton)
 	If $g_bDebugSetLog Then SetLog("donate : " & $g_asSiegeMachineNames[$iSiegeIndex], $COLOR_ERROR)
 	If $g_bDebugSetLog Then SetLog("coordinate : " & _ArrayToString($aSLot), $COLOR_ERROR)
 
-	; was always 1: qath 1 Nov request window 'Siege Machine: 0/2' got 1 Stone Slammer, 1 slot left empty -> fill the free
+	; was always 1: 1 Nov request window 'Siege Machine: 0/2' got 1 Stone Slammer, 1 slot left empty -> fill the free
 	; siege slots (the request count is 1 also when its OCR read nothing)
 	Local $iQuant = $g_iTotalDonateSiegeMachineCapacity
 	For $i = 1 To $iQuant

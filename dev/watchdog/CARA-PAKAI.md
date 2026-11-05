@@ -72,3 +72,9 @@ MuMu-1.bat / MuMu-2.bat  (atau watchdog yang start)
 - 2 (MuMu-2): qath, quartz, quazzy, qiralle, quiver, macia
 
 Kalau profil ditambah / dipindah instance, ubah daftar `$Inst` di `BotWatchdog.ps1`.
+
+## Device lain / 1 instance saja
+
+- Folder bot bebas (path diambil dari lokasi script). Butuh AutoIt di `C:\Program Files (x86)\AutoIt3`, MuMu instance 1 bernama `MuMuPlayerGlobal-12.0-1`.
+- Sekali: `InstallWatchdogTask.bat`. Tiap kali: `StartWatchdog-1.bat` (bukan `StartWatchdog.bat`) -> hanya bot 1 (zone dst.) yang di-start dan dijaga, instance 2 tidak disentuh.
+- `StartWatchdog-1.bat` membuat `only-1.flag` (tidak masuk git). `StartWatchdog.bat` menghapusnya = kembali 2 instance.

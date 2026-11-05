@@ -89,7 +89,7 @@ Func BlacksmithReadPage()
 		$aCorner[$i][2] = Number($aCorner[$i][2])
 	Next
 	_ArraySort($aCorner, 0, 0, 0, 2)
-	; corner not matched on some rows (quazzy 29 Oct: Fireball y 213, Spiky Ball y 392 missing): a gap of N rows
+	; corner not matched on some rows (29 Oct: Fireball y 213, Spiky Ball y 392 missing): a gap of N rows
 	; (59.7 px each, +-6) between 2 found corners gets the rows in between; section headers break the step, no fill there
 	Local $iX = Number($aCorner[0][1]), $aY[0]
 	For $i = 0 To UBound($aCorner) - 1
@@ -107,7 +107,7 @@ Func BlacksmithReadPage()
 		If Not $g_bRunState Then Return $aRet
 		Local $iY = $aY[$i]
 		Local $aName = getBuildingName(597, $iY + 6, 180)
-		If StringStripWS($aName[0], 8) = "" Then ; new equipment: green name (Vampstache on quazzy 29 Oct, ~B4F050)
+		If StringStripWS($aName[0], 8) = "" Then ; new equipment: green name (Vampstache on 29 Oct, ~B4F050)
 			$g_bOcrGreenText = True
 			$aName = getBuildingName(597, $iY + 6, 180)
 			$g_bOcrGreenText = False
@@ -117,12 +117,12 @@ Func BlacksmithReadPage()
 		Local $bMatched = (@extended = 1)
 		; red ore cost text = not enough ores
 		Local $bEnough = Not _PixelSearch(823, $iY + 9, 823, $iY + 35, Hex(0xFF7B72, 6), 20, True, "EnoughOres")
-		; locked row ("Upgrade Blacksmith to Level N", padlock, no ore cost) also has the corner: no blue Shiny Ore icon (quazzy 29 Oct)
+		; locked row ("Upgrade Blacksmith to Level N", padlock, no ore cost) also has the corner: no blue Shiny Ore icon (29 Oct)
 		If $bEnough And Not _PixelSearch(828, $iY - 5, 852, $iY + 45, Hex(0x18A8E8, 6), 30, True, "OreIcon") Then
 			SetDebugLog("Equipment row " & $sName & ": locked (no ore cost)")
 			$bEnough = False
 		EndIf
-		; equipped = colored hero portrait left of the equipment, unequipped = grey (quazzy 29 Oct: 79-109 / 14 colored px)
+		; equipped = colored hero portrait left of the equipment, unequipped = grey (29 Oct: 79-109 / 14 colored px)
 		Local $bEquipped = BlacksmithColorCount(512, $iY - 5, 545, $iY + 35) >= 40
 		Local $aAdd[1][6] = [[$sName, $bMatched, $iX - 50, $iY + 10, $bEnough, $bEquipped]]
 		_ArrayAdd($aRet, $aAdd)

@@ -298,7 +298,7 @@ Func ForgeClanCapitalGold($bTest = False)
 					If _Sleep(1000) Then Return
 					Local $cost = getOcrAndCapture("coc-forge", 240, 350, 160, 25, True)
 					Local $gain = getOcrAndCapture("coc-forge", 528, 365, 100, 25, True)
-					; red cost text = not enough (BB Gold 2 400 000 red on quazzy, 29 Oct)
+					; red cost text = not enough (BB Gold 2 400 000 red, 29 Oct)
 					If $cost = "" Or _PixelSearch(240, 350, 400, 375, Hex(0xF87870, 6), 15, True, "ForgeCostRed") Then
 						SetLog("Not enough resource to forge with" & $aResource[$i][0], $COLOR_INFO)
 						ContinueLoop

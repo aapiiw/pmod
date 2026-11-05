@@ -26,7 +26,7 @@ Func AttackReport()
 		If _Sleep($DELAYATTACKREPORT2) Then Return
 		$g_iStatsLastAttack[$eLootDarkElixir] = getResourcesLootDE(370, 385)
 		If _Sleep($DELAYATTACKREPORT2) Then Return
-		; League layout with the DE pixel matched: Gold read, Elixir and DE empty (qurlk 28 Oct): League rows by Tesseract
+		; League layout with the DE pixel matched: Gold read, Elixir and DE empty (28 Oct): League rows by Tesseract
 		If $g_iStatsLastAttack[$eLootElixir] = "" Then
 			Local $sTsGold = getResourcesLootTs(320, 281, 160), $sTsElix = getResourcesLootTs(320, 319, 160)
 			If $sTsGold <> "" Or $sTsElix <> "" Then

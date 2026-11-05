@@ -371,7 +371,7 @@ Func LabUpgrade($bTest = False, $bKeepOpen = False)
 	If Not $g_bAutoLabUpgradeEnable Then Return False
 	checkMainScreen(False)
 	If Not CheckIfLabIdle($bTest) Then Return False ; lab counter on main screen
-	; idle lab with every research locked ("Upgrade Laboratory to Level N", macia 27 Oct) or red: list read for nothing every cycle
+	; idle lab with every research locked ("Upgrade Laboratory to Level N", 27 Oct) or red: list read for nothing every cycle
 	Local $hNoLab = $g_ahRoutineTimer[CurAccountIndex()][4]
 	If Not $bTest And $hNoLab <> 0 And __TimerDiff($hNoLab) < $g_aiNoUpgradeWaitMin[CurAccountIndex()][0] * 60000 Then
 		SetDebugLog("No Lab upgrade " & Round(__TimerDiff($hNoLab) / 60000) & " min ago, next check after " & $g_aiNoUpgradeWaitMin[CurAccountIndex()][0] & " min")
@@ -488,9 +488,16 @@ Func LabUpgrade($bTest = False, $bKeepOpen = False)
 	Next
 	Local $bRet = LaboratoryUpgrade($aList[$iPick][3], $aCoord, $aList[$iPick][5], $bTest)
 	If $bRet And Not $bTest Then LabSaveBusyTime($aCoord[2])
-	; new research of 23 h or more: potion right away (row 1 of tab 2 shows the running research)
-	If $bRet And Not $bTest And $g_bUseLabPotion And $aCoord[2] >= 1380 And OpenBuildMenu(2) Then
-		If BuildMenuUsePotion(0) Then $g_sLabUpgradeTime = ""
+	; new research of 23 h or more: potion right away (row 1 of tab 2 shows the running research). The menu closes with
+	; an animation after the research start: opened again while it was closing, counters -1/-1, "filter is on, reset it",
+	; filter window not opened and no potion (Balloon 5 d / Golem 1 d, 5 Nov) -> wait until it is closed first
+	If $bRet And Not $bTest And $g_bUseLabPotion And $aCoord[2] >= 1380 Then
+		For $i = 1 To 6
+			If Not IsBuildMenuOpen() Then ExitLoop
+			If _Sleep(500) Then Return $bRet
+		Next
+		If _Sleep(300) Then Return $bRet
+		If OpenBuildMenu(2) And BuildMenuUsePotion(0) Then $g_sLabUpgradeTime = ""
 	EndIf
 	CloseBuildMenu()
 	Return $bRet

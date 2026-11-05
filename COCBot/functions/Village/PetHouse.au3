@@ -20,7 +20,7 @@ Func PetUpgrade($bTest = False)
 		If $g_bUpgradePetsEnable[$i] Then $bAnyEnabled = True
 	Next
 	If Not $bAnyEnabled Then Return False
-	; saved time is a guess (a pet finished 19 h early on qiralle, 26 Oct 2026): counters just read in the Build menu
+	; saved time is a guess (a pet finished 19 h early, 26 Oct 2026): counters just read in the Build menu
 	; (Laboratory check) showing a free Pet House win over it
 	Local $bPetFree = BuildMenuCountersFresh(False) And $g_aiBuildMenuCounter[4][0] > 0
 	; Pet Potion due (not tried in the last hour): the Build menu is opened to use it while the Pet House is busy
@@ -42,10 +42,10 @@ Func PetUpgrade($bTest = False)
 	If Not OpenBuildMenu(4) Then Return False
 	Local $iOldDE = Number($g_aiCurrentLoot[$eLootDarkElixir])
 	BuildMenuReadLoot()
-	; DE read '' with the menu open (1 of 4 pet checks 28-29 Oct, quazzy test): keep the village report value
+	; DE read '' with the menu open (1 of 4 pet checks 28-29 Oct, test): keep the village report value
 	If Number($g_aiCurrentLoot[$eLootDarkElixir]) <= 0 And $iOldDE > 0 Then $g_aiCurrentLoot[$eLootDarkElixir] = $iOldDE
 	; counter not read (-1) right after the tab change: Pet House busy was missed, the upgrade click opened the gem window
-	; (qurlk 28 Oct 21:14 'Pet:-1/-1', read again 0/1 a moment later)
+	; (28 Oct 21:14 'Pet:-1/-1', read again 0/1 a moment later)
 	If $g_aiBuildMenuCounter[4][0] < 0 Then
 		If _Sleep(500) Then Return False
 		ReadBuildMenuCounters(False)
@@ -139,16 +139,22 @@ Func PetUpgrade($bTest = False)
 	GUICtrlSetState($g_hPicPetGreen, $GUI_SHOW)
 	PetSaveBusyTime($aCoord[2])
 	ClickAway()
-	; new pet upgrade of 23 h or more: potion right away (row 1 of tab 4 shows the running upgrade)
-	If $g_bUsePetPotion And $aCoord[2] >= 1380 And OpenBuildMenu(4) Then
-		If BuildMenuUsePotion(2) Then $g_sPetUpgradeTime = ""
+	; new pet upgrade of 23 h or more: potion right away (row 1 of tab 4 shows the running upgrade). Wait until the closing
+	; menu is gone first (Lab: opened again while closing = no potion, 5 Nov)
+	If $g_bUsePetPotion And $aCoord[2] >= 1380 Then
+		For $i = 1 To 6
+			If Not IsBuildMenuOpen() Then ExitLoop
+			If _Sleep(500) Then Return True
+		Next
+		If _Sleep(300) Then Return True
+		If OpenBuildMenu(4) And BuildMenuUsePotion(2) Then $g_sPetUpgradeTime = ""
 	EndIf
 	CloseBuildMenu()
 	Return True
 EndFunc   ;==>PetUpgrade
 
 ; BuildMenuCollect hook (pet tab): rows of the page on screen with a hero portrait at x 512-545 (colored, >= 15 of 88 px;
-; assigned L.A.S.S.I 45, unassigned Diggy 0 on quazzy 29 Oct) -> $g_asPetAssigned. Never stops the scroll
+; assigned L.A.S.S.I 45, unassigned Diggy 0 on 29 Oct) -> $g_asPetAssigned. Never stops the scroll
 Func PetAssignedMark($aList)
 	_CaptureRegion() ; whole screen once, pixels below read from it
 	For $i = 0 To UBound($aList) - 1

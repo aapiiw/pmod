@@ -463,7 +463,7 @@ Func AutoUpgradeByOrder($bTest = False)
 	EndIf
 	If UpgradeDeadlineLeft() >= 0 Then
 		; deadline on: one Cost Min pass over the whole list (no Type filter, ignore lists are off). Type passes read the
-		; same rows again and the "rest" pass after the Hero pass showed heroes on top (zone 1 Nov 09:42: Hero / Army /
+		; same rows again and the "rest" pass after the Hero pass showed heroes on top (1 Nov 09:42: Hero / Army /
 		; Resource / Defense / rest = 5 filter changes for one upgrade check)
 		_ArrayAdd($aOrder, "")
 	Else
@@ -538,7 +538,7 @@ Func AutoUpgradeTypePass($sType, $bTest = False)
 	If Not OpenBuildMenu(1, False, $sFilter) Then ; tab 1 (the menu opens on the last used tab) with the filter
 		SetLog("Build menu " & ($sType = "" ? "" : "filter " & $sType & " ") & "failed, skip", $COLOR_WARNING)
 		; 4 = filter not usable (no filter button while the Town Hall is upgrading). Not 1 (row to wait for): the "" pass reads
-		; the whole list after this, an empty list there pauses Auto Upgrade (macia, Oct 2026: tried every loop while TH upgraded)
+		; the whole list after this, an empty list there pauses Auto Upgrade (Oct 2026: tried every loop while TH upgraded)
 		Return SetExtended(4, 0)
 	EndIf
 	BuildMenuReadLoot(False)
@@ -701,7 +701,7 @@ Func AutoUpgradeMinSave($sRes)
 	Return 0
 EndFunc   ;==>AutoUpgradeMinSave
 
-; loot of $sRes for the Min Save check: not read by the village report (qath 1 Nov 20:46: [D]: '' -> "-120000 < 1500",
+; loot of $sRes for the Min Save check: not read by the village report (1 Nov 20:46: [D]: '' -> "-120000 < 1500",
 ; every DE hero refused with 277 937 DE) -> read it from the open Build menu (top center). Still unknown -> False: the row
 ; cost is white (affordable), only the Min Save is not checked
 Func AutoUpgradeLootKnown($sRes)
@@ -766,7 +766,7 @@ Func AutoUpgradeRow(ByRef $aRow, $bTest = False)
 		Local $sBuilder = getBuildersOnMenu()
 		If StringInStr($sBuilder, "#") And Int(StringLeft($sBuilder, StringInStr($sBuilder, "#") - 1)) < $iFreeBefore Then Return 1
 	Next
-	; Town Hall warning dialog closes the Build menu, its counter is gone: main screen counter (qiralle 3 Nov 19:59,
+	; Town Hall warning dialog closes the Build menu, its counter is gone: main screen counter (3 Nov 19:59,
 	; upgrade started - gold -7.5M, builders 0/6 - but logged as not confirmed)
 	If Not IsBuildMenuOpen() And getBuilderCount(True) And $g_iFreeBuilderCount < $iFreeBefore Then Return 1
 	SetLog($sName & ": free builder count did not go down, upgrade not confirmed", $COLOR_ERROR)
@@ -776,7 +776,7 @@ EndFunc   ;==>AutoUpgradeRow
 ; Town Hall "before you upgrade" warning after the upgrade click
 Func AutoUpgradeContinueTH()
 	If _Sleep(800) Then Return
-	; "Before you upgrade..." (qiralle TH15 -> 16, adb 3 Nov 2026): orange Cancel at 340,532 and green Continue at 512,532.
+	; "Before you upgrade..." (TH15 -> 16, adb 3 Nov 2026): orange Cancel at 340,532 and green Continue at 512,532.
 	; The Continue images of the old window are not found on it (12:00 attempt not confirmed)
 	If _ColorCheck(_GetPixelColor(340, 545, True), Hex(0xEA6C2F, 6), 25) And _ColorCheck(_GetPixelColor(512, 545, True), Hex(0x82CB2C, 6), 25) _
 			And _ColorCheck(_GetPixelColor(512, 520, True), Hex(0xCEEF76, 6), 25) Then
@@ -1065,7 +1065,7 @@ Func CheckResourceForDoUpgrade($BuildingName, $Cost, $CostType)
 EndFunc
 
 ; "Upgrades to ignore" / "Resources to ignore" are not used while the upgrade deadline is on (user 1 Nov: before the
-; deadline every short upgrade, zone ignored traps / collectors / heroes / defenses and started nothing)
+; deadline every short upgrade, the account ignored traps / collectors / heroes / defenses and started nothing)
 Func UpgradeIgnoreOff()
 	Return UpgradeDeadlineLeft() >= 0
 EndFunc   ;==>UpgradeIgnoreOff

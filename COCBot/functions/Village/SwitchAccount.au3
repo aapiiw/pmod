@@ -294,14 +294,14 @@ Func SwitchSCID($NextAccount)
 	Local $bCheckName = Not $g_bInitiateSwitchAcc And $NextAccount <> $g_iCurAccount
 	Local $sNameBefore = ""
 	If $bCheckName Then
-		; retry of the same switch: compare with the village we left, the screen can already show the wanted account (zone
-		; 1 Nov: qurlk loaded > 70 s = failed, every retry read qurlk before and after the click = 'did not change' forever)
+		; retry of the same switch: compare with the village we left, the screen can already show the wanted account
+		; (1 Nov: loaded > 70 s = failed, every retry read the same name before and after the click = 'did not change' forever)
 		If $g_iSwitchNameTarget = $NextAccount And $g_iSwitchNameFrom = $g_iCurAccount And $g_sSwitchNameLeft <> "" Then
 			$sNameBefore = $g_sSwitchNameLeft
 		Else
 			$sNameBefore = SwitchNameSignature()
 			; read before the main screen was back (request / donate window): ~80 % of the switches were not checked (4-5 Nov),
-			; quazzy -> qiralle 01:21 5 Nov clicked quazzy again and passed
+			; read again after the main screen check (5 Nov: a wrong click was found this way and the switch passed on retry)
 			If $sNameBefore = "" Then
 				checkMainScreen(False, False, "SwitchSCID")
 				$sNameBefore = SwitchNameSignature()
@@ -325,7 +325,7 @@ Func SwitchSCID($NextAccount)
 	Next
 	
 	If ClickAccountSCID($NextAccount + 1) Then
-		; the click hit the row of the account we were on (list dragged twice, qiralle profile played quazzy 05:35 31 Oct): the
+		; the click hit the row of the account we were on (list dragged twice, a profile played another account, 31 Oct): the
 		; game does not reload and the village name stays the same -> failed, SwitchCOCAcc tries again before the profile change
 		If $sNameBefore <> "" And SwitchNameUnchanged($sNameBefore) Then
 			SetLog("Village name did not change after the account click, switch failed", $COLOR_ERROR)
@@ -367,8 +367,8 @@ Func SwitchNameSignature()
 EndFunc   ;==>SwitchNameSignature
 
 ; True when the main screen is back (max 60 s) with the same village name as $sBefore: <= 8 pixels differ (different
-; accounts differed by 37+ of 858 on adb screenshots 30 Oct, qruel / quirk the closest). No main screen in 60 s = True too
-; (was "changed": quartz / quazzy profiles played qath 22:05 / 22:18 31 Oct, the click did not load another account)
+; accounts differed by 37+ of 858 on adb screenshots 30 Oct). No main screen in 60 s = True too
+; (was "changed": 2 profiles played another account 31 Oct, the click did not load another account)
 Func SwitchNameUnchanged($sBefore)
 	For $i = 1 To 30
 		Local $sNow = SwitchNameSignature()
@@ -381,12 +381,24 @@ Func SwitchNameUnchanged($sBefore)
 			Return $iDiff <= 8
 		EndIf
 		If _Sleep(2000) Then Return False
-		; a window after the load (event news...) hides the main screen: close it once, half way
+		; a window after the load (chat, event news...) hides the main screen. Waiting for try 15 cost ~55 s on 34 of 107
+		; switches (5-6 Nov night: click -> name 66-98 s instead of 13 s; at 21:17 a ClickAway + chat close cleared it):
+		; light clear at tries 3, 8, 13..., the full checkMainScreen only at try 15 (it also requests / donates with the
+		; profile not switched yet)
+		If Mod($i, 5) = 3 Then SwitchNameClearScreen()
 		If $i = 15 Then checkMainScreen(False, False, "SwitchNameUnchanged")
 	Next
 	SetLog("No main screen 70 s after the account click", $COLOR_ERROR)
 	Return True
 EndFunc   ;==>SwitchNameUnchanged
+
+; after an account load: close the chat window when it is open and tap the empty top left corner (closes a news /
+; event window); nothing else (no request / donate like checkMainScreen)
+Func SwitchNameClearScreen()
+	checkChatTabPixel(False)
+	ClickAway()
+	If _Sleep(500) Then Return
+EndFunc   ;==>SwitchNameClearScreen
 
 ; pixels that differ between two village name signatures (different accounts 37+ of 858, same name <= 8)
 Func SwitchNameDiff($sA, $sB)
@@ -407,6 +419,8 @@ Func SwitchNameOfOther($iAcc)
 		$sNow = SwitchNameSignature()
 		If $sNow <> "" Then ExitLoop
 		If _Sleep(2000) Then Return -1
+		If Mod($i, 5) = 3 Then SwitchNameClearScreen() ; window over the main screen (see SwitchNameUnchanged)
+		If $i = 15 Then checkMainScreen(False, False, "SwitchNameOfOther")
 	Next
 	If $sNow = "" Then Return -1
 	For $j = 0 To UBound($g_asVillageNameSig) - 1
@@ -457,7 +471,7 @@ EndFunc   ;==>ClickSCIDSwitchID
 
 Func ClickAccountSCID($iAccount = 2)
 	Local $bRet = False
-	Local $aAccount, $x, $y, $aDel[1] = [0]
+	Local $aAccount, $x, $y
 	If Not $g_bRunState Then Return
 
 	For $i = 1 To 5
@@ -494,38 +508,21 @@ Func ClickAccountSCID($iAccount = 2)
 	If QuickMIS("BC1", $g_sImgSupercellIDBottomPage, 500, 580, 560, 630) Then $bBottomPage = True
 	
 	;lets check TownHall Text
-	$aAccount = QuickMIS("CNX", $g_sImgSupercellIDTown, 560, 400, 577, 650)
-	If IsArray($aAccount) And UBound($aAccount) > 0 Then
-		_ArraySort($aAccount, 0, 0, 0, 2)
-		SetDebugLog("Detected account : " & UBound($aAccount))
-		
-		Local $iTmpY = 0, $iDistance = 50
-		For $i = 0 To UBound($aAccount) - 1
-			If $aAccount[$i][2] - $iTmpY > $iDistance Then
-				$iTmpY = $aAccount[$i][2]
-			Else
-				_ArrayAdd($aDel, $i)
-			EndIf
-		Next
-		
-		$aDel[0] = UBound($aDel) - 1
-		_ArrayDelete($aAccount, $aDel) 
-		_ArraySort($aAccount, 0, 0, 0, 2) 
-		
-		If UBound($aAccount) < 1 Then
-			SetLog("accountList: " & _ArrayToString($aAccount), $COLOR_DEBUG2)
-			Return False
-		EndIf
-		
-		For $i = 0 To UBound($aAccount) - 1
-			SetDebugLog("Bottom Splitter on : " & $aAccount[$i][1] & "," & $aAccount[$i][2])
-		Next
-		; rows must sit on the page grid (splitters 433/529/625): list 25 px off (407/503/599, qarelith 01:37 30 Oct) clicked
-		; account 4 for account 6 (qassa played quirk). Off grid = no click, SwitchCOCAcc tries again
-		If Abs(Mod($aAccount[0][2] - 433 + 960, 96)) > 12 And Abs(Mod($aAccount[0][2] - 433 + 960, 96)) < 84 Then
+	; rows must sit on the page grid (splitters 433/529/625): list 25 px off (407/503/599, 01:37 30 Oct) clicked
+	; account 4 for account 6. Off grid = the list still moves after the drag: read again 2x after
+	; 500 ms (5-6 Nov night: 8 switches failed off grid, +30-45 s each, 3x in a row once), then no click, SwitchCOCAcc retries
+	For $iRead = 1 To 3
+		$aAccount = SwitchSCIDRows()
+		If Not IsArray($aAccount) Then ExitLoop
+		If Not (Abs(Mod($aAccount[0][2] - 433 + 960, 96)) > 12 And Abs(Mod($aAccount[0][2] - 433 + 960, 96)) < 84) Then ExitLoop
+		If $iRead = 3 Then
 			SetLog("Supercell ID list not on its page grid (row at y " & $aAccount[0][2] & "), account " & $iAccount & " not clicked", $COLOR_ERROR)
 			Return False
 		EndIf
+		SetDebugLog("Supercell ID list off grid (row at y " & $aAccount[0][2] & "), read again")
+		If _Sleep(500) Then Return False
+	Next
+	If IsArray($aAccount) Then
 		
 		If Not $g_bRunState Then Return
 		Switch $iAccount
@@ -558,7 +555,7 @@ Func ClickAccountSCID($iAccount = 2)
 		EndSwitch
 		
 		If Not $g_bRunState Then Return
-		; row not found: no click (was a click on "," and "Successfully Switch": qassa profile played qarelith 23:22 29 Oct,
+		; row not found: no click (was a click on "," and "Successfully Switch": a profile played another account, 29 Oct,
 		; list stopped 56 px lower than usual, 2 rows seen) -> False, SwitchCOCAcc tries again
 		If $x = "" Or $y = "" Then Return False
 		SetLog("Click Account : [" & $iAccount & "] " & $g_asProfileName[$iAccount-1] & " on " & $x & "," & $y, $COLOR_SUCCESS)
@@ -571,7 +568,32 @@ Func ClickAccountSCID($iAccount = 2)
 	Return $bRet
 EndFunc ;ClickAccountSCID
 
-; the drag did not scroll the list on 5 of ~60 switches (29 Oct: qarelith/qassa/quirk/macia played the village of the
+; Supercell ID list on screen: row splitters (Town Hall text) top to bottom, one per row (closer than 50 px = same row),
+; 0 when none
+Func SwitchSCIDRows()
+	Local $aAccount = QuickMIS("CNX", $g_sImgSupercellIDTown, 560, 400, 577, 650)
+	If Not IsArray($aAccount) Or UBound($aAccount) = 0 Then Return 0
+	_ArraySort($aAccount, 0, 0, 0, 2)
+	SetDebugLog("Detected account : " & UBound($aAccount))
+	Local $aDel[1] = [0], $iTmpY = 0
+	For $i = 0 To UBound($aAccount) - 1
+		If $aAccount[$i][2] - $iTmpY > 50 Then
+			$iTmpY = $aAccount[$i][2]
+		Else
+			_ArrayAdd($aDel, $i)
+		EndIf
+	Next
+	$aDel[0] = UBound($aDel) - 1
+	_ArrayDelete($aAccount, $aDel)
+	If UBound($aAccount) < 1 Then Return 0
+	_ArraySort($aAccount, 0, 0, 0, 2)
+	For $i = 0 To UBound($aAccount) - 1
+		SetDebugLog("Bottom Splitter on : " & $aAccount[$i][1] & "," & $aAccount[$i][2])
+	Next
+	Return $aAccount
+EndFunc   ;==>SwitchSCIDRows
+
+; the drag did not scroll the list on 5 of ~60 switches (29 Oct: 4 profiles played the village of the
 ; account 3 rows up): list pixels compared before and after each drag, drag again until it moved
 Func ClickDragSCID($iCount = 1)
 	Local $sBefore

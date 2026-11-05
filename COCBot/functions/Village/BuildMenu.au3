@@ -117,10 +117,15 @@ Func BuildMenuSetFilter($sType = "", $iTab = 1)
 	Local $bOk = True
 	For $i = 0 To UBound($g_aBuildMenuFilterBtn) - 1
 		Local $bWant = ($g_aBuildMenuFilterBtn[$i][0] = $sBtn Or ($sSort <> "" And $g_aBuildMenuFilterBtn[$i][0] = $sSort))
+		; the button changes 0.5-0.8 s after the click on an idle emulator, later under load: a second click after a fixed
+		; 700 ms turned it back off (Army after Hero failed 16 of 21 times, 5-6 Nov). Wait up to 2 s for the change first
 		For $iTry = 1 To 3
 			If BuildMenuFilterBtnOn($i) = $bWant Then ExitLoop
 			Click($g_aBuildMenuFilterBtn[$i][1], $g_aBuildMenuFilterBtn[$i][2], 1, 0, "Filter " & $g_aBuildMenuFilterBtn[$i][0])
-			If _Sleep(700) Then Return False
+			For $iWait = 1 To 10
+				If _Sleep(200) Then Return False
+				If BuildMenuFilterBtnOn($i) = $bWant Then ExitLoop
+			Next
 		Next
 		If BuildMenuFilterBtnOn($i) <> $bWant Then $bOk = False
 	Next
@@ -130,7 +135,7 @@ Func BuildMenuSetFilter($sType = "", $iTab = 1)
 		If BuildMenuFilterWaitWindow(False) Then ExitLoop
 	Next
 	$g_iBuildMenuPage = 1
-	BuildMenuWaitStill() ; list redrawn after the filter (quiver 27 Oct: read 40 ms later, Lab names '' and costs lost)
+	BuildMenuWaitStill() ; list redrawn after the filter (27 Oct: read 40 ms later, Lab names '' and costs lost)
 	If $bOk Then
 		$g_asBuildMenuFilter[$iTab] = $sType
 		SetDebugLog("Build menu filter tab " & $iTab & ": " & ($sType = "" ? "none" : $sType))
@@ -233,7 +238,7 @@ Func BuildMenuOnVillage($bBB)
 EndFunc   ;==>BuildMenuOnVillage
 
 ; Builder's Apprentice (tab 1) / Lab Assistant (tab 2): face icon left of the open Build menu, "Available" text when idle
-; (same images and steps as dev, checked on qruel 23 Oct 2026). Idle: open it, Assign the first ongoing upgrade (longest),
+; (same images and steps as dev, checked on 23 Oct 2026). Idle: open it, Assign the first ongoing upgrade (longest),
 ; "Keep assigned until upgrade is complete", Confirm. The menu is opened again on $iTab after it.
 ; Checked again after 60 min per account ($iHelper 0 = builder, 1 = lab). Return True = assigned
 Func BuildMenuAssignHelper($iHelper, $iTab)
@@ -281,7 +286,7 @@ Func BuildMenuHelperDue($iHelper)
 EndFunc   ;==>BuildMenuHelperDue
 
 ; potion of the open Build menu tab running: the camera moves to the building of the tab (Builder Hut / Laboratory / Pet
-; House) and a dark bubble with its boost time and the potion icon sits at x 385-480, y 286-305 (qiralle 1 Nov, all 3
+; House) and a dark bubble with its boost time and the potion icon sits at x 385-480, y 286-305 (1 Nov, all 3
 ; potions on). Dark bubble rows y 286 / 305 (x 398-440, 86 px): 72-84 with a potion, 0-48 on 74 captures without one
 ; (12 accounts x tabs 1/2/4); white text px (x 392-452, y 289-302): 167-196. The time in the bubble is not read (glyphs of
 ; the list font read it wrong). Camera may still move after the tab change: 3 tries
@@ -564,7 +569,7 @@ Func BuildMenuReadCost($iX, $iY)
 	Local $sTess = StringStripWS(getOcrAndCapture("coc-buildcost", $iX - 128, $iY - 2, 115, 18, False), $STR_STRIPALL)
 	; template lost the 5 of a "500" group ("8 500 000" -> "8 00 000", "14 500 000" -> "14 00 000"): Tesseract is used only
 	; when the template digits are in it ("14 00 000" / Tesseract "12500000" was taken), else the 5 is put back
-	; (adb test 30 Oct qruel: Tesseract "80000" for 8 500 000 x5, every lost digit of this form was a 5)
+	; (adb test 30 Oct: Tesseract "80000" for 8 500 000 x5, every lost digit of this form was a 5)
 	If StringRegExp($sCost, "^[1-9]\d{0,2} 00( \d{3})+$") And $iMinDigits = StringLen($sDigits) + 1 Then
 		If StringRegExp($sTess, "^[1-9]\d{2,8}$") And StringLen($sTess) = $iMinDigits And BuildMenuIsSubsequence($sDigits, $sTess) Then Return Number($sTess)
 		Return Number(StringReplace(StringRegExpReplace($sCost, "^(\d+) ", "${1}5", 1), " ", ""))
@@ -693,7 +698,7 @@ Func BuildMenuReadPage($sIconDir, $iNameX, $iNameDy, $sType, $bRedNames = False)
 			Local $aNoIcon[0][4]
 			$aIcon = $aNoIcon
 		EndIf
-		; Gold / Elixir icons found by color too: QuickMIS missed the last rows of the list (qath, Oct 2026: Wall and Bomb
+		; Gold / Elixir icons found by color too: QuickMIS missed the last rows of the list (Oct 2026: Wall and Bomb
 		; at the bottom of the last page were never read, the wall was not upgraded)
 		Local $aColor = BuildMenuRowsByColor(60, 595)
 		For $j = 0 To UBound($aColor) - 1
@@ -723,7 +728,7 @@ Func BuildMenuReadPage($sIconDir, $iNameX, $iNameDy, $sType, $bRedNames = False)
 		EndIf
 		; in progress / max level / unreadable: skip name OCR. BB rows are found by their resource icon (no row without
 		; cost): white cost not read ("500 000" read as "00 000") is kept with cost 0, the upgrade window checks the cost.
-		; Wall search ("building") keeps them too: "10 000 000" was not read and the wall was not found (zone, Oct 2026)
+		; Wall search ("building") keeps them too: "10 000 000" was not read and the wall was not found (Oct 2026)
 		If $iCost <= 0 And Not (($sType = "bb" Or $sType = "building") And $iCost = 0) And Not ($bRedNames And $iCost = -1) Then ContinueLoop
 		If $iCost <> -1 Then $iFlags = BitOR($iFlags, 2)
 		; wall search: a read cost that is no wall cost can not be the wall row (UpgradeWallBuildMenu drops it), no name OCR
@@ -812,7 +817,7 @@ Func BuildMenuReadTime($iY)
 	_GDIPlus_BitmapUnlockBits($hBmp, $tData)
 	_GDIPlus_BitmapDispose($hBmp)
 	; only the top text band (rows with white next to each other): the cost of the row reaches the bottom rows of short
-	; times, "1m 0s" over "1 000" joined the columns of m / s with the cost digits and read '103' (zone 1 Nov)
+	; times, "1m 0s" over "1 000" joined the columns of m / s with the cost digits and read '103' (1 Nov)
 	Local $iBandT = -1, $iBandB = -1, $bRow
 	For $y = 0 To $iH - 1
 		$bRow = False
@@ -962,7 +967,7 @@ Func BuildMenuScrollUp()
 EndFunc   ;==>BuildMenuScrollUp
 
 ; wait until the list stops moving after a drag: 2 frames 150 ms apart with the same white (text) pixels in the name and
-; cost columns. A fixed 200 ms wait was too short sometimes (qath 27 Oct: page 2 read while moving, garbled names, all
+; cost columns. A fixed 200 ms wait was too short sometimes (27 Oct: page 2 read while moving, garbled names, all
 ; costs ''). Only white is compared: the shine of in-progress bars changes the other colors all the time
 Global $g_aiBuildMenuStillX[4] = [575, 600, 780, 800] ; name and cost text columns
 
@@ -1071,7 +1076,7 @@ Func BuildMenuGoToItem($iTab, $sName, $iPage, $sIconDir, $iNameX, $iNameDy, $sTy
 		If IsArray($aRet) Then Return $aRet
 	Next
 	; same path as BuildMenuCollect: top, then $iPage - 1 drags down. A drag up from a later page does not land on the
-	; same rows in a short list (L.A.S.S.I, page 2 of the pet list: zone 2 Nov 20:56, macia 3 Nov 11:13)
+	; same rows in a short list (L.A.S.S.I, page 2 of the pet list: 2 Nov 20:56, 3 Nov 11:13)
 	For $i = 1 To $g_iBuildMenuPage + 1
 		BuildMenuScrollUp()
 	Next
@@ -1227,7 +1232,7 @@ Func BBFindFirstUpgrade(ByRef $aSkip)
 		For $i = 0 To UBound($aPage) - 1
 			; name not read (a lone "Mine" always gives empty OCR): still a building to upgrade, so Wall is not taken first
 			If Not $aPage[$i][7] Then
-				; a main village name (quiver, Oct 2026: 'Pet House' 12 000 000 Elix, an ad was over the screen): not the BB list
+				; a main village name (Oct 2026: 'Pet House' 12 000 000 Elix, an ad was over the screen): not the BB list
 				If $aPage[$i][3] <> "" Then
 					OcrMatchBuildingName($aPage[$i][3])
 					If @extended = 1 Then
@@ -1236,7 +1241,7 @@ Func BBFindFirstUpgrade(ByRef $aSkip)
 					EndIf
 				EndIf
 				$aPage[$i][3] = "?"
-				; name and cost both unread (row cut at the list edge): "upgrade window not found" after a 4 s try (quiver 27 Oct)
+				; name and cost both unread (row cut at the list edge): "upgrade window not found" after a 4 s try (27 Oct)
 				If $aPage[$i][5] = 0 Then ContinueLoop
 			EndIf
 			If $aPage[$i][3] = "Builder Hall" And $g_bChkAutoUpgradeBBIgnoreHall Then ContinueLoop
@@ -1365,7 +1370,7 @@ Func BBWallUpgradeMore($sResource, $iCount)
 	Static $iFail = 0 ; resource button not found after Upgrade More 3 times in a row: single wall upgrade until bot restart
 	If $iFail >= 3 Then Return 0
 	_CaptureRegion()
-	; Upgrade More by its white "+" (column 340 only missed it: quazzy 28 Oct 'no Upgrade More button'), +1 takes its column
+	; Upgrade More by its white "+" (column 340 only missed it: 28 Oct 'no Upgrade More button'), +1 takes its column
 	Local $aPlusSign[3]
 	If Not WallPlusSignByShape($aPlusSign) Or Not WallUpgradeMoreEnabled($aPlusSign) Then
 		SetDebugLog("Wall: no Upgrade More button (or disabled)")
@@ -1381,7 +1386,7 @@ Func BBWallUpgradeMore($sResource, $iCount)
 			$bPlus = True
 			ExitLoop
 		EndIf
-		; fewer than 10 walls left of this level (qassa, Oct 2026): no +10, top row Remove Wall | +1 | Gold upgrade
+		; fewer than 10 walls left of this level (Oct 2026): no +10, top row Remove Wall | +1 | Gold upgrade
 		If BBWallTopButtonPixels($iMoreX - 92, "green") >= 15 Then
 			$bPlus = True
 			$iPlusX = $iMoreX - 92
@@ -1389,7 +1394,7 @@ Func BBWallUpgradeMore($sResource, $iCount)
 		EndIf
 	Next
 	Local $iWalls = 1
-	; +1 grey (last wall of this level, checked on zone 23 Oct 2026: green +1 shows within 350 ms when it can be used):
+	; +1 grey (last wall of this level, checked on 23 Oct 2026: green +1 shows within 350 ms when it can be used):
 	; the selected wall is still upgraded alone with the buttons below
 	If Not $bPlus Then
 		SetLog("Wall: +1 not available (no other wall of this level), upgrade 1 wall", $COLOR_INFO)
@@ -1475,7 +1480,7 @@ Func BBWallButtonIconX($sResource, $iY = 566, $iX0 = 110, $iX1 = 305)
 	Return 0
 EndFunc   ;==>BBWallButtonIconX
 
-; after Upgrade More with fewer than 10 walls of the level the Gold button moves to the top row (x ~340, qassa Oct 2026:
+; after Upgrade More with fewer than 10 walls of the level the Gold button moves to the top row (x ~340, Oct 2026:
 ; Gold icon 366,486, Elixir icon 232,570). Bottom row first: the top row scan finds a wrong icon when +10 is there.
 ; $iRowY = cost line top of the row found (566 bottom, 482 top), button click y = $iRowY + 39
 Func BBWallButtonIconXRow($sResource, ByRef $iRowY)

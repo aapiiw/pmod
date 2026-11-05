@@ -5,7 +5,7 @@
 #  - bot not running -> started again (not when the log ends with Bot Stop / Closing My Bot = closed by hand)
 #  - restart-<n>.flag (written by the agent after a code fix) -> killed, started again
 #  - pause.flag / pause-<n>.flag -> instance left alone
-# First pass: a bot not running is started with its first profile (zone / qath) even when it was closed by hand.
+# First pass: a bot not running is started with its first profile (list $Inst below) even when it was closed by hand.
 # After every start the watchdog waits (max $ReadyMin min) until that bot reaches the main screen, so bot 2 starts after bot 1.
 # Started with the profile of the newest log = the account the bot was on (bot autostarts by its own setting), /ErrorStdOut
 # (an AutoIt error goes to run\bot<n>_<time>.log and the bot exits instead of waiting on the dialog).
@@ -25,6 +25,9 @@ $Inst = @{
 	2 = @{ Title = 'MuMuPlayerGlobal-12.0-2'; Profiles = @('qath', 'quartz', 'quazzy', 'qiralle', 'quiver', 'macia') }
 }
 foreach ($n in $Inst.Keys) { $Inst[$n].Started = [datetime]::MinValue; $Inst[$n].Restarts = @(); $Inst[$n].Note = '' }
+# only-1.flag / only-2.flag (this device, from StartWatchdog-1.bat): only that instance is started and watched, the other is never touched
+$Active = @(1, 2)
+foreach ($n in @(1, 2)) { if (Test-Path (Join-Path $PSScriptRoot "only-$n.flag")) { $Active = @($n) } }
 
 New-Item -ItemType Directory -Force $Run | Out-Null
 $WLog = Join-Path $Run 'watchdog.log'
@@ -157,12 +160,12 @@ function Is-ClosedByHand($log) {
 	return [bool]($tail | Select-String -SimpleMatch -Pattern '===== Bot Stop =====', 'Closing My Bot')
 }
 
-W "watchdog started (stall $StallMin min, max $MaxPerHour restarts / h)"
+W "watchdog started (instance $($Active -join ', '), stall $StallMin min, max $MaxPerHour restarts / h)"
 $first = $true
 while ($true) {
 	$bots = Get-Bots
 	$wins = [WdWin]::List()
-	foreach ($n in @(1, 2)) {
+	foreach ($n in $Active) {
 		if ((Test-Path (Join-Path $Dir 'pause.flag')) -or (Test-Path (Join-Path $Dir "pause-$n.flag"))) { continue }
 		$bot = $bots | Where-Object { $_.N -eq $n } | Select-Object -First 1
 		$log = Get-NewestLog $n
