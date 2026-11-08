@@ -50,7 +50,6 @@ Global $g_sImgDailyRewardItems = @ScriptDir & "\imgxml\Resources\DailyChallenge\
 Global $g_sImgShield = @ScriptDir & "\imgxml\Resources\Shield\"
 Global $g_sImgBuilderHut = @ScriptDir & "\imgxml\Buildings\BuilderHut\"
 Global $g_sImgClanCastle = @ScriptDir & "\imgxml\Buildings\ClanCastle"
-Global $g_sImgLaboratory = @ScriptDir & "\imgxml\Buildings\Laboratory\"
 Global $g_sImgBoat = @ScriptDir & "\imgxml\Boat\Main\"
 Global $g_sImgZoomOutDir = @ScriptDir & "\imgxml\village\"
 Global $g_sImgCheckWallDir = @ScriptDir & "\imgxml\Walls"
@@ -64,10 +63,6 @@ Global $g_sImgTraderGems = @ScriptDir & "\imgxml\FreeMagicItems\Gems\"
 Global $g_sImgTraderRaidMedal = @ScriptDir & "\imgxml\FreeMagicItems\RaidMedal\"
 Global $g_sImgTraderCard= @ScriptDir & "\imgxml\FreeMagicItems\Card\"
 Global $g_sImgMagicItemBox = @ScriptDir & "\imgxml\FreeMagicItems\Box\"
-Global $g_sImgUpgradeWhiteZero = @ScriptDir & "\imgxml\Main Village\Upgrade\WhiteZero*"
-Global $g_sImgLabResearch = @ScriptDir & "\imgxml\Research\Laboratory\"
-Global $g_sImgAnySpell = @ScriptDir & "\imgxml\Research\Laboratory\AllSpell\"
-Global $g_sImgAnySiege = @ScriptDir & "\imgxml\Research\Laboratory\AllSiege\"
 Global $g_sImgResIcon = @ScriptDir & "\imgxml\Research\ResIcon\"
 Global $g_sImgLabAssistant = @ScriptDir & "\imgxml\Research\Laboratory\LabAssistant\"
 Global $g_sImgEquipmentMenu = @ScriptDir & "\imgxml\Research\Blacksmith\EquipmentMenu\" ; Blacksmith tab title of Build menu
@@ -88,7 +83,6 @@ Global $g_sImgForgeHouse = @ScriptDir & "\imgxml\Resources\ClanCapital\ForgeHous
 Global $g_sImgResourceCC = @ScriptDir & "\imgxml\Resources\ClanCapital\CCMap\BuilderMenu\"
 Global $g_sImgDecoration = @ScriptDir & "\imgxml\Resources\ClanCapital\CCMap\BuilderMenu\Decoration\"
 Global $g_sImgCCUpgradeButton = @ScriptDir & "\imgxml\Resources\ClanCapital\CCMap\UpgradeButton\"
-Global $g_sImgAttackDeployArea = @ScriptDir & "\imgxml\Attack\ClanCapital\MainLoop\DeployArea\"
 #EndRegion
 
 #Region Boost Super Troops
@@ -108,12 +102,6 @@ Global $g_sImgCleanBBHigher = @ScriptDir & "\imgxml\Resources\ObstaclesBB\Higher
 Global $g_sImgCleanBBRemoveButton = @ScriptDir & "\imgxml\Resources\ObstaclesBB\RemoveButton\"
 Global $g_sImgCleanBBUpTunnel = @ScriptDir & "\imgxml\Resources\ObstaclesBB\UpTunnel\"
 Global $g_sImgCleanBBDownTunnel = @ScriptDir & "\imgxml\Resources\ObstaclesBB\DownTunnel\"
-Global $g_sImgBuilderHall = @ScriptDir & "\imgxml\Resources\BuildersBase\BuilderHall\"
-Global $g_sImgVersusBH = @ScriptDir & "\imgxml\Resources\BuildersBase\BuilderHall\"
-Global $g_sImgBattleMachine = @ScriptDir & "\imgxml\Resources\BuildersBase\BattleMachine\"
-Global $g_sImgStarLaboratory = @ScriptDir & "\imgxml\Resources\BuildersBase\StarLaboratory"
-Global $g_sImgStarLabTroops = @ScriptDir & "\imgxml\Resources\BuildersBase\StarLaboratory\Troops\"
-Global $g_sImgStarLabNeedUp = @ScriptDir & "\imgxml\Resources\BuildersBase\StarLaboratory\NeedUpgrade\"
 Global $g_sImgBB20 = @ScriptDir & "\imgxml\Resources\BuildersBase\BB20\"
 
 Global $g_sImgBBMachReady = @ScriptDir & "\imgxml\Attack\BuilderBase\PrepareAttackBB\BattleMachine"
@@ -160,7 +148,6 @@ Global $g_sImgBuilderPotion = @ScriptDir & "\imgxml\Resources\AutoUpgrade\Potion
 Global $g_sImgResearchPotion = @ScriptDir & "\imgxml\Research\Potion\" ; Magic Item icon (Build menu) + Research Potion
 Global $g_sImgPetPotion = @ScriptDir & "\imgxml\Research\PetHouse\Potion\" ; Pet Potion in Magic Items
 Global $g_sImgResourceIcon = @ScriptDir & "\imgxml\Resources\AutoUpgrade\ResourceIcon\"
-Global $g_sImgBuildingAndTraps = @ScriptDir & "\imgxml\Resources\AutoUpgrade\Shop\BuildingAndTraps\"
 Global $g_sImgBuilderMenu = @ScriptDir & "\imgxml\Resources\AutoUpgrade\BuilderMenu\"
 Global $g_sImgHeroHall = @ScriptDir & "\imgxml\Resources\AutoUpgrade\HeroHall\"
 Global $g_sImgUpgradeMenu = @ScriptDir & "\imgxml\Resources\AutoUpgrade\UpgradeMenu\"
@@ -169,14 +156,7 @@ Global $g_sImgUpgradeMenu = @ScriptDir & "\imgxml\Resources\AutoUpgrade\UpgradeM
 #Region Auto Upgrade Builder Base
 Global $g_sImgOrangeBuilding = @ScriptDir & "\imgxml\Resources\OrangeArrow\"
 Global $g_sImgAutoUpgradeBtnBB = @ScriptDir & "\imgxml\Resources\BuildersBase\AutoUpgrade\Upgrade\"
-Global $g_sImgAUpgradeGreenZoneBB = @ScriptDir & "\imgxml\Resources\BuildersBase\AutoUpgrade\GreenZoneBB\"
-Global $g_sImgGreenCheckBB = @ScriptDir & "\imgxml\Resources\BuildersBase\AutoUpgrade\GreenCheck\"
-Global $g_sImgBBResourceIcon = @ScriptDir & "\imgxml\Resources\BuildersBase\AutoUpgrade\BBResourceIcon\"
 Global $g_sImgBBUpgradeWindowButton = @ScriptDir & "\imgxml\Resources\BuildersBase\AutoUpgrade\Upgrade\UpgradeWindowButton\"
-Global $g_sImgShopArmyBB = @ScriptDir & "\imgxml\Resources\BuildersBase\AutoUpgrade\ShopBB\Army\"
-Global $g_sImgShopResourcesBB = @ScriptDir & "\imgxml\Resources\BuildersBase\AutoUpgrade\ShopBB\Resources\"
-Global $g_sImgShopDefensesBB = @ScriptDir & "\imgxml\Resources\BuildersBase\AutoUpgrade\ShopBB\Defenses\"
-Global $g_sImgShopTrapsBB = @ScriptDir & "\imgxml\Resources\BuildersBase\AutoUpgrade\ShopBB\Traps\"
 
 #EndRegion
 
@@ -195,7 +175,6 @@ Global $g_sImgArmyOverviewHeroes = @ScriptDir & "\imgxml\ArmyOverview\Heroes\"
 Global $g_sImgArmyOverviewHeroChange = @ScriptDir & "\imgxml\ArmyOverview\Heroes\HeroChange\"
 Global $g_sImgArmyOverviewHeroesHammer = @ScriptDir & "\imgxml\ArmyOverview\Heroes\Hammer\"
 Global $g_sImgArmyOverviewExclam = @ScriptDir & "\imgxml\ArmyOverview\Exclam\"
-Global $g_sImgDelQueue = @ScriptDir & "\imgxml\Train\Delete\"
 Global $g_sImgSlash = @ScriptDir & "\imgxml\Train\Slash\"
 #EndRegion
 

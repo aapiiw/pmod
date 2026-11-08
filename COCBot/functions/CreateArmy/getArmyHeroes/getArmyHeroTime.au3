@@ -45,7 +45,6 @@ Func getArmyHeroTime($iHeroType, $bOpenArmyWindow = False, $bCloseArmyWindow = F
 	Local $iRemainTrainHeroTimer = 0, $sResultHeroTime
 	Local $sResult
 	Local $aResultHeroes[$eHeroCount] = ["", "", "", ""] ; array to hold all remaining regen time read via OCR
-	;Local Const $aHeroStatusSlots[3][2] = [[658, 347], [732, 347], [805, 347]] ; Location of hero status check tile
 
 	; Constant Array with OCR find location: [X pos, Y Pos, Text Name, Global enum value]
 	Local Const $aHeroRemainData[$eHeroCount][4] = [[528, 383, "King", $eHeroKing], [592, 383, "Queen", $eHeroQueen], [655, 383, "Warden", $eHeroWarden], [718, 383, "Champion", $eHeroChampion]]
@@ -75,7 +74,6 @@ Func getArmyHeroTime($iHeroType, $bOpenArmyWindow = False, $bCloseArmyWindow = F
 		If $sResult <> "" Then
 
 			$aResultHeroes[$index] = ConvertOCRTime($aHeroRemainData[$index][2] & " recover" , $sResult, False) ; update global array
-			;If _DateDiff("h", $g_aiHeroBoost[$index], _NowCalc()) < 1 Then $aResultHeroes[$index] /= 4 ; Check if Bot boosted Heroes and boost is still active and if it is then reduce heal time ;)
 
 			SetLog("Remaining " & $aHeroRemainData[$index][2] & " recover time: " & StringFormat("%.2f", $aResultHeroes[$index]), $COLOR_INFO)
 

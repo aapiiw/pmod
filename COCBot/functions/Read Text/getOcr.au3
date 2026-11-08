@@ -10,13 +10,110 @@
 ; Example .......: No
 ; ===============================================================================================================================
 
-Func getNameBuilding($x_start, $y_start) ; getNameBuilding(242,520) -> Gets complete name and level of the buildings, bottom of screen
-	Return getOcrAndCapture("coc-build", $x_start, $y_start, 420, 27)
+; name and level of the selected building, label above the button row (y 480).
+; Area 480 / 26 high (Nov 2026, 26 adb frames of 10 buildings): 25 read right, 0 wrong. Old 477 / 27: 3 empty, a bouncing
+; resource bubble above the label reaches into the top. 480 / 22 (upstream): 7 wrong, cuts g / p ("Gold Stora 1e")
+Func getNameBuilding($x_start, $y_start)
+	Return getOcrAndCapture("coc-build", $x_start, $y_start, 420, 26)
 EndFunc   ;==>getNameBuilding
 
-Func getGoldVillageSearch($x_start, $y_start) ;48, 69 -> Gets complete value of gold xxx,xxx while searching, top left, Getresources.au3
+; loot of the searched base / of the battle, top left (gold 45,70 elixir 45,99 DE 45,127). Own glyphs first, template after
+Func getGoldVillageSearch($x_start, $y_start)
+	Local $sGlyph = ReadSearchLoot($x_start + 2, $y_start - 3, "g")
+	If $sGlyph <> "" Then Return $sGlyph
 	Return getOcrAndCapture("coc-v-g", $x_start, $y_start, 90, 21, True)
 EndFunc   ;==>getGoldVillageSearch
+
+; digits of the search / battle loot ($sKind "g" cream gold, "e" pink elixir, "d" white DE) read with $g_aiSearchLootGlyph.
+; The base is behind the text: only the text band (9-14 rows with text pixels) is kept, glyphs left to right until a gap
+; > 14 px. Return the digits ("" = not a clean number, the template OCR is used)
+Func ReadSearchLoot($iX, $iY, $sKind)
+	Local Const $iW = 125, $iH = 20
+	_CaptureRegion2($iX, $iY, $iX + $iW, $iY + $iH)
+	Local $hBmp = _GDIPlus_BitmapCreateFromHBITMAP($g_hHBitmap2)
+	If @error Or $hBmp = 0 Then Return ""
+	Local $tData = _GDIPlus_BitmapLockBits($hBmp, 0, 0, $iW, $iH, $GDIP_ILMREAD, $GDIP_PXF32ARGB)
+	Local $iStridePx = DllStructGetData($tData, "Stride") / 4
+	Local $tPix = DllStructCreate("uint[" & $iStridePx * $iH & "]", DllStructGetData($tData, "Scan0"))
+	Local $aM[$iH][$iW], $aiRow[$iH], $iPix, $r, $g, $b, $bText
+	For $y = 0 To $iH - 1
+		For $x = 0 To $iW - 1
+			$iPix = DllStructGetData($tPix, 1, $y * $iStridePx + $x + 1)
+			$r = BitAND(BitShift($iPix, 16), 0xFF)
+			$g = BitAND(BitShift($iPix, 8), 0xFF)
+			$b = BitAND($iPix, 0xFF)
+			Switch $sKind ; text colors measured on 131 search screenshots (Nov 2026)
+				Case "g"
+					$bText = $r > 228 And $g > 228 And $b >= 165 And $b <= 228
+				Case "e"
+					$bText = $r > 228 And $g >= 200 And $g <= 242 And $b > 228
+				Case Else
+					$bText = $r > 222 And $g > 222 And $b > 222
+			EndSwitch
+			$aM[$y][$x] = $bText ? 1 : 0
+			If $bText Then $aiRow[$y] += 1
+		Next
+	Next
+	_GDIPlus_BitmapUnlockBits($hBmp, $tData)
+	_GDIPlus_BitmapDispose($hBmp)
+	Local $iBandT = -1, $iBandB = -1, $y = 0
+	While $y < $iH
+		If $aiRow[$y] < 2 Then
+			$y += 1
+			ContinueLoop
+		EndIf
+		Local $iT = $y
+		While $y < $iH And $aiRow[$y] >= 2
+			$y += 1
+		WEnd
+		If $y - $iT >= 9 And $y - $iT <= 14 Then
+			$iBandT = $iT
+			$iBandB = $y - 1
+			ExitLoop
+		EndIf
+	WEnd
+	If $iBandT < 0 Then Return ""
+	Local $abCol[$iW]
+	For $x = 0 To $iW - 1
+		For $y = $iBandT To $iBandB
+			If $aM[$y][$x] Then
+				$abCol[$x] = True
+				ExitLoop
+			EndIf
+		Next
+	Next
+	Local $sText = "", $x = 0, $iS, $iTop, $iBot, $iLastE = -1, $sChar
+	While $x < $iW
+		If Not $abCol[$x] Then
+			$x += 1
+			ContinueLoop
+		EndIf
+		$iS = $x
+		While $x < $iW And $abCol[$x]
+			$x += 1
+		WEnd
+		$iTop = -1
+		$iBot = -1
+		For $y = $iBandT To $iBandB
+			For $c = $iS To $x - 1
+				If $aM[$y][$c] Then
+					If $iTop < 0 Then $iTop = $y
+					$iBot = $y
+					ExitLoop
+				EndIf
+			Next
+		Next
+		If $iBot - $iTop + 1 < 7 Then ContinueLoop
+		If $iLastE >= 0 And $iS - $iLastE > 14 Then ExitLoop
+		$sChar = BuildMenuGlyphMatch($aM, $iS, $x, $iTop, $iBot, $g_aiSearchLootGlyph)
+		If @extended > 24 Then Return ""
+		If $iLastE >= 0 And $iS - $iLastE >= 5 Then $sText &= " "
+		$sText &= $sChar
+		$iLastE = $x
+	WEnd
+	If Not StringRegExp($sText, "^[1-9]\d{0,2}( \d{3})*$") Then Return ""
+	Return StringReplace($sText, " ", "")
+EndFunc   ;==>ReadSearchLoot
 
 ; NOTE: $bNeedCapture params below are kept for caller compatibility only. OCR always captures its own region,
 ; because a forced OCR capture replaces $g_hHBitmap2 with a small region and reusing it would crop wrong coordinates.
@@ -28,11 +125,15 @@ Func getRemainBuildTimer($x_start, $y_start, $bNeedCapture = True) ;
 	Return getOcrAndCapture("coc-RemainTrain", $x_start, $y_start, 50, 10, True)
 EndFunc   ;==>getRemainTrainTimer
 
-Func getElixirVillageSearch($x_start, $y_start) ;48, 69+29 -> Gets complete value of Elixir xxx,xxx, top left,  Getresources.au3
+Func getElixirVillageSearch($x_start, $y_start)
+	Local $sGlyph = ReadSearchLoot($x_start + 2, $y_start - 3, "e")
+	If $sGlyph <> "" Then Return $sGlyph
 	Return getOcrAndCapture("coc-v-e", $x_start, $y_start, 90, 21, True)
 EndFunc   ;==>getElixirVillageSearch
 
-Func getDarkElixirVillageSearch($x_start, $y_start) ;48, 69+57 or 69+69  -> Gets complete value of Dark Elixir xxx,xxx, top left,  Getresources.au3
+Func getDarkElixirVillageSearch($x_start, $y_start)
+	Local $sGlyph = ReadSearchLoot($x_start + 2, $y_start - 3, "d")
+	If $sGlyph <> "" Then Return $sGlyph
 	Return getOcrAndCapture("coc-v-de", $x_start, $y_start, 75, 21, True)
 EndFunc   ;==>getDarkElixirVillageSearch
 
@@ -44,9 +145,83 @@ Func getTrophyMainScreen($x_start, $y_start) ; -> Gets trophy value, top left of
 	Return StringReplace(getOcrAndCapture("coc-ms", $x_start, $y_start, 50, 16, True), "-", "")
 EndFunc   ;==>getTrophyMainScreen
 
-Func getResourcesMainScreen($x_start, $y_start) ; -> Gets complete value of Gold/Elixir/Dark Elixir/Trophies/Gems xxx,xxx "VillageReport.au3"
+; Gold / Elixir / Dark Elixir / Gems of the main screen and the Build menu, digits only.
+; Own glyphs first (Nov 2026, 375 fields of 6 accounts: 374 right; template "coc-ms" 336, mostly empty reads), template after
+Func getResourcesMainScreen($x_start, $y_start)
+	Local $sGlyph = ReadWhiteNumber($x_start, $y_start - 2, 125, 20)
+	If StringRegExp($sGlyph, "^\d{1,3}( \d{3})*$") Then Return StringReplace($sGlyph, " ", "")
 	Return StringReplace(getOcrAndCapture("coc-ms", $x_start, $y_start, 125, 16, True), "-", "")
 EndFunc   ;==>getResourcesMainScreen
+
+; pure white digits with black outline (resources, gems, "free/total" counters) read with $g_aiWhiteNumGlyph, right to left
+; until a gap > 14 px. Return the text with a space for gaps of 5+ px ("26 000 000", "1/7"), "" when a glyph is far from
+; every template. Only white > 248: the Build menu shows the village through the resource bars (light pixels were read)
+Func ReadWhiteNumber($iX, $iY, $iW, $iH, $iCutGap = 0)
+	_CaptureRegion2($iX, $iY, $iX + $iW, $iY + $iH)
+	Local $hBmp = _GDIPlus_BitmapCreateFromHBITMAP($g_hHBitmap2)
+	If @error Or $hBmp = 0 Then Return ""
+	Local $tData = _GDIPlus_BitmapLockBits($hBmp, 0, 0, $iW, $iH, $GDIP_ILMREAD, $GDIP_PXF32ARGB)
+	Local $iStridePx = DllStructGetData($tData, "Stride") / 4
+	Local $tPix = DllStructCreate("uint[" & $iStridePx * $iH & "]", DllStructGetData($tData, "Scan0"))
+	Local $aM[$iH][$iW], $abCol[$iW], $iPix
+	For $y = 0 To $iH - 1
+		For $x = 0 To $iW - 1
+			$iPix = DllStructGetData($tPix, 1, $y * $iStridePx + $x + 1)
+			If BitAND(BitShift($iPix, 16), 0xFF) > 248 And BitAND(BitShift($iPix, 8), 0xFF) > 248 And BitAND($iPix, 0xFF) > 248 Then
+				$aM[$y][$x] = 1
+				$abCol[$x] = True
+			Else
+				$aM[$y][$x] = 0
+			EndIf
+		Next
+	Next
+	_GDIPlus_BitmapUnlockBits($hBmp, $tData)
+	_GDIPlus_BitmapDispose($hBmp)
+	; $iCutGap: keep only the first text group from the left (attack bar "x12": the white slot border is 8+ px after it)
+	If $iCutGap > 0 Then
+		Local $iLastCol = -1
+		For $x = 0 To $iW - 1
+			If Not $abCol[$x] Then ContinueLoop
+			If $iLastCol >= 0 And $x - $iLastCol - 1 > $iCutGap Then
+				For $k = $x To $iW - 1
+					$abCol[$k] = False
+				Next
+				ExitLoop
+			EndIf
+			$iLastCol = $x
+		Next
+	EndIf
+	Local $sText = "", $x = $iW - 1, $iEnd, $iTop, $iBot, $iLastS = -1, $sChar
+	While $x >= 0
+		If Not $abCol[$x] Then
+			$x -= 1
+			ContinueLoop
+		EndIf
+		$iEnd = $x + 1
+		While $x >= 0 And $abCol[$x]
+			$x -= 1
+		WEnd
+		If $iLastS >= 0 And $iLastS - $iEnd > 14 Then ExitLoop
+		$iTop = -1
+		$iBot = -1
+		For $y = 0 To $iH - 1
+			For $c = $x + 1 To $iEnd - 1
+				If $aM[$y][$c] Then
+					If $iTop < 0 Then $iTop = $y
+					$iBot = $y
+					ExitLoop
+				EndIf
+			Next
+		Next
+		If $iBot - $iTop + 1 < 6 Then ContinueLoop
+		$sChar = BuildMenuGlyphMatch($aM, $x + 1, $iEnd, $iTop, $iBot, $g_aiWhiteNumGlyph)
+		If @extended > 24 Then Return ""
+		If $iLastS >= 0 And $iLastS - $iEnd >= 5 Then $sChar &= " "
+		$sText = $sChar & $sText
+		$iLastS = $x + 1
+	WEnd
+	Return $sText
+EndFunc   ;==>ReadWhiteNumber
 
 Func getTrophyBB($x_start = 70, $y_start = 135) ; -> Gets trophy value BB
 	Return StringReplace(getOcrAndCapture("coc-freemagicitems", $x_start, $y_start, 50, 16, True), "-", "")
@@ -79,20 +254,6 @@ Func getResourcesBonusPerc($x_start, $y_start) ; -> Gets complete value of Bonus
 	Return getOcrAndCapture("coc-bonus", $x_start, $y_start, 48, 16, True)
 EndFunc   ;==>getResourcesBonusPerc
 
-Func getLabCost($x_start, $y_start) ;normal lab
-	Return StringRegExpReplace(getOcrAndCapture("coc-labcost", $x_start, $y_start, 100, 18, True), "[-x]", "")
-	;Return StringReplace(getOcrAndCapture("coc-labcost", $x_start, $y_start, 100, 18, True), "-", "")
-EndFunc 
-
-Func getSLabCost($x_start, $y_start) ;builderbase lab
-	Return StringRegExpReplace(getOcrAndCapture("coc-slabcost", $x_start, $y_start, 100, 18, True), "[-x]", "")
-	;Return getOcrAndCapture("coc-slabcost", $x_start, $y_start, 100, 18, True)
-EndFunc 
-
-Func getLabUpgradeTime($x_start, $y_start) ; -> Gets complete remain lab upgrade time V2 for Dec2015 update
-	Return StringReplace(getOcrAndCapture("coc-uptime2", $x_start, $y_start, 68, 22), "-", "") ; 40 is enougth xxx : 2 numbers and one letter at max
-EndFunc   ;==>getLabUpgradeTime
-
 Func getHeroUpgradeTime($x_start, $y_start) ; -> Gets complete upgrade time for heroes 464, 527
 	Return StringReplace(getOcrAndCapture("coc-uptime2", $x_start, $y_start, 78, 20), "-", "") ; 78 is required to days & hours for young hero
 EndFunc   ;==>getHeroUpgradeTime
@@ -101,7 +262,10 @@ Func getChatString($x_start, $y_start, $language) ; -> Get string chat request -
 	Return getOcrAndCapture($language, $x_start, $y_start, 310, 17)
 EndFunc   ;==>getChatString
 
-Func getBuilders($x_start, $y_start) ;  -> Gets Builders number - main screen --> getBuilders(324,23)  coc-profile
+; "free#total" counter of the main screen (builders at 753,545, lab at 802,545). Own glyphs first, template after
+Func getBuilders($x_start, $y_start)
+	Local $sGlyph = ReadWhiteNumber($x_start - 8, $y_start - 5, 50, 22)
+	If StringRegExp($sGlyph, "^\d/\d$") Then Return StringReplace($sGlyph, "/", "#")
 	Return getOcrAndCapture("coc-Builders", $x_start, $y_start, 40, 16, True)
 EndFunc   ;==>getBuilders
 
@@ -109,15 +273,11 @@ Func getBuildersOnMenu($x_start = 528, $y_start = 639) ;  -> Gets Builders numbe
 	Return getOcrAndCapture("coc-totalreq", $x_start, $y_start, 35, 14, True)
 EndFunc   ;==>getBuildersOnMenu
 
-Func getPetBuilderOnMenu($x_start = 800, $y_start = 639) ;  -> Gets Builders number - on Builder menu
-	Return getOcrAndCapture("coc-totalreq", $x_start, $y_start, 35, 14, True)
-EndFunc   ;==>getPetBuilderOnMenu
-
-Func getProfile($x_start, $y_start) ;  -> Gets Attack Win/Defense Win/Donated/Received values - profile screen --> getProfile(160,268)  troops donation
-	Return getOcrAndCapture("coc-profile", $x_start, $y_start, 55, 13, True)
-EndFunc   ;==>getProfile
-
-Func getTroopCount($x_start, $y_start, $width = 50, $height = 22) ;  -> Gets troop amount on Attack Screen for non-selected troop kind
+; troop amount "x12" on the attack bar, $x_start = middle of the "x". Own glyphs first (Nov 2026, 127 counts of 26 battles:
+; template 113, glyphs 127; the template missed "x1" / "x2" of spells with an event label, the amount then was 1)
+Func getTroopCount($x_start, $y_start, $width = 50, $height = 22)
+	Local $iX = $x_start - 12, $sGlyph = ReadWhiteNumber($iX, $y_start + 2, _Min(56, 860 - $iX), 18, 4)
+	If StringRegExp($sGlyph, "^x\d{1,3}$") Then Return StringTrimLeft($sGlyph, 1)
 	Return StringReplace(getOcrAndCapture("coc-troopcount", $x_start, $y_start, $width, $height, True), "-", "")
 EndFunc   ;==>getTroopCountSmall
 
@@ -179,7 +339,6 @@ Func TestAllOCR($xStart = 0, $yStart = 0, $ilength = 200, $iheight = 50)
 	EndIf
 EndFunc
 
-;TestOCRTroopCap(0, 320)
 Func TestOCRTroopCap($iStart = 0, $iCount = 10, $path = "D:\OCRTool\TestImages\DebugOCR\", $iSleep = 800)
 	
 	Local $sRet = "", $sRet1 = "", $sRet2 = "", $aRet, $s1 = ""
@@ -214,7 +373,11 @@ Func getOcrSpaceCastleDonate($x_start, $y_start) ;  -> Get the number of troops 
 	Return getOcrAndCapture("coc-totalreq", $x_start, $y_start, 50, 13, True)
 EndFunc   ;==>getOcrSpaceCastleDonate
 
-Func getOcrOverAllDamage($x_start, $y_start) ;  -> Get the Overall Damage %
+; overall damage "58%" of the battle. Own glyphs first (Nov 2026, 120 battle screenshots: template empty on 12 shown
+; values, glyphs read 10 of them; digits that touch are refused and the template reads them)
+Func getOcrOverAllDamage($x_start, $y_start)
+	Local $sGlyph = ReadWhiteNumber($x_start, $y_start, 66, 25)
+	If StringRegExp($sGlyph, "^\d{1,3}%$") Then Return StringTrimRight($sGlyph, 1)
 	Return getOcrAndCapture("coc-overalldamage", $x_start, $y_start, 55, 25, True)
 EndFunc   ;==>getOcrOverAllDamage
 
@@ -233,10 +396,6 @@ EndFunc   ;==>getBuilderLeastUpgradeTime
 Func getBuilderMenuCost($x_start, $y_start) ;  -> Get least upgradetime on builder menu
 	Return getOcrAndCapture("coc-buildermenu-cost", $x_start, $y_start, 120, 18, True)
 EndFunc   ;==>getBuilderBuilderMenuCost
-
-Func getOresValues($x_start, $y_start, $ilength = 60) ;  -> Get least upgradetime on builder menu
-	Return StringReplace(getOcrAndCapture("coc-bonus", $x_start, $y_start, $ilength, 20, True), "-", "")
-EndFunc   ;==>getOresValues
 
 Func getBuildingName($x_start, $y_start, $length = 180, $height = 25) ;  -> Get BuildingName on builder menu
 	Local $BuildingName = "", $Count = 1
@@ -260,7 +419,6 @@ Func getBuildingName($x_start, $y_start, $length = 180, $height = 25) ;  -> Get 
 EndFunc   ;==>getBuildingName
 
 Func ReplaceQuantityX(ByRef $UpgradeName)
-	;If $g_bDebugSetLog Then SetLog("ReplaceQuantityX Before :" & $UpgradeName, $COLOR_INFO)
 	If StringRegExp($UpgradeName, "x\d{1,}") = 1 Then
 		Local $aReplace = StringRegExp($UpgradeName, "( x\d{1,})", 1)
 		If Ubound($aReplace) > 0 Then 
@@ -341,7 +499,6 @@ Func ReplaceQuantityX(ByRef $UpgradeName)
 	EndIf
 	
 	
-	;If $g_bDebugSetLog Then SetLog("ReplaceQuantityX After :" & $UpgradeName, $COLOR_SUCCESS)
 EndFunc
 
 Func getCCBuildingName($x_start, $y_start) ;  -> Get BuildingName on builder menu
@@ -438,10 +595,6 @@ EndFunc   ;==>getOcrYourScore
 Func getOcrEventTime($x_start, $y_start) ; -> Gets CheckValuesCost on Train Window
 	Return getOcrAndCapture("coc-cgevents", $x_start, $y_start, 60, 20, True)
 EndFunc   ;==>getOcrEventTime
-
-Func getRemainTLaboratory($x_start, $y_start) ; read actual time remaining in Lab for current upgrade (336,260), changed CoC v9.24 282,277
-	Return getOcrAndCapture("coc-RemainLaboratory", $x_start, $y_start, 194, 25)
-EndFunc   ;==>getRemainTLaboratory
 
 Func getRemainTHero($x_start, $y_start, $bNeedCapture = True) ; Get time remaining for hero to be ready for attack from train window, BK:443,504 AQ:504,504 GW:565:504
 	Return getOcrAndCapture("coc-remainhero", $x_start, $y_start, 55, 12, True)
@@ -759,26 +912,6 @@ Func OcrNamesInBand($x1, $y1, $x2, $y2, $iMinGap = 25, $iMinWidth = 10, $iMinWhi
 	Next
 	Return $aRet
 EndFunc   ;==>OcrNamesInBand
-
-; Find a button below a selected building by its label text (OCR) and click it.
-; For buttons without image (e.g. "Heroes" on Hero Hall). Searches the object buttons area (120,516,800,620).
-Func ClickButtonByText($sText, $bClick = True)
-	Local $aBands[3] = [588, 572, 604] ; label rows to try
-	Local $aTarget[1] = [$sText]
-	For $y In $aBands
-		Local $aNames = OcrNamesInBand(120, $y, 800, $y + 24, 18)
-		For $i = 0 To UBound($aNames) - 1
-			OcrMatchName($aNames[$i][0], $aTarget, 0.34)
-			If @extended Then
-				SetDebugLog("ClickButtonByText: found '" & $aNames[$i][0] & "' at " & $aNames[$i][1] & "," & $aNames[$i][2])
-				If $bClick Then Click($aNames[$i][1], $aNames[$i][2] - 20, 1, 0, "Button " & $sText)
-				Return True
-			EndIf
-		Next
-	Next
-	SetDebugLog("ClickButtonByText: '" & $sText & "' not found")
-	Return False
-EndFunc   ;==>ClickButtonByText
 
 Func OcrFromHBitmapDirect(ByRef Const $_hHBitmap, $sWhitelist = "", $iPSM = 7, $sTagName = "ocr", $bPreprocess = False)
 	Local $hWorkerWnd = _GetOcrWorkerHWND()

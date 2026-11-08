@@ -67,8 +67,6 @@ Func applyConfig($bRedrawAtExit = True, $TypeReadSave = "Read") ;Applies the dat
 	SetDebugLog("ApplyConfig Village Misc")
 	ApplyConfig_600_6($TypeReadSave)
 	; <><><><> Village / Achievements <><><><>
-	;SetDebugLog("ApplyConfig Village Achievements")
-	;ApplyConfig_600_9($TypeReadSave)
 	; <><><><> Village / Donate - Request <><><><>
 	SetDebugLog("ApplyConfig Village Donate - Request")
 	ApplyConfig_600_11($TypeReadSave)
@@ -1012,8 +1010,6 @@ Func ApplyConfig_600_16($TypeReadSave)
 	Switch $TypeReadSave
 		Case "Read"
 			For $iz = 0 To UBound($g_avBuildingUpgrades, 1) - 1 ; Apply the buildings upgrade variable to GUI
-				;SetDebugLog("Setting image to " & $g_aiPicUpgradeStatus[$iz])
-				;$eIcnTroops=43, $eIcnGreenLight=69, $eIcnRedLight=71 or $eIcnYellowLight=73
 				;I have no idea why this crap is necessary...
 				$j=$eIcnRedLight
 				if $g_aiPicUpgradeStatus[$iz]=$eIcnYellowLight Then $j=$eIcnYellowLight
@@ -1906,7 +1902,6 @@ Func ApplyConfig_600_35_1($TypeReadSave)
 			_GUICtrlComboBox_SetCurSel($g_hCmbAlignmentOptions, $g_iAutoAlignPosition)
 			GUICtrlSetData($g_hTxtAlignOffsetX, $g_iAutoAlignOffsetX)
 			GUICtrlSetData($g_hTxtAlignOffsetY, $g_iAutoAlignOffsetY)
-			;GUICtrlSetState($g_hChkUpdatingWhenMinimized, $g_bUpdatingWhenMinimized ? $GUI_CHECKED : $GUI_UNCHECKED)
 			GUICtrlSetState($g_hChkBotCustomTitleBarClick, ((BitAND($g_iBotDesignFlags, 1)) ? ($GUI_CHECKED) : ($GUI_UNCHECKED)))
 			GUICtrlSetState($g_hChkBotAutoSlideClick, ((BitAND($g_iBotDesignFlags, 2)) ? ($GUI_CHECKED) : ($GUI_UNCHECKED)))
 			GUICtrlSetState($g_hChkHideWhenMinimized, $g_bHideWhenMinimized ? $GUI_CHECKED : $GUI_UNCHECKED)
@@ -1941,7 +1936,6 @@ Func ApplyConfig_600_35_1($TypeReadSave)
 			$g_iAutoAlignPosition = _GUICtrlComboBox_GetCurSel($g_hCmbAlignmentOptions)
 			$g_iAutoAlignOffsetX = GUICtrlRead($g_hTxtAlignOffsetX)
 			$g_iAutoAlignOffsetY = GUICtrlRead($g_hTxtAlignOffsetY)
-			;$g_bUpdatingWhenMinimized = GUICtrlRead($g_hChkUpdatingWhenMinimized) = $GUI_CHECKED ? 1 : 0 ; disabled as is must be always on
 			$g_iBotDesignFlags = BitOR(BitAND($g_iBotDesignFlags, BitNOT(1)), ((GUICtrlRead($g_hChkBotCustomTitleBarClick) = $GUI_CHECKED) ? (1) : (0)))
 			$g_iBotDesignFlags = BitOR(BitAND($g_iBotDesignFlags, BitNOT(2)), ((GUICtrlRead($g_hChkBotAutoSlideClick) = $GUI_CHECKED) ? (2) : (0)))
 			$g_bHideWhenMinimized = (GUICtrlRead($g_hChkHideWhenMinimized) = $GUI_CHECKED)

@@ -27,31 +27,6 @@ Func ReadTroopQuantity($iSlotNumber, $bCheckSelectedSlot = False, $bNeedNewCaptu
 	Return Number($iAmount)
 EndFunc   ;==>ReadTroopQuantity
 
-Func UpdateTroopQuantity($sTroopName, $bNeedNewCapture = Default)
-	If Not $bNeedNewCapture Then $bNeedNewCapture = True
-	If $bNeedNewCapture Then
-		_CaptureRegion2()
-	EndIf
-
-	; Get the integer index of the troop name specified
-	Local $iTroopIndex = TroopIndexLookup($sTroopName)
-	If $iTroopIndex = -1 Then
-		SetLog("'UpdateTroopQuantity' troop name '" & $sTroopName & "' is unrecognized.")
-		Return
-	EndIf
-
-	Local $iFoundAt = _ArraySearch($g_avAttackTroops, $iTroopIndex)
-	If $iFoundAt = -1 Then
-		SetLog("Couldn't find '" & $sTroopName & "' in $g_avAttackTroops", $COLOR_ERROR)
-	EndIf
-
-	If Not $g_bRunState Then Return
-	Local $iQuantity = ReadTroopQuantity($iFoundAt, True, Not $bNeedNewCapture)
-	$g_avAttackTroops[$iFoundAt][1] = $iQuantity
-
-	Return $iFoundAt ; Return Troop Position in the Array, will be the slot of Troop in Attack bar
-EndFunc   ;==>UpdateTroopQuantity
-
 Func IsSlotSelected($iSlotIndex, $bNeedNewCapture = Default)
 	; $iSlotIndex Starts from 0
 	If Not $bNeedNewCapture Then $bNeedNewCapture = True

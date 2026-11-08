@@ -233,7 +233,6 @@ Func CheckQueueTroopAndTrainRemain($ArmyCamp = Default) ;GetCurrentTroop(95, 163
 		If _Sleep(1500) Then Return
 		$ArmyCamp = GetCurrentTroop(95, 163)
 		SetLog("After excess troop queue: " & $ArmyCamp[0] & "/" & $ArmyCamp[1] * 2, $COLOR_DEBUG1)
-		;Return True
 	EndIf
 	
 	If $ArmyCamp[0] < $ArmyCamp[1] * 2 Then
@@ -265,7 +264,6 @@ Func CheckQueueSpellAndTrainRemain($ArmyCamp = Default, $bDebug = False)
 	Local $iTotalQueue = 0
 	SetLog("Checking spell queue: " & $ArmyCamp[0] & "/" & $ArmyCamp[1] * 2, $COLOR_DEBUG1)
 	
-	;CheckQueueSpells(True, True, FindxQueueStart())
 	Local $aiQueueSpells = CheckQueueSpells(True, $bDebug, FindxQueueStart())
 	If Not IsArray($aiQueueSpells) Then Return False
 	For $i = 0 To UBound($aiQueueSpells) - 1
@@ -277,7 +275,6 @@ Func CheckQueueSpellAndTrainRemain($ArmyCamp = Default, $bDebug = False)
 	
 	;check wrong camp utilization
 	If $ArmyCamp[1] <> $g_iTotalSpellValue Then 
-		;SetLog("$ArmyCamp[1] <> $g_iTotalSpellValue", $COLOR_ERROR)
 		Local $countSpell = 0
 		For $i = 0 To UBound($g_aiArmyCompSpells) - 1
 			$countSpell += $g_aiArmyCompSpells[$i]
@@ -311,7 +308,6 @@ Func CheckQueueSpellAndTrainRemain($ArmyCamp = Default, $bDebug = False)
 		If _Sleep(1500) Then Return
 		$ArmyCamp = GetCurrentTroop(95, 163)
 		SetLog("After excess troop queue: " & $ArmyCamp[0] & "/" & $ArmyCamp[1] * 2, $COLOR_DEBUG1)
-		;Return True
 	EndIf
 	
 	If $ArmyCamp[0] < $ArmyCamp[1] * 2 Then
@@ -611,7 +607,6 @@ Func DoubleTrainTroop($bTest = False)
 		If _Sleep(50) Then Return
 		If Not $g_bRunState Then Return
 		
-		;If $g_bDebugSetlog Then 
 		SetLog(_ArrayToString($TroopCamp), $COLOR_DEBUG1)
 		SetLog("DoubleTrainTroop: " & $TroopCamp[0] & "/" & $TroopCamp[1] * 2 & " remain space:" & $TroopCamp[2], $COLOR_DEBUG1)
 		If $tmpCamp = $TroopCamp[2] Then ExitLoop
@@ -624,9 +619,6 @@ Func DoubleTrainTroop($bTest = False)
 			Case $TroopCamp[0] = $TroopCamp[3]
 				SetLog("Cur = Max, Skip", $COLOR_DEBUG1)
 				If $bTest Then ContinueLoop
-				;If IsNormalTroopTrain() Then
-				;	If Not CheckQueueTroopAndTrainRemain() Then ExitLoop
-				;EndIf
 			Case $TroopCamp[0] = 0 And $TroopCamp[1] = $TroopCamp[2]; 0/600 (empty troop camp)
 				SetLog("TroopCamp[0] = 0, TrainFullTroop()", $COLOR_DEBUG1)
 				If $bTest Then ContinueLoop

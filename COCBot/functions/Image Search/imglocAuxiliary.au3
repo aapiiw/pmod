@@ -20,7 +20,6 @@ Func decodeMultipleCoords($coords, $iDedupX = Default, $iDedupY = Default, $iSor
 	;returns array of N coordinates [0=x, 1=y][0=x1, 1=y1]
 	Local $retCoords, $c
 	Local $pOff = 0
-	;	SetDebugLog("**decodeMultipleCoords: " & $coords, $COLOR_DEBUG)
 	Local $aCoordsSplit = StringSplit($coords, "|", $STR_NOCOUNT)
 	If StringInStr($aCoordsSplit[0], ",") > 0 Then
 		Local $retCoords[UBound($aCoordsSplit)]
@@ -120,7 +119,6 @@ Func checkImglocError(ByRef $imglocvalue, $funcName, $sTileSource = "", $sImageA
 		ElseIf StringLeft($imglocvalue[0], 2) = "-2" Then ;critical error
 			SetLog($funcName & " - Imgloc DLL Critical Error", $COLOR_ERROR)
 			SetLog(StringMid($imglocvalue[0], 4), $COLOR_ERROR)
-			;BotStop() ; stop bot on critical errors
 			; Restart Bot on critical errors
 			SetLog("Restart bot in 3 Minutes...", $COLOR_GREEN)
 			If _SleepStatus(180000) = False Then
@@ -418,7 +416,6 @@ Func GetDeployableNextTo($sPoints, $distance = 3, $redlineoverride = "")
 	If $error Then
 		_logErrorDLLCall($g_sLibMyBotPath, $error)
 		SetDebugLog(" imgloc DLL Error imgloc " & $error & " --- " & $extError)
-		;SetError(2, $extError, "") ; Set external error code = 2 for DLL error
 		Return ""
 	EndIf
 
@@ -426,22 +423,6 @@ Func GetDeployableNextTo($sPoints, $distance = 3, $redlineoverride = "")
 	SetDebugLog("GetDeployableNextTo : " & $sPoints & ", dist. = " & $distance & " : " & $result[0], $COLOR_ORANGE)
 	Return $result[0]
 EndFunc   ;==>GetDeployableNextTo
-
-Func GetOffsetRedline($sArea = "TL", $distance = 3)
-	Local $result = DllCall($g_hLibMyBot, "str", "GetOffSetRedline", "str", $sArea, "int", $distance)
-	Local $error = @error ; Store error values as they reset at next function call
-	Local $extError = @extended
-	If $error Then
-		_logErrorDLLCall($g_sLibMyBotPath, $error)
-		SetDebugLog(" imgloc DLL Error imgloc " & $error & " --- " & $extError)
-		;SetError(2, $extError, "") ; Set external error code = 2 for DLL error
-		Return ""
-	EndIf
-
-	If UBound($result) = 0 Then Return ""
-	SetDebugLog("GetOffSetRedline : " & $sArea & ", dist. = " & $distance & " : " & $result[0], $COLOR_ORANGE)
-	Return $result[0]
-EndFunc   ;==>GetOffsetRedline
 
 Func findMultiple($directory, $sCocDiamond, $redLines, $minLevel = 0, $maxLevel = 1000, $maxReturnPoints = 0, $returnProps = "objectname,objectlevel,objectpoints", $bForceCapture = True)
 	; same has findButton, but allow custom area instead of button area decoding
@@ -579,22 +560,8 @@ Func GetDiamondFromRect($rect)
 	Return $returnvalue
 EndFunc   ;==>GetDiamondFromRect
 
-Func GetDiamondFromRect2($iX1 = -1, $iY1 = -1, $iX2 = -1, $iY2 = -1)
-	If $iX1 = -1 Or $iX2 = -1 Or $iY1 = -1 Or $iY2 = -1 Then
-		SetLog("GetDiamondFromRect2: One or more bad input coordinates!", $COLOR_ERROR)
-		Return ""
-	EndIf
-
-	Local $sReturnDiamond = ""
-	$sReturnDiamond = $iX1 & "," & $iY1 & "|" & $iX2 & "," & $iY1 & "|" & $iX2 & "," & $iY2 & "|" & $iX1 & "," & $iY2
-	Return $sReturnDiamond
-EndFunc   ;==>GetDiamondFromRect2
-
 Func GetDiamondFromArray($aRectArray)
 	;Recieves $aArray[0] = StartX
-	;		  $aArray[1] = StartY
-	;		  $aArray[2] = EndX
-	;		  $aArray[3] = EndY
 
 	If UBound($aRectArray, 1) < 4 Then
 		SetDebugLog("GetDiamondFromArray: Bad Input Array!", $COLOR_ERROR)
@@ -612,68 +579,6 @@ Func GetDiamondFromArray($aRectArray)
 	Return $sReturnDiamond
 EndFunc   ;==>GetDiamondFromArray
 
-Func FindImageInPlace($sImageName, $sImageTile, $place, $bForceCaptureRegion = True, $AndroidTag = Default)
-	;creates a reduced capture of the place area a finds the image in that area
-	;returns string with X,Y of ACTUALL FULL SCREEN coordinates or Empty if not found
-	SetDebugLog("FindImageInPlace : > " & $sImageName & " - " & $sImageTile & " - " & $place, $COLOR_INFO)
-	Local $returnvalue = ""
-	Local $aPlaces = GetRectArray($place)
-	Local $sImageArea = GetDiamondFromRect($aPlaces)
-	If $bForceCaptureRegion = True Then
-		$sImageArea = "FV"
-		_CaptureRegion2(Number($aPlaces[0]), Number($aPlaces[1]), Number($aPlaces[2]), Number($aPlaces[3]))
-	EndIf
-	Local $coords = findImage($sImageName, $sImageTile, $sImageArea, 1, False, $AndroidTag) ; reduce capture full image
-	Local $aCoords = decodeSingleCoord($coords)
-	If UBound($aCoords) < 2 Then
-		SetDebugLog("FindImageInPlace : " & $sImageName & " NOT Found", $COLOR_INFO)
-		Return ""
-	EndIf
-	If $bForceCaptureRegion Then
-		$returnvalue = Number($aCoords[0]) + Number($aPlaces[0]) & "," & Number($aCoords[1]) + Number($aPlaces[1])
-	Else
-		$returnvalue = Number($aCoords[0]) & "," & Number($aCoords[1])
-	EndIf
-	SetDebugLog("FindImageInPlace : < " & $sImageName & " Found in " & $returnvalue, $COLOR_INFO)
-	Return $returnvalue
-EndFunc   ;==>FindImageInPlace
-
-; Same as FindImageInPlace but takes individual coords instead of a string
-Func FindImageInPlace2($sImageName, $sImageTile, $iX1 = -1, $iY1 = -1, $iX2 = -1, $iY2 = -1, $bForceCaptureRegion = True, $AndroidTag = Default)
-	;creates a reduced capture of the place area a finds the image in that area
-	;returns string with X,Y of ACTUALL FULL SCREEN coordinates or Empty if not found
-	If $g_bDebugSetlog Then SetDebugLog("FindImageInPlace2 : > " & $sImageName & " - " & $sImageTile, $COLOR_INFO)
-
-	If $iX1 = -1 Or $iX2 = -1 Or $iY1 = -1 Or $iY2 = -1 Then
-		SetLog("FindImageInPlace2 : One or more bad input coordinates!", $COLOR_ERROR)
-		Return ""
-	EndIf
-
-	Local $returnvalue = ""
-	;Local $aPlaces = GetRectArray($place)
-	Local $sImageArea = $iX1 & "," & $iY1 & "|" & $iX2 & "," & $iY1 & "|" & $iX2 & "," & $iY2 & "|" & $iX1 & "," & $iY2
-	If $bForceCaptureRegion = True Then
-		$sImageArea = "FV"
-		_CaptureRegion2(Number($iX1), Number($iY1), Number($iX2), Number($iY2))
-	EndIf
-	Local $coords = findImage($sImageName, $sImageTile, $sImageArea, 1, False, $AndroidTag) ; reduce capture full image
-	Local $aCoords = decodeSingleCoord($coords)
-	If UBound($aCoords) < 2 Then
-		If $g_bDebugSetlog Then SetDebugLog("FindImageInPlace : " & $sImageName & " NOT Found", $COLOR_INFO)
-		Return ""
-	EndIf
-	If $bForceCaptureRegion Then
-		$returnvalue = Number($aCoords[0]) + Number($iX1) & "," & Number($aCoords[1]) + Number($iY1)
-	Else
-		$returnvalue = Number($aCoords[0]) & "," & Number($aCoords[1])
-	EndIf
-	If $g_bDebugSetlog Then SetDebugLog("FindImageInPlace : < " & $sImageName & " Found in " & $returnvalue, $COLOR_INFO)
-
-	;	SetLog("FindImageInPlace : < " & $sImageName & " Found in " & $returnvalue, $COLOR_INFO)
-
-	Return $returnvalue
-EndFunc   ;==>FindImageInPlace2
-
 Func SearchRedLines($sCocDiamond = "ECD")
 	If $g_sImglocRedline <> "" Then Return $g_sImglocRedline
 	Local $result = DllCallMyBot("SearchRedLines", "handle", $g_hHBitmap2, "str", $sCocDiamond)
@@ -682,7 +587,6 @@ Func SearchRedLines($sCocDiamond = "ECD")
 	If $error Then
 		_logErrorDLLCall($g_sLibMyBotPath, $error)
 		SetDebugLog(" imgloc DLL Error : " & $error & " --- " & $extError)
-		;SetError(2, $extError) ; Set external error code = 2 for DLL error
 		Return ""
 	EndIf
 	If checkImglocError($result, "SearchRedLines") = True Then
@@ -715,12 +619,10 @@ Func RedlineOffSetMod($sXY, $iOffset = 2, $iDistance = 5)
 	Local $sRet = "", $iXOffset = 0, $iYOffset = 0, $sArea = ""
 	Local $aTmpXYTL[2] = [0, 0], $aTmpXYBL[2] = [0, 0], $aTmpXYBR[2] = [0, 0], $aTmpXYTR[2] = [0, 0]
 	Local $aRet = StringSplit($sXY, "|", $STR_NOCOUNT)
-	;SetLog("aRet = " & _ArrayToString($aRet))
 	If IsArray($aRet) And Ubound($aRet) > 0 Then
 		_ArraySort($aRet, 0, 0, 0, 0) ;sort by x
 		For $i = 0 To UBound($aRet) - 1
 			Local $aXY = StringSplit($aRet[$i], ",", $STR_NOCOUNT)
-			;SetLog("aXY = " & _ArrayToString($aXY, ","))
 			If IsArray($aXY) And UBound($aXY) = 2 Then
 				$sArea = "->"
 				$sArea = GetPixelSectionMod($aXY[0], $aXY[1])
@@ -729,7 +631,6 @@ Func RedlineOffSetMod($sXY, $iOffset = 2, $iDistance = 5)
 						$iXOffset = Int($aXY[0]) - $iOffset
 						$iYOffset = Int($aXY[1]) - $iOffset
 						If Abs(Int($aXY[0]) - Int($aTmpXYTL[0])) < $iDistance Then
-						;If GetPixelDistance($aXY, $aTmpXYTL) < $iDistance Then 
 							If $g_bDebugSetlog Then SetLog("=! " & $sArea & " [" & _ArrayToString($aXY, ",") & "] < " & $iDistance & " -> [" & _ArrayToString($aTmpXYTL) & "]", $COLOR_ACTION)
 							ContinueLoop
 						EndIf
@@ -738,7 +639,6 @@ Func RedlineOffSetMod($sXY, $iOffset = 2, $iDistance = 5)
 						$iXOffset = Int($aXY[0]) - $iOffset
 						$iYOffset = Int($aXY[1]) + $iOffset
 						If Abs(Int($aXY[0]) - Int($aTmpXYBL[0])) < $iDistance Then
-						;If GetPixelDistance($aXY, $aTmpXYBL) < $iDistance Then 
 							If $g_bDebugSetlog Then SetLog("=! " & $sArea & " [" & _ArrayToString($aXY, ",") & "] < " & $iDistance & " -> [" & _ArrayToString($aTmpXYBL) & "]", $COLOR_ACTION)
 							ContinueLoop
 						EndIf
@@ -747,7 +647,6 @@ Func RedlineOffSetMod($sXY, $iOffset = 2, $iDistance = 5)
 						$iXOffset = Int($aXY[0]) + $iOffset
 						$iYOffset = Int($aXY[1]) + $iOffset
 						If Abs(Int($aXY[0]) - Int($aTmpXYBR[0])) < $iDistance Then
-						;If GetPixelDistance($aXY, $aTmpXYBR) < $iDistance Then 
 							If $g_bDebugSetlog Then SetLog("=! " & $sArea & " [" & _ArrayToString($aXY, ",") & "] < " & $iDistance & " -> [" & _ArrayToString($aTmpXYBR) & "]", $COLOR_ACTION)
 							ContinueLoop
 						EndIf
@@ -756,7 +655,6 @@ Func RedlineOffSetMod($sXY, $iOffset = 2, $iDistance = 5)
 						$iXOffset = Int($aXY[0]) + $iOffset
 						$iYOffset = Int($aXY[1]) - $iOffset
 						If Abs(Int($aXY[0]) - Int($aTmpXYTR[0])) < $iDistance Then
-						;If GetPixelDistance($aXY, $aTmpXYTR) < $iDistance Then 
 							If $g_bDebugSetlog Then SetLog("=! " & $sArea & " [" & _ArrayToString($aXY, ",") & "] < " & $iDistance & " -> [" & _ArrayToString($aTmpXYTR) & "]", $COLOR_ACTION)
 							ContinueLoop
 						EndIf
@@ -883,32 +781,6 @@ Func SearchRedLinesModMultipleTimes($iCount = 3, $iDelay = 100)
 		$g_hHBitmap2 = $g_hHBitmap2_old
 	EndIf
 	
-	;_CaptureRegion2()
-	;Local $EditedImage = _GDIPlus_BitmapCreateFromHBITMAP($g_hHBitmap2)
-	;Local $hGraphic = _GDIPlus_ImageGetGraphicsContext($EditedImage)
-	;Local $hPenMagenta = _GDIPlus_PenCreate(0xFFFF00F6, 2)
-	;Local $pixel
-	;Local $aPoints = StringSplit($g_sImglocRedline, "|", $STR_NOCOUNT)
-	;
-	;For $sPoint In $aPoints
-	;	Local $pixel = GetPixel($sPoint, ",")
-	;	If UBound($pixel) > 1 Then
-	;		_GDIPlus_GraphicsDrawEllipse($hGraphic, $pixel[0]-2, $pixel[1]-2, 2, 2, $hPenMagenta)
-	;	EndIf
-	;Next
-	;
-	;Local $Date = @YEAR & "-" & @MON & "-" & @MDAY
-	;Local $Time = @HOUR & "." & @MIN & "." & @SEC
-	;Local $sAttackType = ($g_iMatchMode = $DB ? "DB" : "LB")
-	;Local $filename = $g_sProfileTempDebugPath & String($sAttackType & "_AttackDebug_" & DetectScenery($g_aVillageSize[6]) & "_" & $Date & "_" & $Time) & ".png"
-	;_GDIPlus_ImageSaveToFile($EditedImage, $filename)
-	;If @error Then SetLog("Debug Image save error: " & @extended, $COLOR_ERROR)
-	;SetDebugLog("Attack CSV image saved: " & $filename)
-	;
-	;_GDIPlus_PenDispose($hPenMagenta)
-	;_GDIPlus_GraphicsDispose($hGraphic)
-	;_GDIPlus_BitmapDispose($EditedImage)
-	;ShellExecute($filename)
 	
 	$g_sImglocRedline = RedlineOffSetMod($g_sImglocRedline)
 	Return $g_sImglocRedline
@@ -989,15 +861,3 @@ Func GetDummyRectangle($sCoords, $ndistance)
 	Local $aCoords = StringSplit($sCoords, ",", $STR_NOCOUNT)
 	Return Number($aCoords[0]) - $ndistance & "," & Number($aCoords[1]) - $ndistance & "," & Number($aCoords[0]) + $ndistance & "," & Number($aCoords[1]) + $ndistance
 EndFunc   ;==>GetDummyRectangle
-
-Func ImgLogDebugProps($result)
-	If UBound($result) < 1 Then Return False
-	Local $resultArr = StringSplit($result[0], "|", $STR_NOCOUNT)
-	Local $returnData = StringSplit("objectname,objectlevel,objectpoints", ",", $STR_NOCOUNT)
-	For $rs = 0 To UBound($resultArr) - 1
-		For $rD = 0 To UBound($returnData) - 1 ; cycle props
-			Local $returnLine = RetrieveImglocProperty($resultArr[$rs], $returnData[$rD])
-			SetLog("ImgLogDebugProps : " & $resultArr[$rs] & "->" & $returnData[$rD] & " -> " & $returnLine)
-		Next
-	Next
-EndFunc   ;==>ImgLogDebugProps

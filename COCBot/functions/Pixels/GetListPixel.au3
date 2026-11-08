@@ -65,18 +65,3 @@ Func GetPixelListDistance(Const $PixelArray, Const $iMaxAllowedPixelDistance)
 	Next
 	Return $dTotal
 EndFunc   ;==>GetPixelListDistance
-
-; USES OLD OPENCV DETECTION
-Func GetLocationItem($functionName)
-	If $g_bDebugSetlog Or $g_bDebugBuildingPos Then
-		Local $hTimer = __TimerInit()
-		SetLog("GetLocationItem(" & $functionName & ")", $COLOR_DEBUG)
-	EndIf
-	Local $resultHere = DllCall($g_hLibMyBot, "str", $functionName, "ptr", $g_hHBitmap2)
-	If UBound($resultHere) > 0 Then
-		If $g_bDebugBuildingPos Then SetLog("#*# " & $functionName & ": " & $resultHere[0] & "calc in " & Round(__TimerDiff($hTimer) / 1000, 2) & " seconds ", $COLOR_DEBUG1)
-		Return GetListPixel($resultHere[0])
-	Else
-		If $g_bDebugBuildingPos Then SetLog("#*# " & $functionName & ": NONE calc in " & Round(__TimerDiff($hTimer) / 1000, 2) & " seconds ", $COLOR_DEBUG1)
-	EndIf
-EndFunc   ;==>GetLocationItem

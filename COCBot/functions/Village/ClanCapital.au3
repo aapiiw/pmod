@@ -163,10 +163,8 @@ Func ClanCapitalReport($SetLog = True)
 			SkipChat()
 			SwitchToCapitalMain()
 		EndIf
-		;If Number($iAttack) > 0 Then NotifyPushToTelegram($g_sProfileCurrentName & " have " & $iAttack & " Available attack on Capital Raid Weekend")
 	EndIf
 
-	;If $g_bChkStartWeekendRaid Then StartRaidWeekend()
 EndFunc
 
 Func OpenForgeWindow()
@@ -465,7 +463,6 @@ Func IsCCBuilderMenuOpen()
 
 	Local $sTriangle
 	If _CheckPixel($aBorder0, True) Or _CheckPixel($aBorder1, True) Or _CheckPixel($aBorder2, True) Or _CheckPixel($aBorder3, True) Then
-		;SetDebugLog("Found Border Color: " & _GetPixelColor($aBorder0[0], $aBorder0[1], True), $COLOR_ACTION)
 		$bRet = True ;got correct color for border
 	Else
 		SetDebugLog("Border Color Not Matched: " & _GetPixelColor($aBorder0[0], $aBorder0[1], True), $COLOR_ACTION)

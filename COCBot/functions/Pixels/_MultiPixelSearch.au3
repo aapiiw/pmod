@@ -59,46 +59,6 @@ Func _MultiPixelSearch($iLeft, $iTop, $iRight, $iBottom, $xSkip, $ySkip, $firstC
 	Return 0
 EndFunc   ;==>_MultiPixelSearch
 
-; rotate y first, x second: search in columns WITH Debug log when first point is found to help debug searching
-Func _MultiPixelSearchDebug($iLeft, $iTop, $iRight, $iBottom, $xSkip, $ySkip, $firstColor, $offColor, $iColorVariation)
-	_CaptureRegion($iLeft, $iTop, $iRight, $iBottom)
-	Local $sPixelColor
-	Local $offColorVariation = UBound($offColor, 2) > 3
-	Local $xRange = $iRight - $iLeft
-	Local $yRange = $iBottom - $iTop
-	If $xSkip < 0 Then
-		$xRange = Abs($xSkip)
-		$xSkip = 1
-	EndIf
-	If $ySkip < 0 Then
-		$yRange = Abs($ySkip)
-		$ySkip = 1
-	EndIf
-	For $x = 0 To $xRange Step $xSkip
-		For $y = 0 To $yRange Step $ySkip
-			$sPixelColor = _GetPixelColor($x, $y, $g_bNoCapturePixel)
-			If _ColorCheck($sPixelColor , $firstColor, $iColorVariation) Then
-				SetDebugLog("Search At Loc: " & $x+$iLeft & " , " & $y+$iTop & ", MPSDebug Pix#1: " & $sPixelColor)
-				Local $allchecked = True
-				Local $iCV = $iColorVariation
-				For $i = 0 To UBound($offColor) - 1
-					If $offColorVariation = True Then $iCV = $offColor[$i][3]
-					If _ColorCheck(_GetPixelColor($x + $offColor[$i][1], $y + $offColor[$i][2], $g_bNoCapturePixel, ">>> MPSDebug Pix#" & $i+2), Hex($offColor[$i][0], 6), $iCV) = False Then
-						$allchecked = False
-						ExitLoop
-					EndIf
-				Next
-				If $allchecked Then
-					Local $Pos[2] = [$iLeft + $x, $iTop + $y]
-					SetDebugLog("MSPDebug loc found: " & $iLeft + $x & " , " & $iTop + $y, $COLOR_DEBUG)
-					Return $Pos
-				EndIf
-			EndIf
-		Next
-	Next
-	Return 0
-EndFunc   ;==>_MultiPixelSearchDebug
-
 Func WaitforPixel($iLeft, $iTop, $iRight, $iBottom, $firstColor, $iColorVariation, $maxDelay = 10, $sSource = "WaitforPixel") ; $maxDelay is in 1/2 second
 	For $i = 1 To $maxDelay * 2
 		If _PixelSearch($iLeft, $iTop, $iRight, $iBottom, $firstColor, $iColorVariation, True, $sSource) Then Return True

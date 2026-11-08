@@ -199,7 +199,6 @@ Func _ClanGames($test = False, $bOnlyPurge = False)
 
 			Click($aAllEvent[$i][1], $aAllEvent[$i][2], 1, 100, "Click Event to Start")
 			If _Sleep(1050) Then Return
-			;_ArrayDisplay($aAllEvent)
 			Return ClickOnEvent($YourAccScore, $aiScoreLimit, $sEventName)
 		Next
 	EndIf
@@ -1008,7 +1007,6 @@ Func GetEventInfo($x, $y)
 	Local $Ret
 	
 	If $y > 270 Then $yRegion = 410
-	;If $y > 430 Then $yRegion = 440
 	
 	If $x < 405 Then $xRegion = 600
 	If $x > 405 Then $xRegion = 274
@@ -1280,7 +1278,6 @@ Func GetCGRewardList($X = 270, $OnlyClaimMax = False)
 	Local $aResult[0][4]
 	Local $aTier = QuickMIS("CNX", $g_sImgRewardTier, $X, 170, 820, 210) ;search green check on top of Tier
 	_ArraySort($aTier, 0, 0, 0, 1) ;Sort by x coord
-	;_ArrayDisplay($aTier)
 	If IsArray($aTier) And UBound($aTier) > 0 Then
 		For $i = 0 To UBound($aTier) - 1
 			If Not $g_bRunState Then Return

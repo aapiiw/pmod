@@ -109,7 +109,6 @@ Func createProfile($bCreateNew = False)
 		setupProfileComboBox()
 		setupProfile()
 		saveConfig()
-		; applyConfig()
 		setupProfileComboBox()
 		selectProfile()
 		Return FuncReturn()
@@ -232,7 +231,6 @@ Func aquireProfileMutex($sProfile = Default, $bReturnOnlyMutex = Default, $bShow
 	EndIf
 
 	; try to aquire mutex, since 7.4.4 beta 3, it's not using full pathname anymore to ensure shared_prefs with same village name is not used by different bot installs
-	; Local $hMutex_Profile = CreateMutex(StringReplace($g_sProfilePath & "\" & $sProfile, "\", "-"))
 	Local $hMutex_Profile = CreateMutex("MyBot.run-Profile-" & $sProfile)
 	If $bReturnOnlyMutex Then
 		Return $hMutex_Profile
@@ -243,7 +241,6 @@ Func aquireProfileMutex($sProfile = Default, $bReturnOnlyMutex = Default, $bShow
 	If $hMutex_Profile = 0 Then
 		; mutex already in use
 		SetLog($sMsg, $COLOR_ERROR)
-		;SetLog($sMsg, "Cannot switch to profile " & $sProfile, $COLOR_ERROR)
 		If $bShowMsgBox Then
 			MsgBox(BitOR($MB_OK, $MB_ICONINFORMATION, $MB_TOPMOST), $g_sBotTitle, $sMsg)
 		EndIf

@@ -210,7 +210,6 @@ Func EndBattleBB() ; Find if battle has ended and click okay
 	Local $bSpeedUpBattle = False
 	
 	For $i = 1 To 200
-		;SetLog("Waiting EndBattle Screen #" & $i, $COLOR_ACTION)
 		If Not $g_bRunState Then ExitLoop
 		If IsProblemAffect() Then Return
 		If $bBattleMachine Then $bBattleMachine = CheckBMLoop()
@@ -625,7 +624,6 @@ Func isInsideDiamondAttackBB($aCoords, $aaDiamond)
 	Local $DY = Abs($y - $aMiddle[1])
 
 	If ($DX / $aSize[0] + $DY / $aSize[1] <= 1) Then
-		;If $g_bChkDebugAttackBB Then SetDebugLog("isInsideDiamondAttackBB: " & "[" & $x & "," & $y & "] Coord Inside Village", $COLOR_INFO)
 		Return True ; Inside Village
 	Else
 		If $g_bChkDebugAttackBB Then SetDebugLog("isInsideDiamondAttackBB: " & "[" & $x & "," & $y & "] Coord Outside Village", $COLOR_DEBUG)
@@ -661,7 +659,6 @@ Func SearchRedLinesBB($bSecondAttack = False)
 	
 	If IsProblemAffect() Then Return
 	SetLog("Search BBDropPoint result : " & UBound($aResult) & " Coords", $COLOR_INFO)
-	;_ArrayDisplay($aResult)
 
 	Local $XMiddle = 445, $YMiddle = 340
 	Local $aaCoords[0][4], $iSide
@@ -676,13 +673,11 @@ Func SearchRedLinesBB($bSecondAttack = False)
 		_ArrayAdd($aaCoords, $iSide & "|" & $aResult[$i][0] & "|" & $aResult[$i][1] & "|" & $aResult[$i][2])
 	Next
 	SetLog("Cleared BBDropPoint result : " & UBound($aaCoords) & " Coords", $COLOR_INFO)
-	;If $g_bChkDebugAttackBB Then DebugAttackBBImage($aaCoords)
 	Return $aaCoords
 EndFunc
 
 Func GetBBDropPoint($bSecondAttack = False)
 
-	;SetVersusBHToMid()
 	Local $hTimer = TimerInit()
 	SetLog("GetBBDropPoint start", $COLOR_ACTION)
 	$g_bAttackActive = True
@@ -692,7 +687,6 @@ Func GetBBDropPoint($bSecondAttack = False)
 
 	Local $aDPResult = SortBBDP($aaCoords)
 	SetLog("BBDropPoint after sort : " & UBound($aDPResult) & " Coords", $COLOR_INFO)
-	;_ArrayDisplay($aDPResult)
 
 	If IsProblemAffect() Then Return
 	ResumeAndroid()
@@ -711,7 +705,6 @@ Func GetBBDropPoint($bSecondAttack = False)
 		EndSwitch
 	EndIf
 	
-	;If $g_bIsBBevent Then FindClanGamesBuildingTarget()
 	
 	If $g_bChkDebugAttackBB Then SetLog("MainSide = " & $g_BBDPSide)
 	If $g_bChkDebugAttackBB Then DebugAttackBBImage($aDPResult, $g_BBDPSide)

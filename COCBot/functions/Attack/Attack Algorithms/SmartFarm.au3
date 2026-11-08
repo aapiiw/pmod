@@ -24,7 +24,6 @@ Func TestSmartFarm()
 	SetLog("Starting the SmartFarm Attack Test()", $COLOR_INFO)
 
 	CheckMainScreen(False, $g_bStayOnBuilderBase, "TestSmartFarm")
-	;CheckIfArmyIsReady()
 	ClickAway()
 	If _Sleep(100) Then Return FuncReturn()
 	If _Sleep(100) Then Return
@@ -240,7 +239,6 @@ Func SmartFarmDetection()
 				$sPoint &= _ArrayToString($aPoint[$p]) & ","
 			Next
 			If StringRight($sPoint, 1) = "," Then $sPoint = StringTrimRight($sPoint, 1)
-			;SetDebugLog("$sPoint : " & $sPoint)
 			
 			Local $tmparray[1][6] = [[$aXY[0], $aXY[1], $sInOut, $sSide, $sPoint, $aAll[$i][0] & "_" & $aAll[$i][3]]]
 			_ArrayAdd($aRet, $tmparray)
@@ -294,10 +292,8 @@ Func IsInsideSmallDiamond($aCoords)
 	Local $DY = Abs($y - $aMiddle[1])
 
 	If ($DX / $aSize[0] + $DY / $aSize[1] <= 1) Then
-		;If $g_bDebugSetLog Then SetDebugLog("isInsideSmallDiamond: " & "[" & $x & "," & $y & "] Coord Inside SmallDiamond", $COLOR_DEBUG1)
 		$bRet = True
 	Else
-		;If $g_bDebugSetLog Then SetDebugLog("isInsideSmallDiamond: " & "[" & $x & "," & $y & "] Coord Outside SmallDiamond", $COLOR_DEBUG1)
 		$bRet = False
 	EndIf
 	Return $bRet
@@ -382,7 +378,6 @@ Func DebugImageSmartFarm($THdetails, $aIn, $aOut, $sTime, $aBestSideToAttack)
 
 	; Store a copy of the image handle
 	Local $editedImage = $g_hBitmap
-	;Local $subDirectory = @ScriptDir & "\SmartFarm\"
 	Local $subDirectory = $g_sProfileTempDebugPath & "\SmartFarm\"
 	DirCreate($subDirectory)
 
@@ -407,12 +402,10 @@ Func DebugImageSmartFarm($THdetails, $aIn, $aOut, $sTime, $aBestSideToAttack)
 		
 		; Deploy points near Red Line
 		Local $aPoints = StringSplit($aIn[$i][4], ",", $STR_NOCOUNT)
-		;SetDebugLog("aPoints: " & _ArrayToString($aPoints))
 		If IsArray($aPoints) And UBound($aPoints) > 0 Then
 			For $p = 0 To UBound($aPoints) - 1
 				Local $aPoint = StringSplit($aPoints[$p], "|", $STR_NOCOUNT)
 				If IsArray($aPoint) And UBound($aPoint) = 2 Then
-					;SetDebugLog("aPoint: " & _ArrayToString($aPoint))
 					_GDIPlus_GraphicsDrawRect($hGraphic, $aPoint[0], $aPoint[1], 3, 3, $hPenRed)
 				EndIf
 			Next
@@ -425,12 +418,10 @@ Func DebugImageSmartFarm($THdetails, $aIn, $aOut, $sTime, $aBestSideToAttack)
 
 		; Deploy points near Red Line
 		Local $aPoints = StringSplit($aOut[$i][4], ",", $STR_NOCOUNT)
-		;SetDebugLog("aPoints: " & _ArrayToString($aPoints))
 		If IsArray($aPoints) And UBound($aPoints) > 0 Then
 			For $p = 0 To UBound($aPoints) - 1
 				Local $aPoint = StringSplit($aPoints[$p], "|", $STR_NOCOUNT)
 				If IsArray($aPoint) And UBound($aPoint) = 2 Then
-					;SetDebugLog("aPoint: " & _ArrayToString($aPoint))
 					_GDIPlus_GraphicsDrawRect($hGraphic, $aPoint[0], $aPoint[1], 3, 3, $hPenCyan)
 				EndIf
 			Next
@@ -581,7 +572,6 @@ Func AttackSmartFarm($Nside, $SIDESNAMES)
 		Next
 		$listInfoDeploy = $aTmpListInfoDeploy
 	EndIf
-	;_ArrayDisplay($listInfoDeploy, "listInfoDeploy")
 	
 	$g_bIsCCDropped = False
 	$g_aiDeployCCPosition[0] = -1
@@ -632,7 +622,6 @@ Func LaunchTroopSmartFarm($listInfoDeploy, $iCC, $iKing, $iQueen, $iWarden, $iCh
 	Local $hTimer = TimerInit()
 	
 	SetDebugLog("LaunchTroopSmartFarm with CC " & $iCC & ", K " & $iKing & ", Q " & $iQueen & ", W " & $iWarden & ", C " & $iChampion & ", M " & $iMinion & ", D " & $iDuke, $COLOR_DEBUG)
-	; $ListInfoDeploy = [Troop, No. of Sides, $WaveNb, $MaxWaveNb, $slotsPerEdge]
 	Local $listListInfoDeployTroopPixel[0]
 	Local $pixelRandomDrop[2]
 	Local $pixelRandomDropcc[2]
@@ -680,7 +669,6 @@ Func LaunchTroopSmartFarm($listInfoDeploy, $iCC, $iKing, $iQueen, $iWarden, $iCh
 				Local $arrCCorHeroes[1] = [$troopKind]
 				$listInfoDeployTroopPixel[UBound($listInfoDeployTroopPixel) - 1] = $arrCCorHeroes
 			Else
-				; $infoDropTroop = [$troop, $listInfoPixelDropTroop, $nbTroopsPerEdge, $slotsPerEdge, $number, $name]
 				Local $infoDropTroop = DropTroopSmartFarm($troop, $nbSides, $troopNb, $slotsPerEdge, $name, $SIDESNAMES)
 				$listInfoDeployTroopPixel[UBound($listInfoDeployTroopPixel) - 1] = $infoDropTroop
 			EndIf
@@ -764,12 +752,10 @@ Func DropTroopSmartFarm($troop, $nbSides, $number, $slotsPerEdge = 0, $name = ""
 	If $g_bDebugSmartFarm Then SetLog(" - " & GetSlotTroopName($troop) & " Number: " & $number & " Sides: " & $nbSides & " SlotsPerEdge: " & $slotsPerEdge)
 
 	If $nbSides = 4 Then
-		; $listInfoPixelDropTroop = [$newPixelBottomRight, $newPixelTopLeft, $newPixelBottomLeft, $newPixelTopRight]
 		ReDim $listInfoPixelDropTroop[4]
 		$listInfoPixelDropTroop = GetPixelDropTroop($troop, $number, $slotsPerEdge)
 	Else
 		;;;;;;;; HERE WILL BE THE SIDE CHOISE ;;;;;;;;;
-		; $TEMPlistInfoPixelDropTroop = [$newPixelBottomRight, $newPixelTopLeft, $newPixelBottomLeft, $newPixelTopRight]
 		Local $TEMPlistInfoPixelDropTroop = GetPixelDropTroop($troop, $nbTroopsPerEdge, $slotsPerEdge)
 
 		If StringInStr($SIDESNAMES, "|") <> 0 Then
@@ -815,33 +801,10 @@ Func GetPixelDropTroop($troop, $number, $slotsPerEdge)
 	Local $newPixelTopRight
 	Local $newPixelBottomRight
 
-	;If ($troop = $eArch Or $troop = $eSArch Or $troop = $eWiza Or $troop = $eSWiza Or $troop = $eMini Or $troop = $eSMini Or $troop = $eBarb Or $troop = $eSBarb) Then
-	;	If UBound($g_aiPixelTopLeftFurther) > 0 Then
-	;		$newPixelTopLeft = $g_aiPixelTopLeftFurther
-	;	Else
-	;		$newPixelTopLeft = $g_aiPixelTopLeft
-	;	EndIf
-	;	If UBound($g_aiPixelBottomLeftFurther) > 0 Then
-	;		$newPixelBottomLeft = $g_aiPixelBottomLeftFurther
-	;	Else
-	;		$newPixelBottomLeft = $g_aiPixelBottomLeft
-	;	EndIf
-	;	If UBound($g_aiPixelTopRightFurther) > 0 Then
-	;		$newPixelTopRight = $g_aiPixelTopRightFurther
-	;	Else
-	;		$newPixelTopRight = $g_aiPixelTopRight
-	;	EndIf
-	;	If UBound($g_aiPixelBottomRightFurther) Then
-	;		$newPixelBottomRight = $g_aiPixelBottomRightFurther
-	;	Else
-	;		$newPixelBottomRight = $g_aiPixelBottomRight
-	;	EndIf
-	;Else
 		$newPixelTopLeft = $g_aiPixelTopLeft
 		$newPixelBottomLeft = $g_aiPixelBottomLeft
 		$newPixelTopRight = $g_aiPixelTopRight
 		$newPixelBottomRight = $g_aiPixelBottomRight
-	;EndIf
 
 	$newPixelTopLeft = GetVectorPixelOnEachSide2($newPixelTopLeft, 0, $slotsPerEdge)
 	$newPixelBottomLeft = GetVectorPixelOnEachSide2($newPixelBottomLeft, 1, $slotsPerEdge)
@@ -872,7 +835,6 @@ Func GetRandomCoord($SIDESNAMES)
 	$aRet = $aDefault
 	$aLastDropPoint = _GetVectorOutZone($iSide)
 	If IsArray($aLastDropPoint) And UBound($aLastDropPoint) > 0 Then
-		;_ArraySort($aLastDropPoint, 0, 0, 0, 0)
 		Local $iMiddle = Floor(UBound($aLastDropPoint)/2)
 		$aRet = $aLastDropPoint[$iMiddle]
 		SetDebugLog("sLastSide = " & $sLastSide & ", count DropPoint = " & UBound($aLastDropPoint) & " iRandomXY = " & _ArrayToString($aRet))
@@ -966,11 +928,8 @@ Func _GetVectorOutZone($eVectorType)
 
 	For $i = 0 To $iSteps
 		Local $pixel = [Round($xMin + (($xMax - $xMin) * $i) / $iSteps), Round($yMin + (($yMax - $yMin) * $i) / $iSteps)]
-		;If $pixel[1] > 565 Then
 		;	;If $g_bDebugSetLog Then SetDebugLog("Skip vector out of zone [" & $pixel[0] & "," & $pixel[1] & "]")
-		;	ContinueLoop
 		;	;$pixel[1] = 555
-		;EndIf
 		ReDim $vectorOutZone[UBound($vectorOutZone) + 1]
 		$vectorOutZone[UBound($vectorOutZone) - 1] = $pixel
 	Next
@@ -995,7 +954,6 @@ EndFunc   ;==>_GetVectorOutZone
 ; ===============================================================================================================================
 
 Func GetVectorPixelOnEachSide2($arrPixel, $vectorDirection, $slotsPerEdge)
-	; $vectorDirection = 0 than is Xaxis , $vectorDirection = 1 than is Yaxis	
 	Local $minAdd = Random(0, Ceiling(($slotsPerEdge / 100) * 20), 1)
 	$slotsPerEdge += $minAdd
 	
@@ -1006,15 +964,11 @@ Func GetVectorPixelOnEachSide2($arrPixel, $vectorDirection, $slotsPerEdge)
 		Local $maxPixel = $arrPixel[UBound($arrPixel) - 1]
 		Local $min = $minPixel[$vectorDirection]
 		Local $max = $maxPixel[$vectorDirection]
-		;If $g_bDebugSmartFarm Then SetDebuglog("Min pixel coord: " & $min & ", Max Pixel coord: " & $max)
 		Local $posSide = Floor(($max - $min) / $slotsPerEdge)
 
 		For $i = 0 To $slotsPerEdge - 1
 			$pixelSearch[$vectorDirection] = $min + Floor(($posSide * ($i + 1)) - ($posSide / 2))
-			;Local $coordinate = ($vectorDirection = 0) ? "X" : "Y"
-			;If $g_bDebugSmartFarm Then SetDebuglog("Deploy point number[" & $i + 1 & "] at " &  $coordinate & ": " & $min + Floor(($posSide * ($i + 1)) - ($posSide / 2)))
 			Local $arrPixelCloser = _FindPixelCloser($arrPixel, $pixelSearch, 1)
-			;If $g_bDebugSmartFarm Then SetDebuglog("Deploy point Closer[" & $i + 1 & "] at: " & _ArrayToString($arrPixelCloser[0]))
 			$vectorPixelEachSide[$i] = $arrPixelCloser[0]
 		Next
 	EndIf

@@ -84,7 +84,6 @@ Func QuickMIS($ValueReturned, $directory, $Left = 0, $Top = 0, $Right = $g_iGAME
 	EndIf
 
 	If IsArray($Res) Then
-		;_ArrayDisplay($Res)
 		If $g_bDebugSetlog Then SetDebugLog("DLL Call succeeded " & $Res[0], $COLOR_PURPLE)
 
 		If $Res[0] = "" Or $Res[0] = "0" Then
@@ -106,8 +105,6 @@ Func QuickMIS($ValueReturned, $directory, $Left = 0, $Top = 0, $Right = $g_iGAME
 					Return 0
 			EndSwitch
 
-		;ElseIf StringInStr($Res[0], "-1") <> 0 Then
-		;	SetLog("DLL Error", $COLOR_ERROR)
 
 		Else
 			Switch $ValueReturned
@@ -161,7 +158,6 @@ Func QuickMIS($ValueReturned, $directory, $Left = 0, $Top = 0, $Right = $g_iGAME
 						Local $DLLRes = DllCallMyBot("GetProperty", "str", $KeyValue[$i], "str", "objectpoints")
 						Local $objName = StringSplit($KeyValue[$i], "_", $STR_NOCOUNT)
 						Local $xy = StringSplit($DLLRes[0], "|", $STR_NOCOUNT)
-						;SetDebugLog(_ArrayToString($xy))
 						For $j = 0 To Ubound($xy) - 1
 							If UBound(decodeSingleCoord($xy[$j])) > 1 Then 
 								Local $Tmpxy = StringSplit($xy[$j], ",", $STR_NOCOUNT)
@@ -219,7 +215,6 @@ EndFunc   ;==>QuickMIS
 
 Func DebugQuickMIS($x, $y, $DebugText = "")
 
-	;_CaptureRegion2()
 	Local $subDirectory = $g_sProfileTempDebugPath & "QuickMIS"
 	DirCreate($subDirectory)
 	Local $Date = @YEAR & "-" & @MON & "-" & @MDAY

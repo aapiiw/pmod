@@ -66,7 +66,6 @@ Func UpgradeWall($bTest = False)
 EndFunc   ;==>UpgradeWall
 
 ; select a wall from Build menu tab 1 ("Wall x N", any level) then upgrade it (with Upgrade More)
-; Return True/False = upgrade result, -1 = no wall row found (use old way)
 Func UpgradeWallBuildMenu()
 	; no Type filter: "Permanent" holds almost every building, it does not shorten the list
 	Local $sFilter = ""
@@ -146,7 +145,7 @@ Func UpgradeWallBuildMenu()
 	; Build menu stays open on the right: name and buttons move left, the wall name sits above 2 button rows
 	; (Oct 2026 screen: "Wall (Level 16)" at x 160-340, y 438-461, the default read at 242,477 was always empty)
 	Local $aInfo = BuildingInfo(60, 435)
-	If $aInfo[1] = "" Then $aInfo = BuildingInfo(60, 477)
+	If $aInfo[1] = "" Then $aInfo = BuildingInfo(60, 480)
 	If $aInfo[1] = "" Then
 		; nothing selected (28 Oct, last list page, 5 rows without a readable name: list still moving): one more try
 		SetLog("Wall: no building selected, click the row again", $COLOR_DEBUG1)
@@ -158,7 +157,7 @@ Func UpgradeWallBuildMenu()
 			ClickP($aCoord)
 			If _Sleep(1500) Then Return False
 			$aInfo = BuildingInfo(60, 435)
-			If $aInfo[1] = "" Then $aInfo = BuildingInfo(60, 477)
+			If $aInfo[1] = "" Then $aInfo = BuildingInfo(60, 480)
 		EndIf
 	EndIf
 	If $aInfo[1] <> "Wall" Then
@@ -469,7 +468,6 @@ Func DoUpgradeWall($iSelectedWallCost = 0)
 
 				Local $iCount = 1, $bPlusButtonFound = False, $iCostUpgrade = 0
 				If $iPlus10Gold > 0 Or $iPlus10Elix > 0 Then
-					;UpWallElixir($iWallCost = $g_aiWallCost[$g_iTownHallLevel - 1], $iCountPlus = 1, $UpType = "+10", $aElixButton)
 					
 					SetLog("Looking for +10 Button", $COLOR_DEBUG)
 					Switch $g_iUpgradeWallLootType
@@ -937,10 +935,8 @@ Func SearchWall(ByRef $aWallLevelFound, $bTest = False)
 			EndIf
 		Next
 		
-		;If $bTest Then _ArrayDisplay($aWall, "$aWall")
 		
 		$aDel[0] = UBound($aDel) - 1
-		;If $bTest Then _ArrayDisplay($aDel, "$sDel")
 		If UBound($aWall) > $aDel[0] Then 
 			_ArrayDelete($aWall, $aDel) ;delete wall level which same or higher than TH level
 		Else

@@ -53,39 +53,11 @@ Func PrepareAttack($pMatchMode = 0, $bRemaining = False) ;Assigns troops
 	Local $avAttackBar = GetAttackBar($bRemaining, $pMatchMode)
 	For $i = 0 To UBound($g_avAttackTroops, 1) - 1
 		Local $bClearSlot = True ; by default clear the slot, if no corresponding slot is found in attackbar detection
-		;If $bRemaining Then
 		;	; keep initial heroes to avoid possibly "losing" them when not dropped yet
 		;	;Local $bSlotDetectedAgain = UBound($avAttackBar, 1) > $i And $g_avAttackTroops[$i][0] = Number($avAttackBar[$i][0]) ; wrong, as attackbar array on remain is shorter
-		;	Local $bDropped = Default
-		;	Local $iTroopIndex = $g_avAttackTroops[$i][0]
-		;	Switch $iTroopIndex
-		;		Case $eKing
-		;			$bDropped = $g_bDropKing
-		;		Case $eQueen
-		;			$bDropped = $g_bDropQueen
-		;		Case $eWarden
-		;			$bDropped = $g_bDropWarden
-		;		Case $eChampion
-		;			$bDropped = $g_bDropChampion
-		;		Case $eMinionP
-		;			$bDropped = $g_bDropMinionP
-		;		Case $eDuke
-		;			$bDropped = $g_bDropDuke
-		;	EndSwitch
-		;	If $bDropped = False Then
-		;		SetDebugLog("Discard updating hero " & GetTroopName($g_avAttackTroops[$i][0]) & " because not dropped yet")
-		;		$iTroopNumber += $g_avAttackTroops[$i][2]
-		;		ContinueLoop
-		;	EndIf
-		;	If $bDropped = True Then
 		;		;If $bSlotDetectedAgain Then
 		;			; ok, hero was dropped, really? don't know yet... TODO add check if hero was really dropped...
 		;		;EndIf
-		;		SetDebugLog("Discard updating hero " & GetTroopName($g_avAttackTroops[$i][0]) & " because already dropped")
-		;		$iTroopNumber += $g_avAttackTroops[$i][2]
-		;		ContinueLoop
-		;	EndIf
-		;EndIf
 
 		If UBound($avAttackBar, 1) > 0 Then
 			For $j = 0 To UBound($avAttackBar, 1) - 1
@@ -155,7 +127,6 @@ EndFunc   ;==>PrepareAttack
 
 Func SelectCastleOrSiege(ByRef $iTroopIndex, $iX, $iCmbSiege)
 	SetDebugLog("iTroopIndex=" & $iTroopIndex & ", $iX=" & $iX & ", $iCmbSiege=" & $iCmbSiege)
-	;Local $hStarttime = _Timer_Init()
 	Local $aSiegeTypes[11] = [$eCastle, $eWallW, $eBattleB, $eStoneS, $eSiegeB, $eLogL, $eFlameF, $eBattleD, $eTroopL, $eSkyW, "Any"]
 
 	Local $ToUse = $aSiegeTypes[$iCmbSiege]
@@ -309,9 +280,7 @@ Func SelectCastleOrSiege(ByRef $iTroopIndex, $iX, $iCmbSiege)
 			EndIf
 			If _Sleep(200) Then Return
 		Else
-			;If $iTroopIndex <> $eCastle Then $iTroopIndex = -1 ;setting other than castle only (spesific siege or anysiege) but no switch button, will discard use of siege
 			If $ToUse = $eCastle And $iTroopIndex = $eCastle Then $iTroopIndex = $eCastle ;setting castle only, there is castle on attackbar, but no switch button, will use cc
-			;If $ToUse = $eCastle And $iTroopIndex <> $eCastle Then $iTroopIndex = -1 ;setting castle only, there is siege on attackbar, but no switch button, will discard use siege
 			SetDebugLog("ToUse=" & $ToUse & " |iTroopIndex=" & $iTroopIndex)
 			SetLog("No switch button = No CC Detected, discard Siege use", $COLOR_INFO)
 		EndIf

@@ -2,7 +2,6 @@
 ; Name ..........: _CaptureRegion
 ; Description ...: Saves a screenshot of the window into memory. Updates bitmap "$g_hBitmap" and bitmpa DC "$g_hHBitmap" Global handles
 ; Syntax ........: _CaptureRegion([$iLeft = 0[, $iTop = 0[, $iRight = $g_iGAME_WIDTH[, $iBottom = $g_iGAME_HEIGHT[, $ReturnBMP[,
-;                  $ReturnLocal_hHBitmap = False]]]]]])
 ; Parameters ....: $iLeft               - [optional] an integer value. Default is 0.
 ;                  $iTop                - [optional] an integer value. Default is 0.
 ;                  $iRight              - [optional] an integer value. Default is $g_iGAME_WIDTH.
@@ -113,7 +112,6 @@ Func _CaptureGameScreen(ByRef $_hHBitmap, Const $iLeft = 0, Const $iTop = 0, Con
 				$_hHBitmap = AndroidScreencap($iL, $iT, $iW, $iH)
 			Else
 				$SuspendMode = ResumeAndroid(False)
-				;Local $hCtrl = ControlGetHandle($g_hAndroidWindow, $g_sAppPaneName, $g_sAppClassInstance)
 				Local $hCtrl = ControlGetHandle(GetCurrentAndroidHWnD(), $g_sAppPaneName, $g_sAppClassInstance)
 				If $hCtrl = 0 Then SetLog("AndroidHandle not found, contact support", $COLOR_ERROR)
 				Local $hDC_Capture = _WinAPI_GetDC($hCtrl)
@@ -122,8 +120,6 @@ Func _CaptureGameScreen(ByRef $_hHBitmap, Const $iLeft = 0, Const $iTop = 0, Con
 				Local $hObjectOld = _WinAPI_SelectObject($hMemDC, $_hHBitmap)
 
 				Local $flags = 0
-				; $PW_CLIENTONLY = 1 ; Only the client area of the window is copied to hdcBlt. By default, the entire window is copied.
-				; $PW_RENDERFULLCONTENT = 2 ; New in Windows 8.1, suppost to capture DirectX/OpenGL screens through DWM (but didn't work for MEmu)
 				DllCall("user32.dll", "int", "PrintWindow", "hwnd", $hCtrl, "handle", $hMemDC, "int", $flags)
 				_WinAPI_SelectObject($hMemDC, $_hHBitmap)
 				_WinAPI_BitBlt($hMemDC, 0, 0, $iW, $iH, $hDC_Capture, $iL, $iT, $SRCCOPY)

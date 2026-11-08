@@ -124,8 +124,10 @@ function Start-Bot($n, $prof, $why) {
 		return
 	}
 	$out = Join-Path $Run ('bot{0}_{1:yyyyMMdd_HHmmss}.log' -f $n, $now)
+	# /nowatchdog: this script is the only supervisor. MyBot's own watchdog relaunched a crashed bot with its old profile
+	# 2 min after this script had started it with another one (7 Nov 01:27): 2 bots on one MuMu, boot loop, 18 min lost
 	Start-Process -FilePath $AutoIt -WorkingDirectory $Root -RedirectStandardOutput $out -RedirectStandardError "$out.err" `
-		-ArgumentList @('/ErrorStdOut', "`"$Root\MyBot.run.au3`"", $prof)
+		-ArgumentList @('/ErrorStdOut', "`"$Root\MyBot.run.au3`"", $prof, '/nowatchdog')
 	$Inst[$n].Started = $now; $Inst[$n].Restarts += $now; $Inst[$n].Note = ''
 	W "[$n] started with profile $prof ($why), output $out"
 	if ($why -ne 'watchdog start') { TG $n "$IcoWarn restart $prof`n$why" }

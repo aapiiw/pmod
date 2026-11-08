@@ -3,9 +3,7 @@
 ; Description ...: Maintains an in-memory array of all of MBR's ini settings, and provides _Ini_Save to write all settings in one
 ;				   FileOpen/FileClose batch
 ; Syntax ........: _Ini_Load($filename), _Ini_Save($filename), _Ini_Clear(), _Ini_Add($section, $key, $value),
-;				   _Ini_Update($section, $key, $value), _Ini_Delete($section, $key)
 ; Parameters ....: $filename = full path to config.ini file
-;				   $section = ini file section name
 ;				   $key and $value = ini file key name and value pair
 ; Return values .: NA
 ; Author ........: CodeSlinger69 (2017)
@@ -37,7 +35,6 @@ Func _Ini_Load($filename)
 				Exit
 			Else
 				$sCurrentSection = $asParts[2]
-				;SetDebugLog("New section: " & $sCurrentSection)
 			EndIf
 
 			; Key/value pair
@@ -117,7 +114,6 @@ Func _Ini_Clear()
 	$g_asIniTable = 0
 	Dim $g_asIniTable[$g_iIniLinesMax][3]
 	$g_iIniLineCount = 0
-	;SetDebugLog("Cleared Ini table")
 EndFunc   ;==>_Ini_Clear
 
 Func _Ini_Add($section, $key, $value)
@@ -149,7 +145,6 @@ Func _Ini_AddNewKeyValue($section, $key, $value)
 	EndIf
 	$g_asIniTable[$g_iIniLineCount][0] = $section & "|" & $key
 	$g_asIniTable[$g_iIniLineCount][1] = $value
-	;SetDebugLog("New key value pair: " & $g_iIniLineCount & " " & $g_asIniTable[$g_iIniLineCount][0] & "=" & $g_asIniTable[$g_iIniLineCount][1])
 	$g_iIniLineCount += 1
 EndFunc   ;==>_Ini_AddNewKeyValue
 

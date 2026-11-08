@@ -32,13 +32,10 @@ Func saveConfig()
 	SaveProfileConfig()
 
 	SaveWeakBaseStats()
-	;SetDebugLog("saveWeakBaseStats(), time = " & Round(__TimerDiff($t)/1000, 2) & " sec")
 
 	SaveBuildingConfig()
-	;SetDebugLog("SaveBuildingConfig(), time = " & Round(__TimerDiff($t)/1000, 2) & " sec")
 
 	SaveRegularConfig()
-	;SetDebugLog("SaveRegularConfig(), time = " & Round(__TimerDiff($t)/1000, 2) & " sec")
 
 	SetDebugLog("SaveConfig(), time = " & Round(__TimerDiff($t) / 1000, 2) & " sec")
 
@@ -55,7 +52,6 @@ Func SaveProfileConfig($sIniFile = Default, $bForceWrite = False)
 		IniWrite($sIniFile, "general", "globalthreads", $g_iGlobalThreads)
 	EndIf
 	; Not used anymore since MBR v7.6.7
-	;_SaveProfileConfigAdbPath($sIniFile)
 EndFunc   ;==>SaveProfileConfig
 
 Func SaveWeakBaseStats()
@@ -95,11 +91,7 @@ Func SaveBuildingConfig()
 
 	_Ini_Add("other", "totalcamp", $g_iTotalCampSpace)
 
-	;_Ini_Add("other", "xspellfactory", $SFPos[0])
-	;_Ini_Add("other", "yspellfactory", $SFPos[1])
 
-	;_Ini_Add("other", "xDspellfactory", $DSFPos[0])
-	;_Ini_Add("other", "yDspellfactory", $DSFPos[1])
 
 	; <><><><> Village / Upgrade - Hero Hall <><><><>
 	_Ini_Add("other", "xHeroHallPos", $g_aiHeroHallPos[0])
@@ -184,7 +176,6 @@ Func SaveRegularConfig()
 	; <><><><> Village / Misc <><><><>
 	SaveConfig_600_6()
 	; <><><><> Village / Achievements <><><><>
-	;SaveConfig_600_9()
 	; <><><><> Village / Donate - Request <><><><>
 	SaveConfig_600_11()
 	; <><><><> Village / Donate - Donate <><><><>
@@ -251,7 +242,6 @@ Func SaveRegularConfig()
 	; <><><><> Bot / Stats <><><><>
 	; <<< nothing here >>>
 
-	;SetDebugLog("saveConfig: Wrote " & $g_iIniLineCount & " ini lines.")
 	_Ini_Save($g_sProfileConfigPath)
 EndFunc   ;==>SaveRegularConfig
 
@@ -563,10 +553,7 @@ Func SaveBuilderBaseMod()
 	_Ini_Add("BBCustomArmy", "ChkAllSideBBAttack", $g_bAllSideBBAttack)
 EndFunc   ;==>SaveBuilderBaseMod
 
-;Func SaveConfig_600_9()
 ;	; <><><><> Village / Achievements <><><><>
-;	ApplyConfig_600_9(GetApplyConfigSaveAction())
-;EndFunc   ;==>SaveConfig_600_9
 
 Func SaveConfig_600_11()
 	ApplyConfig_600_11(GetApplyConfigSaveAction())

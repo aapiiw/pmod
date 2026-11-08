@@ -72,7 +72,6 @@ Global $aWonThreeStarAtkRprt[4] = [534, 183, 0xC6D1DE, 30] ; Center of 3rd Star 
 
 Global $a12OrMoreSlots[4] = [16, 608, 0x5B95C9, 25] ; Attackbar Check if 12+ Slots exist
 Global $aDoubRowAttackBar[4] = [68, 486, 0xFC5D64, 20]
-Global $aTroopIsDeployed[4] = [0, 0, 0x404040, 20] ; Attackbar Remain Check X and Y are Dummies
 Global $aIsAttackPage[4] = [18, 548, 0xCD0D0D, 20] ; red button "end battle" but left portion
 
 ; 1 - Dark Gray : Castle filled/No Castle | 2 - Light Green : Available or Already made | 3 - White : Available or Castle filled/No Castle
@@ -86,12 +85,10 @@ Global $aAtkRprtDECheck2[4] = [765, 400, 0x2E1D38, 30]
 ;returnhome
 Global $aRtnHomeCheck1[4] = [363, 548, 0x78C11C, 20]
 Global $aRtnHomeCheck2[4] = [497, 548, 0x79C326, 20]
-;Global Const $aRtnHomeCheck3[4]      = [ 284,  28, 0x41B1CD, 20]
 
 Global $aArmyTrainButtonRND[4] = [20, 500, 55, 550] ; Main Screen, Army Train Button, RND  Screen 860x732
 Global $aFindMatchButtonRND[4] = [200, 510, 300, 530] ; Find Multiplayer Match Button, Both Shield or without shield Screen 860x732
 
-;Switch Account
 Global $aLoginWithSupercellID[4] = [280, 630, 0xDCF684, 20] ; Upper green button section "Log in with Supercell ID" 0xB1E25A
 Global $aLoginWithSupercellID2[4] = [266, 653, 0xFFFFFF , 10] ; White Font "Log in with Supercell ID"
 Global $aButtonSetting[4] = [820, 530, 0xFFFFFF, 10] ; Setting button, Main Screen

@@ -84,7 +84,6 @@ Func UpgradeBuilding($bTest = False)
 
 		; Check free builder in case of multiple upgrades, but skip check when time to check repeated upgrades.
 		; Why? Can't do repeat upgrades if there are no builders?  Does it correct the upgrade list?
-		;If $iAvailBldr <= 0 And Not $bChkAllRptUpgrade Then
 		If $iAvailBldr <= 0 And Not $bTest And Not $SkipWallReserve Then
 			SetLog("No builder available for #" & $iz + 1 & ", " & $g_avBuildingUpgrades[$iz][4], $COLOR_DEBUG)
 			Return False
@@ -147,33 +146,6 @@ Func UpgradeBuilding($bTest = False)
 		If @error Then _logErrorDateAdd(@error)
 		SetLog("Upgrade #" & $iz + 1 & " " & $g_avBuildingUpgrades[$iz][4] & " Finishes @ " & $g_avBuildingUpgrades[$iz][7], $COLOR_SUCCESS)
 		GUICtrlSetData($g_hTxtUpgradeEndTime[$iz], $g_avBuildingUpgrades[$iz][7])
-		;Local $aArray = StringSplit($g_avBuildingUpgrades[$iz][6], ' ', BitOR($STR_CHRSPLIT, $STR_NOCOUNT)) ;separate days, hours
-		;If IsArray($aArray) Then
-		;	Local $iRemainingTimeMin = 0
-		;	For $i = 0 To UBound($aArray) - 1 ; step through array and compute minutes remaining
-		;		$sTime = ""
-		;		Select
-		;			Case StringInStr($aArray[$i], "d", $STR_NOCASESENSEBASIC) > 0
-		;				$sTime = StringTrimRight($aArray[$i], 1) ; removing the "d"
-		;				$iRemainingTimeMin += (Int($sTime) * 24 * 60) - 7 ; change days to minutes and add, minus 7 minutes for early checking
-		;			Case StringInStr($aArray[$i], "h", $STR_NOCASESENSEBASIC) > 0
-		;				$sTime = StringTrimRight($aArray[$i], 1) ; removing the "h"
-		;				$iRemainingTimeMin += (Int($sTime) * 60) - 3 ; change hours to minutes and add, minus 3 minutes
-		;			Case StringInStr($aArray[$i], "m", $STR_NOCASESENSEBASIC) > 0
-		;				$sTime = StringTrimRight($aArray[$i], 1) ; removing the "m"
-		;				$iRemainingTimeMin += Int($sTime) ; add minutes
-		;			Case Else
-		;				SetLog("Upgrade #" & $iz + 1 & " OCR time invalid" & $aArray[$i], $COLOR_WARNING)
-		;		EndSelect
-		;		SetDebugLog("Upgrade Time: " & $aArray[$i] & ", Minutes= " & $iRemainingTimeMin, $COLOR_DEBUG)
-		;	Next
-		;	$g_avBuildingUpgrades[$iz][7] = _DateAdd('n', Floor($iRemainingTimeMin), _NowCalc()) ; add the time required to NOW to finish the upgrade
-		;	If @error Then _logErrorDateAdd(@error)
-		;	SetLog("Upgrade #" & $iz + 1 & " " & $g_avBuildingUpgrades[$iz][4] & " Finishes @ " & $g_avBuildingUpgrades[$iz][7], $COLOR_SUCCESS)
-		;	GUICtrlSetData($g_hTxtUpgradeEndTime[$iz], $g_avBuildingUpgrades[$iz][7])
-		;Else
-		;	SetLog("Non critical error processing upgrade time for " & "#" & $iz + 1 & ": " & $g_avBuildingUpgrades[$iz][4], $COLOR_WARNING)
-		;EndIf
 		
 		getBuilderCount(True)
 		$iAvailBldr = $g_iFreeBuilderCount - WallReservedBuilder() - ReservedBuildersForHeroes()
@@ -189,7 +161,6 @@ Func UpgradeBuilding($bTest = False)
 		saveConfig()
 	EndIf
 	If _Sleep($DELAYUPGRADEBUILDING2) Then Return
-	;checkMainScreen(False) ; Check for screen errors during function
 	Return $iUpgradeAction
 
 EndFunc   ;==>UpgradeBuilding
@@ -198,51 +169,11 @@ Func UpgradeNormal($bTest, $iUpgradeNumber)
 	ClickAway()
 	If _Sleep($DELAYUPGRADENORMAL1) Then Return
 	
-	;Click($g_avBuildingUpgrades[$iUpgradeNumber][0], $g_avBuildingUpgrades[$iUpgradeNumber][1]) ; Select the item to be upgrade
 	BuildingClick($g_avBuildingUpgrades[$iUpgradeNumber][0], $g_avBuildingUpgrades[$iUpgradeNumber][1], "UpgradeNormal", $g_avBuildingUpgrades[$iUpgradeNumber][8]) ; Select the item to be upgrade
 	If _Sleep($DELAYUPGRADENORMAL1) Then Return ; Wait for window to open
 
 	Local $aResult = BuildingInfo() ; read building name/level to check we have right bldg or if collector was not full
 	If UBound($aResult) < 2 Then Return False
-	;If $g_bOptimizeOTTO Then
-	;	Local $aGearUp[3][2] = [["Mortar", 8], ["Archer T", 10], ["Cannon", 7]]
-	;	For $i = 0 To UBound($aGearUp) - 1 
-	;		If StringInStr($aResult[1], $aGearUp[$i][0]) Then
-	;			SetDebugLog("Matched with : " & $i)
-	;			If Number($aResult[2]) >= $aGearUp[$i][1] Then
-	;				SetLog("Building : " & $aResult[1] & " Level: " & $aResult[2] & " >= " & $aGearUp[$i][1], $COLOR_INFO)
-	;				SetLog("OptimizeOTTO enabled, should skip this Building", $COLOR_INFO)
-	;				SetLog("Now, trying to gear up building!", $COLOR_INFO)
-	;				
-	;				If ClickB("GearUp") Then
-	;					If _Sleep(1000) Then Return
-	;					If QuickMIS("BC1", $g_sImgAUpgradeRes, 350, 410, 560, 500) Then
-	;						Click($g_iQuickMISX, $g_iQuickMISY)
-	;						If _Sleep(1000) Then Return
-	;						If IsGemOpen(True) Then
-	;							ClickAway()
-	;							SetLog("Something is wrong, Gem Window Opened", $COLOR_ERROR)
-	;							Return False
-	;						Else
-	;							If QuickMIS("BC1", $g_sImgAUpgradeRes, 350, 410, 560, 500) Then
-	;								ClickAway()
-	;								SetLog("Upgrade window is still up. BB requirement unfulfilled?", $COLOR_ERROR)
-	;								Return False
-	;							Else
-	;								SetLog(" - GearUp : " & $aResult[1], $COLOR_SUCCESS)
-	;								Return True
-	;							EndIf
-	;						EndIf
-	;					EndIf
-	;				Else
-	;					SetLog("GearUp button not found!", $COLOR_ERROR)
-	;				EndIf
-	;				
-	;				Return False
-	;			EndIf
-	;		EndIf
-	;	Next
-	;EndIf
 		
 	
 	If StringStripWS($aResult[1], BitOR($STR_STRIPLEADING, $STR_STRIPTRAILING)) <> StringStripWS($g_avBuildingUpgrades[$iUpgradeNumber][4], BitOR($STR_STRIPLEADING, $STR_STRIPTRAILING)) Then ; check bldg names
@@ -326,7 +257,6 @@ Func UpgradeNormal($bTest, $iUpgradeNumber)
 				_GUICtrlSetImage($g_hPicUpgradeStatus[$iUpgradeNumber], $g_sLibIconPath, $eIcnGreenLight) ; Change GUI upgrade status to done
 				$g_aiPicUpgradeStatus[$iUpgradeNumber] = $eIcnGreenLight ; Change GUI upgrade status to done
 				GUICtrlSetData($g_hTxtUpgradeValue[$iUpgradeNumber], -($g_avBuildingUpgrades[$iUpgradeNumber][2])) ; Show Negative Upgrade value in GUI
-				;$itxtUpgradeValue[$inum] = -($g_avBuildingUpgrades[$inum][2]) ; Show Negative Upgrade value in GUI
 				GUICtrlSetData($g_hTxtUpgradeLevel[$iUpgradeNumber], $g_avBuildingUpgrades[$iUpgradeNumber][5] & "+") ; Set GUI level to match $g_avBuildingUpgrades variable
 				$g_aiUpgradeLevel[$iUpgradeNumber] = $g_avBuildingUpgrades[$iUpgradeNumber][5] & "+" ; Set GUI level to match $g_avBuildingUpgrades variable
 				If Not $g_abUpgradeRepeatEnable[$iUpgradeNumber] Then ; Check for repeat upgrade

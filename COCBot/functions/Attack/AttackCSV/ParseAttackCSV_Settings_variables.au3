@@ -150,7 +150,6 @@ Func ParseAttackCSV_Settings_variables(ByRef $aiCSVTroops, ByRef $aiCSVSpells, B
 					If $iCSVTotalCapTroops > $g_iMaxCapTroopTH[$iTH - 2] And $iCSVTotalCapTroops <= $g_iMaxCapTroopTH[$iTH] Then $bTotalInRange = True
 				ElseIf $iTH = 13 Or $iTH = 14 Then
 					If $iCSVTotalCapTroops <= $g_iMaxCapTroopTH[13] Then $bTotalInRange = True
-					;If $iCSVTotalCapTroops > $g_iMaxCapTroopTH[$iTH - 1] And $iCSVTotalCapTroops <= $g_iMaxCapTroopTH[$iTH] Then $bTotalInRange = True
 				ElseIf $iTH = 15 Or $iTH = 16 Then
 					If $iCSVTotalCapTroops <= $g_iMaxCapTroopTH[14] Then $bTotalInRange = True
 				EndIf

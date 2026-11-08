@@ -60,7 +60,6 @@ Func GetCoordToUse(Const $iIndex)
 			Local $aTmp[2] = [Number($g_iQuickMISX), Number($g_iQuickMISY)]
 			_ArrayAdd($aRet, $aTmp)
 			If Not $bSiege Then CorrectYCoord($aRet)
-			;_ArrayDisplay($aRet)
 		Else
 			SetLog("Cannot find Image " & $sFilter, $COLOR_DEBUG2)
 			Return -1

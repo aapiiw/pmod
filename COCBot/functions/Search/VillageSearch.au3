@@ -118,9 +118,6 @@ Func _VillageSearch($bTest = False, $bDoClanGames = False) ;Control for searchin
 		SuspendAndroid()
 
 		; ---------------- CHECK THE ACTIVE MODE  --------------------------------------------
-		; $dbase = true if dead base found
-		; $match[$i] = result of check between gui settings and target village resources
-		; $isModeActive[$i] = the mode it is active or not (cups, research, army %)
 		Local $noMatchTxt = ""
 		Local $dbBase = False
 		Local $match[$g_iModeCount]
@@ -343,7 +340,6 @@ Func _VillageSearch($bTest = False, $bDoClanGames = False) ;Control for searchin
 			SetLog($GetResourcesTXT, $COLOR_BLACK, "Lucida Console", 7.5)
 		EndIf
 
-		; Return Home on Search limit or Hero healed
 		If SearchLimit($iSkipped + 1) Then Return True
 
 		If CheckAndroidReboot() = True Then
@@ -538,7 +534,6 @@ Func WriteLogVillageSearch($x)
 
 EndFunc   ;==>WriteLogVillageSearch
 
-; $bOwnVillage = False: enemy village (search / attack), its scenery is not stored as own scenery of the account
 Func CheckZoomOut($bTest = False, $bOwnVillage = False)
 	Local $bRet = False, $aVillageSize
 	resetEdge() ;reset
@@ -556,7 +551,6 @@ Func CheckZoomOut($bTest = False, $bOwnVillage = False)
 	If $g_bVillageSearchActive Then
 		If $bRet And $g_sSceneryCode = "BL" Then 
 			$bRet = False
-			;SetLog("Attack Enemy Scenery [" & $g_sSceneryCode & " - " & $g_sCurrentScenery & "]", $COLOR_ERROR) 
 		EndIf
 		
 		If $bRet Then 

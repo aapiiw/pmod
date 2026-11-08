@@ -105,8 +105,6 @@ Func ReturnHome($bTakeSS = True, $GoldChangeCheck = True) ;Return main screen
 	If CheckAndroidReboot() Then Return
 
 	If $GoldChangeCheck Then
-		;If _Sleep(2000) Then Return ;add more delay to wait all resource appear
-		;_CaptureRegion()
 		AttackReport()
 	EndIf
 

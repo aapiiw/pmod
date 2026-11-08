@@ -76,15 +76,6 @@ Func GetLocationTownHall()
 EndFunc   ;==>GetLocationTownHall
 
 ; USES OLD OPENCV DETECTION
-Func GetLocationDarkElixirStorageWithLevel()
-	Local $aEndResult = DllCallMyBot("getLocationDarkElixirStorageWithLevel", "ptr", $g_hHBitmap2)
-	If $g_bDebugBuildingPos Then SetLog("#*# GetLocationDarkElixirStorageWithLevel: " & $aEndResult[0], $COLOR_DEBUG)
-	If $g_bDebugGetLocation Then DebugImageGetLocation($aEndResult[0], "DarkElixirStorageWithLevel")
-
-	Return $aEndResult[0]
-EndFunc   ;==>GetLocationDarkElixirStorageWithLevel
-
-; USES OLD OPENCV DETECTION
 Func GetLocationDarkElixirStorage()
 	Local $aEndResult = DllCallMyBot("getLocationDarkElixirStorage", "ptr", $g_hHBitmap2)
 	If $g_bDebugBuildingPos Then SetLog("#*# GetLocationDarkElixirStorage: " & $aEndResult[0], $COLOR_DEBUG)
@@ -211,7 +202,6 @@ Func GetLocationBuilding($iBuildingType, $iAttackingTH = $g_iMaxTHLevel, $bForce
 	If $res[0] <> "" Then
 		Local $aKeys = StringSplit($res[0], "|", $STR_NOCOUNT) ; Spilt each returned key into array
 		For $i = 0 To UBound($aKeys) - 1 ; Loop through the array to get all property values
-			;SetDebugLog("$aKeys[" & $i & "]: " & $aKeys[$i], $COLOR_DEBUG)  ; key value debug
 
 			; Object level retrieval
 			$tempNewLevel = Int(RetrieveImglocProperty($aKeys[$i], "objectlevel"))
@@ -269,7 +259,6 @@ Func GetLocationBuilding($iBuildingType, $iAttackingTH = $g_iMaxTHLevel, $bForce
 	EndIf
 
 	$aBldgCoord = decodeMultipleCoords($sLocCoord) ; change string into array with location x,y sub-arrays inside each row
-	;$aBldgCoord = GetListPixel($sLocCoord, ",", "GetLocationBuilding" & $g_sBldgNames[$iBuildingType]) ; change string into array with debugattackcsv message instead of general log msg?
 
 	If $g_bDebugBuildingPos Or  $g_bDebugSetlog Then ; temp debug message to display building location string returned, and convert "_LOCATION" array to string message for comparison
 		SetLog("Bldg Loc Coord String: " & $sLocCoord, $COLOR_DEBUG)
@@ -402,5 +391,3 @@ Func ConvertImgloc2MBR($aArray, $iMaxPositions, $bLevel = False)
 
 	Return $sStringConverted ; xxx-yyy|xxx-yyy|n.... OR Lv#xxx-yyy~Lv#xxx-yyy
 EndFunc   ;==>ConvertImgloc2MBR
-
-

@@ -12,13 +12,11 @@
 ; Link ..........: https://github.com/MyBotRun/MyBot/wiki
 ; Example .......: No
 ; ===============================================================================================================================
-; Return True or False if Switch Account is enabled and current profile in configured list
 Func ProfileSwitchAccountEnabled()
 	If Not $g_bChkSwitchAcc Or Not aquireSwitchAccountMutex() Then Return False
 	Return SetError(0, 0, _ArraySearch($g_asProfileName, $g_sProfileCurrentName) >= 0)
 EndFunc   ;==>ProfileSwitchAccountEnabled
 
-; Return True or False if specified Profile is enabled for Switch Account and controlled by this bot instance
 Func SwitchAccountEnabled($IdxOrProfilename = $g_sProfileCurrentName)
 	Local $sProfile
 	Local $iIdx
@@ -225,9 +223,7 @@ Func SwitchCOCAcc($NextAccount = 0, $bTest = False)
 		EndIf
 		If $bSharedPrefs Then
 			SetLog("Please wait for loading CoC")
-			;PushSharedPrefs()
 			OpenCoC()
-			;waitMainScreen()
 		EndIf
 
 		SetSwitchAccLog("Switched to Acc [" & $NextAccount + 1 & "]", $COLOR_SUCCESS)
@@ -647,7 +643,6 @@ Func aquireSwitchAccountMutex($iSwitchAccountGroup = $g_iCmbSwitchAcc, $bReturnO
 			$g_ahMutex_SwitchAccountsGroup[0] = $iSwitchAccountGroup
 			$g_ahMutex_SwitchAccountsGroup[1] = $hMutex_Profile
 		EndIf
-		;SetDebugLog("Aquire Switch Accounts Group " & $iSwitchAccountGroup & " Mutex: " & $hMutex_Profile)
 		If $bReturnOnlyMutex Then
 			Return $hMutex_Profile
 		EndIf
@@ -655,7 +650,6 @@ Func aquireSwitchAccountMutex($iSwitchAccountGroup = $g_iCmbSwitchAcc, $bReturnO
 		If $hMutex_Profile = 0 Then
 			; mutex already in use
 			SetLog($sMsg, $COLOR_ERROR)
-			;SetLog($sMsg, "Cannot switch to profile " & $sProfile, $COLOR_ERROR)
 			If $bShowMsgBox Then
 				MsgBox(BitOR($MB_OK, $MB_ICONINFORMATION, $MB_TOPMOST), $g_sBotTitle, $sMsg)
 			EndIf
@@ -667,7 +661,6 @@ EndFunc   ;==>aquireSwitchAccountMutex
 
 Func releaseSwitchAccountMutex()
 	If $g_ahMutex_SwitchAccountsGroup[1] Then
-		;SetDebugLog("Release Switch Accounts Group " & $g_ahMutex_SwitchAccountsGroup[0] & " Mutex: " & $g_ahMutex_SwitchAccountsGroup[1])
 		ReleaseMutex($g_ahMutex_SwitchAccountsGroup[1])
 		$g_ahMutex_SwitchAccountsGroup[0] = 0
 		$g_ahMutex_SwitchAccountsGroup[1] = 0

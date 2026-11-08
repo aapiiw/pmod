@@ -26,13 +26,6 @@ Func InitTranslatedTextUpgradeTab()
 		"ignored resource.")
 EndFunc   ;==>InitTranslatedTextUpgradeTab
 
-Func btnLocateUpgrades()
-	Local $wasRunState = $g_bRunState
-	$g_bRunState = True
-	LocateUpgrades()
-	$g_bRunState = $wasRunState
-EndFunc   ;==>btnLocateUpgrades
-
 Func btnchkbxUpgrade()
 	For $i = 0 To UBound($g_avBuildingUpgrades, 1) - 1
 		If GUICtrlRead($g_hChkUpgrade[$i]) = $GUI_CHECKED Then

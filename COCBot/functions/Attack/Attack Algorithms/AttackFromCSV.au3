@@ -80,7 +80,6 @@ Func ConvertInternalExternArea()
 		$ExternalArea[$i][0] = $x
 		$ExternalArea[$i][1] = $y
 		$ExternalArea[$i][2] = $ExternalAreaRef[$i][2]
-		;debugAttackCSV("External Area Point " & $ExternalArea[$i][2] & ": " & $x & ", " & $y)
 	Next
 	
 	$CocDiamondECD = $ExternalArea[2][0] & "," & $ExternalArea[2][1] & "|" & _
@@ -96,7 +95,6 @@ Func ConvertInternalExternArea()
 		$InternalArea[$i][0] = $x
 		$InternalArea[$i][1] = $y
 		$InternalArea[$i][2] = $InternalAreaRef[$i][2]
-		;debugAttackCSV("Internal Area Point " & $InternalArea[$i][2] & ": " & $x & ", " & $y)
 	Next
 	$CocDiamondDCD = $InternalArea[2][0] & "," & $InternalArea[2][1] & "|" & _
 			$InternalArea[1][0] & "," & $InternalArea[1][1] & "|" & _
@@ -356,27 +354,7 @@ Func Algorithm_AttackCSV($testattack = False, $captureredarea = True)
 		EndIf
 	EndIf
 
-	;If $g_bCSVLocateStorageDarkElixir = True Then
-	;	$hTimer = __timerinit()
-	;	SuspendAndroid()
 	;	; USES OLD OPENCV DETECTION
-	;	Local $g_aiPixelDarkElixirStorage = GetLocationDarkElixirStorageWithLevel()
-	;	ResumeAndroid()
-	;	If _Sleep($DELAYRESPOND) Then Return
-	;	CleanRedArea($g_aiPixelDarkElixirStorage)
-	;	Local $pixel = StringSplit($g_aiPixelDarkElixirStorage, "#", 2)
-	;	If UBound($pixel) >= 2 Then
-	;		Local $pixellevel = $pixel[0]
-	;		Local $pixelpos = StringSplit($pixel[1], "-", 2)
-	;		If UBound($pixelpos) >= 2 Then
-	;			Local $temp = [Int($pixelpos[0]), Int($pixelpos[1])]
-	;			$g_aiCSVDarkElixirStoragePos = $temp
-	;		EndIf
-	;	EndIf
-	;	SetLog("> Dark Elixir Storage located in " & Round(__timerdiff($hTimer) / 1000, 2) & " seconds", $COLOR_INFO)
-	;Else
-	;	SetLog("> Dark Elixir Storage detection not needed, skip", $COLOR_INFO)
-	;EndIf
 
 	; 06 - EAGLE ARTILLERY ------------------------------------------------------------------------
 

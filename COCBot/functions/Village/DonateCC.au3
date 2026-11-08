@@ -585,7 +585,6 @@ Func DonateExtraSpell($iEx, $aiDonateButton)
 	EndIf
 EndFunc   ;==>DonateExtraSpell
 
-;DonateWindow(StringSplit("284|561", "|", $STR_NOCOUNT))
 Func DonateWindow($DonateButton = -1, $bOpen = True)
 
 	If $g_bDebugSetLog Then SetLog(($bOpen = True ? "Opening" : "Closing") & " DonateWindow", $COLOR_DEBUG)
@@ -629,7 +628,6 @@ Func DonateWindow($DonateButton = -1, $bOpen = True)
 	Return $g_iDonationWindowX > 0
 EndFunc   ;==>DonateWindow
 
-;DonateWindowCap(False, False)
 Func DonateWindowCap(ByRef $g_bSkipDonTroops, ByRef $g_bSkipDonSpells)
 	SetDebugLog("DonateCapWindow Start", $COLOR_DEBUG)
 	Local $xTroop = $g_iDonationWindowX + 85, $xSpell = $g_iDonationWindowX + 78
@@ -637,6 +635,13 @@ Func DonateWindowCap(ByRef $g_bSkipDonTroops, ByRef $g_bSkipDonSpells)
 	If Not $g_bSkipDonTroops Then
 		; 45 px: "41/55" did not fit in the default 35 px (reads failed only with 2 digit donated counts, Oct 2026)
 		Local $sReadCCTroopsCap = getCastleDonateCap($xTroop, $g_iDonationWindowY + 15, 45) ; use OCR to get donated/total capacity
+		; window still opening (both reads within 300 ms were empty, the same screen read "0#55" a moment later) or its text
+		; 1 px lower: read again for up to 1.5 s (a failed read gave limit 0 = "Donating 0 Balloon", Nov 2026)
+		For $iTry = 1 To 5
+			If StringRegExp($sReadCCTroopsCap, "^\d+#\d+$") Then ExitLoop
+			If _Sleep(300) Then Return
+			$sReadCCTroopsCap = getCastleDonateCap($xTroop, $g_iDonationWindowY + 15 + Mod($iTry, 2), 45)
+		Next
 		SetDebugLog("$sReadCCTroopsCap: " & $sReadCCTroopsCap, $COLOR_DEBUG)
 
 		Local $aTempReadCCTroopsCap = StringSplit($sReadCCTroopsCap, "#")
@@ -646,7 +651,6 @@ Func DonateWindowCap(ByRef $g_bSkipDonTroops, ByRef $g_bSkipDonSpells)
 			If $aTempReadCCTroopsCap[2] > 0 Then
 				$g_iDonTroopsAv = $aTempReadCCTroopsCap[1]
 				$g_iDonTroopsLimit = $aTempReadCCTroopsCap[2]
-				;SetLog("Donate Troops: " & $g_iDonTroopsAv & "/" & $g_iDonTroopsLimit)
 				If $g_iDonTroopsAv = $g_iDonTroopsLimit Then $g_bSkipDonTroops = True
 			EndIf
 		Else
@@ -813,7 +817,6 @@ Func DragDonate($y = 300)
 	If _Sleep(1000) Then Return
 EndFunc
 
-;getRemainingCCcapacity(StringSplit("284|333", "|", $STR_NOCOUNT))
 Func getRemainingCCcapacity($DonateButton = -1)
 	; Remaining CC capacity of requested troops from your ClanMates
 	; Will return the $g_iTotalDonateTroopCapacity with that capacity for use in donation logic.
@@ -977,7 +980,6 @@ Func getRemainingCCcapacity($DonateButton = -1)
 
 EndFunc   ;==>RemainingCCcapacity
 
-;getArmyRequest(StringSplit("284|561", "|", $STR_NOCOUNT))
 Func getArmyRequest($DonateButton = -1)
 	Local $aTempRequestArray, $iArmyIndex = -1, $sClanText = "", $sDebugText = ""
 	$g_aiDonTroopQuant = $g_aiZero52 ;reset array
@@ -1007,7 +1009,6 @@ Func getArmyRequest($DonateButton = -1)
 	If $g_bDebugSetLog Then SetLog("QuickMIS('CNX', $g_sImgDonateImageRequest, 28, " & $aiDonateCoords[1] - 92 & ", " & 343 & ", " & $aiDonateCoords[1] - 40 & ")", $COLOR_DEBUG1)
 	Local $aQuick = QuickMIS("CNX", $g_sImgDonateImageRequest, 28, $aiDonateCoords[1] - 92, 343, $aiDonateCoords[1] - 40)
 	_ArraySort($aQuick, 0, 0, 0, 1)
-	;_ArrayDisplay($aQuick)
 	Local $axCoord[5] = [48, 100, 152, 204, 256]
 	If Ubound($aQuick) > 0 Then
 		For $i = 0 To UBound($aQuick) - 1
@@ -1063,7 +1064,6 @@ Func getArmyRequest($DonateButton = -1)
 	Return StringTrimLeft($sClanText, 2)
 EndFunc   ;==>getArmyRequest
 
-;ReadRequestString(StringSplit("284|237", "|", $STR_NOCOUNT))
 Func ReadRequestString($DonateButton = -1)
 	Local $aiDonateButton[2] = [0, 0]
 	If $DonateButton = -1 Then
@@ -1127,7 +1127,6 @@ Func ReadRequestString($DonateButton = -1)
 				EndIf
 			EndIf
 		Next
-		;SetDebugLog("Get Request OCR in " & StringFormat("%.2f", TimerDiff($iTimer)) & "'ms", $COLOR_DEBUG)
 		SetLog("Request: " & $sString, $COLOR_INFO)
 		Return $sString
 	EndIf

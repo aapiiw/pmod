@@ -386,7 +386,6 @@ Func PetArmyState($i)
 	Return ""
 EndFunc   ;==>PetArmyState
 
-; Select Hero window open on a hero: its pet empty or upgrading -> Select Pet, first usable pet. Return True when changed
 ; $bRemember: "no free pet" kept 2 h for this account (army card check only: right after a hero switch the list was read
 ; empty while the army check found a free pet seconds later, hero slot 1, 4 Nov 21:45 / 22:42)
 Func PetFixInWindow($sHero = "", $bRemember = False)

@@ -102,18 +102,6 @@ EndFunc   ;==>UpgradeHeroes
 
 ; find card of $iHero, scroll right/left when needed. Return [x, name y] or 0
 
-; confirm hero upgrade in the upgrade window
-Func HeroUpgradeConfirm()
-	If ClickB("Upgrade") Then Return True
-	Local $aWhiteZeros = decodeSingleCoord(findImage("UpgradeWhiteZero", $g_sImgUpgradeWhiteZero, GetDiamondFromRect("408,519,747,606"), 1, True, Default))
-	If IsArray($aWhiteZeros) And UBound($aWhiteZeros, 1) = 2 Then
-		ClickP($aWhiteZeros, 1, 0)
-		Return True
-	EndIf
-	If $g_bDebugImageSave Then SaveDebugImage("HeroUpgradeConfirm")
-	Return False
-EndFunc   ;==>HeroUpgradeConfirm
-
 Func ReservedBuildersForHeroes()
 	Local $iUsedBuildersForHeroes = Number(BitAND($g_iHeroUpgradingBit, $eHeroKing) = $eHeroKing ? 1 : 0) + Number(BitAND($g_iHeroUpgradingBit, $eHeroQueen) = $eHeroQueen ? 1 : 0) + Number(BitAND($g_iHeroUpgradingBit, $eHeroWarden) = $eHeroWarden ? 1 : 0) + Number(BitAND($g_iHeroUpgradingBit, $eHeroChampion) = $eHeroChampion ? 1 : 0)
 	If $iUsedBuildersForHeroes = 1 Then

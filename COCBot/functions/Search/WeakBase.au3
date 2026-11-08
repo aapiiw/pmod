@@ -285,7 +285,6 @@ Func IsWeakBase($townHallLevel = $g_iMaxTHLevel, $redlines = "", $bForceCaptureR
 	Local $aResult = weakBaseCheck($townHallLevel, $redlines, $bForceCaptureRegion)
 
 	; Forces the display of the various statistical displays, if set to true
-	; displayWeakBaseLog($aResult, true)
 	; Displays the various statistical displays, if debug logging is enabled
 	displayWeakBaseLog($aResult, $g_bDebugSetlog)
 
@@ -334,7 +333,6 @@ EndFunc   ;==>IsWeakBase
 ; Name ..........: DefenseSearchMultiMatch
 ; Description ...: Embellished clone of returnHighestLevelSingleMatch() except also copies ALL defense building matches to dictionary for later use by CSV to avoid repeating searches
 ; Syntax ........: DefenseSearchMultiMatch($iDefenseType, $directory[, $redlines = "DCD"[, $statFile = ""[, $minLevel = 0[,
-;                  $maxLevel = 100[, $bForceCaptureRegion = True]]]]])
 ; Parameters ....: $iDefenseType         - integer value, Weak base enum for defense type being searched.
 ;                  $directory           - string value, folder location where defense images to search for are found
 ;                  $redlines            - [optional] string value. Default is "DCD".
@@ -479,7 +477,6 @@ Func DefenseSearchMultiMatch($iDefenseType, $directory, $redlines = "DCD", $stat
 			; Check for duplicate locations from DLL when more than 1 location returned?
 			If $i = 0 And StringLen($sTempCoord) > 7 Then
 				$iCountUpdate = RemoveDupNearby($sTempCoord) ; remove duplicates BYREF, return location count
-				;If $iTmpObjectLevel <> $iCountUpdate And $iCountUpdate <> "" Then $iTmpObjectLevel = $iCountUpdate
 			EndIf
 
 			; get number of buildings found

@@ -32,7 +32,7 @@ Func TreasuryCollect()
 		For $iTry = 1 To 2
 			Click($g_aiClanCastlePos[0], $g_aiClanCastlePos[1])
 			If _Sleep(1000) Then Return
-			$BuildingInfo = BuildingInfo(290, 477)
+			$BuildingInfo = BuildingInfo(290, 480)
 			If $BuildingInfo[1] = "Clan Castle" Or $iTry = 2 Then ExitLoop
 			ClickAway()
 			If _Sleep(300) Then Return
@@ -118,7 +118,7 @@ Func NearCCLocate()
 		If _Sleep(500) Then Return False
 		Click($x, $y)
 		If _Sleep(1000) Then Return False
-		$aInfo = BuildingInfo(290, 477)
+		$aInfo = BuildingInfo(290, 480)
 		If $aInfo[1] = "Clan Castle" Then
 			SetLog("Clan Castle found near saved position, new CC Coords : " & $x & "," & $y, $COLOR_INFO)
 			$g_aiClanCastlePos[0] = $x
@@ -148,7 +148,7 @@ Func AutoLocateCC()
 			EndIf
 			
 			If _Sleep(1000) Then Return
-			Local $BuildingInfo = BuildingInfo(290, 477)
+			Local $BuildingInfo = BuildingInfo(290, 480)
 			If $BuildingInfo[1] = "Clan Castle" Then 
 				$g_aiClanCastlePos[0] = $ClanCastleCoord[$i][1] + 10
 				$g_aiClanCastlePos[1] = $ClanCastleCoord[$i][2] + 10

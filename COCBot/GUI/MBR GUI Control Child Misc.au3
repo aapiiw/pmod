@@ -256,15 +256,6 @@ Func btnLocateClanCastle()
 	AndroidShield("btnLocateClanCastle") ; Update shield status due to manual $g_bRunState
 EndFunc   ;==>btnLocateClanCastle
 
-Func btnLocateHeroHall()
-	Local $wasRunState = $g_bRunState
-	$g_bRunState = True
-	ZoomOut()
-	LocateHeroHall()
-	$g_bRunState = $wasRunState
-	AndroidShield("btnLocateHeroHall") ; Update shield status due to manual $g_bRunState
-EndFunc   ;==>btnLocateHeroHall
-
 Func btnLocateTownHall()
 	Local $wasRunState = $g_bRunState
 	Local $bRet = False
@@ -320,15 +311,6 @@ Func btnResetBuilding()
 	$g_bRunState = $wasRunState
 	AndroidShield("btnResetBuilding") ; Update shield status due to manual $g_bRunState
 EndFunc   ;==>btnResetBuilding
-
-Func btnLab()
-	Local $wasRunState = $g_bRunState
-	$g_bRunState = True
-	ZoomOut()
-	LocateLab()
-	$g_bRunState = $wasRunState
-	AndroidShield("btnLab") ; Update shield status due to manual $g_bRunState
-EndFunc   ;==>btnLab
 
 Func ChkCollect()
 	If GUICtrlRead($g_hChkCollect) = $GUI_CHECKED Then

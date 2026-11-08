@@ -37,7 +37,6 @@ Func ReadProfileConfig($sIniFile = $g_sProfilePath & "\profile.ini")
 	If FileExists($sIniFile) = 0 Then Return False
 	Local $iValue, $sValue
 	; defaultprofile read not required
-	;$g_sProfileCurrentName = StringRegExpReplace(IniRead($sIniFile, "general", "defaultprofile", ""), '[/:*?"<>|]', '_')
 
 	$iValue = $g_iGlobalActiveBotsAllowed
 	$g_iGlobalActiveBotsAllowed = Int(IniRead($sIniFile, "general", "globalactivebotsallowed", $g_iGlobalActiveBotsAllowed))
@@ -53,8 +52,6 @@ Func ReadProfileConfig($sIniFile = $g_sProfilePath & "\profile.ini")
 	EndIf
 
 	; Not used anymore since MBR v7.6.7
-	;$sValue = IniRead($sIniFile, "general", "adb.path", $g_sAndroidAdbPath)
-	;If FileExists($sValue) Then $g_sAndroidAdbPath = $sValue
 
 	Return True
 EndFunc   ;==>ReadProfileConfig
@@ -85,23 +82,11 @@ Func ReadBuildingConfig()
 		IniReadS($g_aiClanCastlePos[0], $g_sProfileBuildingPath, "other", "xCCPos", -1, "int")
 		IniReadS($g_aiClanCastlePos[1], $g_sProfileBuildingPath, "other", "yCCPos", -1, "int")
 
-		;IniReadS($barrackPos[0][0], $g_sProfileBuildingPath, "other", "xBarrack1", -1, "int")
-		;IniReadS($barrackPos[0][1], $g_sProfileBuildingPath, "other", "yBarrack1", -1, "int")
 
-		;IniReadS($barrackPos[1][0], $g_sProfileBuildingPath, "other", "xBarrack2", -1, "int")
-		;IniReadS($barrackPos[1][1], $g_sProfileBuildingPath, "other", "yBarrack2", -1, "int")
 
-		;IniReadS($barrackPos[2][0], $g_sProfileBuildingPath, "other", "xBarrack3", -1, "int")
-		;IniReadS($barrackPos[2][1], $g_sProfileBuildingPath, "other", "yBarrack3", -1, "int")
 
-		;IniReadS($barrackPos[3][0], $g_sProfileBuildingPath, "other", "xBarrack4", -1, "int")
-		;IniReadS($barrackPos[3][1], $g_sProfileBuildingPath, "other", "yBarrack4", -1, "int")
 
-		;IniReadS($SFPos[0], $g_sProfileBuildingPath, "other", "xspellfactory", -1, "int")
-		;IniReadS($SFPos[1], $g_sProfileBuildingPath, "other", "yspellfactory", -1, "int")
 
-		;IniReadS($DSFPos[0], $g_sProfileBuildingPath, "other", "xDspellfactory", -1, "int")
-		;IniReadS($DSFPos[1], $g_sProfileBuildingPath, "other", "yDspellfactory", -1, "int")
 
 		IniReadS($g_aiHeroHallPos[0], $g_sProfileBuildingPath, "other", "xHeroHallPos", -1, "int")
 		IniReadS($g_aiHeroHallPos[1], $g_sProfileBuildingPath, "other", "yHeroHallPos", -1, "int")
@@ -1143,13 +1128,6 @@ EndFunc   ;==>ReadConfig_600_29_DB
 Func ReadConfig_600_29_LB()
 	; <><><><> Attack Plan / Search & Attack / Activebase / Attack <><><><>
 	IniReadS($g_aiAttackAlgorithm[$LB], $g_sProfileConfigPath, "attack", "ABAtkAlgorithm", 0, "int")
-	;Local $temp1, $temp2, $temp3, $temp4
-	;IniReadS($temp1, $g_sProfileConfigPath, "attack", "ABKingAtk", $eHeroNone)
-	;IniReadS($temp2, $g_sProfileConfigPath, "attack", "ABQueenAtk", $eHeroNone)
-	;IniReadS($temp3, $g_sProfileConfigPath, "attack", "ABWardenAtk", $eHeroNone)
-	;IniReadS($temp4, $g_sProfileConfigPath, "attack", "ABChampionAtk", $eHeroNone)
-	;$g_aiAttackUseHeroes[$LB] = BitOR(Int($temp1), Int($temp2), Int($temp3), Int($temp4))
-	;IniReadS($g_abAttackDropCC[$LB], $g_sProfileConfigPath, "attack", "ABDropCC", True, "Bool")
 	
 	; <><><><> Attack Plan / Search & Attack / Activebase / Attack / Standard <><><><>
 	IniReadS($g_aiAttackStdDropOrder[$LB], $g_sProfileConfigPath, "attack", "LBStandardAlgorithm", 0, "int")
@@ -1266,7 +1244,6 @@ Func ReadConfig_600_35_1()
 	IniReadS($g_iAutoAlignOffsetX, $g_sProfileConfigPath, "other", "WAOffsetX", "")
 	IniReadS($g_iAutoAlignOffsetY, $g_sProfileConfigPath, "other", "WAOffsetY", "")
 	;$g_bUpdatingWhenMinimized must be always enabled
-	;IniReadS($g_bUpdatingWhenMinimized, $g_sProfileConfigPath, "general", "UpdatingWhenMinimized", True, "Bool")
 	IniReadS($g_bHideWhenMinimized, $g_sProfileConfigPath, "general", "HideWhenMinimized", False, "Bool")
 	$g_bUseRandomClick = (IniRead($g_sProfileConfigPath, "other", "UseRandomClick", "0") = "1")
 	$g_bScreenshotPNGFormat = (IniRead($g_sProfileConfigPath, "other", "ScreenshotType", "1") = "1") ;screenshot type: 0 JPG   1 PNG

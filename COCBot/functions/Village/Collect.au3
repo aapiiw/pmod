@@ -216,7 +216,6 @@ Func ClaimCookieReward($bGoldPass = False)
 		Else
 			ExitLoop
 		EndIf
-		;If QuickMIS("BC1", $g_sImgDailyReward, 380, 380, 550, 450) Then ExitLoop ;thropy color
 		If WaitforPixel(795, 399, 795, 400, "29231F", 10, 1, "End Window Color") Then ExitLoop ;End Window Color
 		ClickDrag(750, 445, 200, 445) ;just swipe to right
 		If _Sleep(1000) Then Return

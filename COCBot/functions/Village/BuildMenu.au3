@@ -71,6 +71,12 @@ Func BuildMenuFilterBtnOn($i)
 	Return _ColorCheck(_GetPixelColor($g_aBuildMenuFilterBtn[$i][1] - 49, $g_aBuildMenuFilterBtn[$i][2] - 10, True), Hex(0xEDAB27, 6), 30)
 EndFunc   ;==>BuildMenuFilterBtnOn
 
+; grey type button (6F6F6F, off is brown 8D6848): nothing of that type can be upgraded (all max), it cannot be turned on.
+; Clicking it anyway gave "filter Army failed" 27x a night (Nov 2026)
+Func BuildMenuFilterBtnGrey($i)
+	Return _ColorCheck(_GetPixelColor($g_aBuildMenuFilterBtn[$i][1] - 49, $g_aBuildMenuFilterBtn[$i][2] - 10, True), Hex(0x6F6F6F, 6), 15)
+EndFunc   ;==>BuildMenuFilterBtnGrey
+
 ; set the list filter of the open tab $iTab: only type button $sType on ("" = no filter), resource off, sorting off unless
 ; $sType ends with "|CostMin" (e.g. "Army|CostMin", "|CostMin": cheapest first, used by the wall reserve builder low cost mode)
 ; or "|Elixir" / "|Dark" (resource button with the type, Lab tab: "Troops|Dark" = dark troops only).
@@ -114,9 +120,13 @@ Func BuildMenuSetFilter($sType = "", $iTab = 1)
 		ClickAway("Left") ; do not leave a half open popup over the list
 		Return False
 	EndIf
-	Local $bOk = True
+	Local $bOk = True, $bGrey = False
 	For $i = 0 To UBound($g_aBuildMenuFilterBtn) - 1
 		Local $bWant = ($g_aBuildMenuFilterBtn[$i][0] = $sBtn Or ($sSort <> "" And $g_aBuildMenuFilterBtn[$i][0] = $sSort))
+		If $bWant And BuildMenuFilterBtnGrey($i) Then ; nothing to upgrade of this kind: no click
+			$bGrey = True
+			ContinueLoop
+		EndIf
 		; the button changes 0.5-0.8 s after the click on an idle emulator, later under load: a second click after a fixed
 		; 700 ms turned it back off (Army after Hero failed 16 of 21 times, 5-6 Nov). Wait up to 2 s for the change first
 		For $iTry = 1 To 3
@@ -136,6 +146,11 @@ Func BuildMenuSetFilter($sType = "", $iTab = 1)
 	Next
 	$g_iBuildMenuPage = 1
 	BuildMenuWaitStill() ; list redrawn after the filter (27 Oct: read 40 ms later, Lab names '' and costs lost)
+	If $bGrey Then
+		$g_asBuildMenuFilter[$iTab] = "#" ; not the wanted filter: the next OpenBuildMenu sets / resets it again
+		SetLog("Build menu filter " & $sBtn & " is grey: nothing to upgrade of this kind, skip", $COLOR_INFO)
+		Return SetError(2, 0, False)
+	EndIf
 	If $bOk Then
 		$g_asBuildMenuFilter[$iTab] = $sType
 		SetDebugLog("Build menu filter tab " & $iTab & ": " & ($sType = "" ? "none" : $sType))
@@ -179,7 +194,6 @@ Func BuildMenuTab($bBB = $g_bBuildMenuBB)
 	Return 0
 EndFunc   ;==>BuildMenuTab
 
-; $sFilter = list filter wanted on a home tab ("" = none, see BuildMenuSetFilter). @error = 1: tab open but filter failed
 Func OpenBuildMenu($iTab = 1, $bBB = False, $sFilter = "")
 	If Not $g_bRunState Then Return False
 	If IsBuildMenuOpen() And $g_bBuildMenuBB <> $bBB Then CloseBuildMenu() ; menu of the other village left open
@@ -205,7 +219,7 @@ Func OpenBuildMenu($iTab = 1, $bBB = False, $sFilter = "")
 			; (tabs 1 and 2 only: Hero Equipment / Pets have another filter window)
 			If Not $bBB And $iTab <= 2 And ($sFilter <> $g_asBuildMenuFilter[$iTab] Or ($sFilter = "" And BuildMenuFilterActive())) Then
 				If $sFilter = "" Then SetLog("Build menu filter is on, reset it", $COLOR_INFO)
-				If Not BuildMenuSetFilter($sFilter, $iTab) And $sFilter <> "" Then Return SetError(1, 0, False)
+				If Not BuildMenuSetFilter($sFilter, $iTab) And $sFilter <> "" Then Return SetError(@error = 2 ? 2 : 1, 0, False) ; 2 = grey button
 			EndIf
 			Return True
 		EndIf
@@ -412,10 +426,15 @@ Func ReadBuildMenuCounters($bBB = $g_bBuildMenuBB)
 		; The text is at the edge of the box: 2 px off reads nothing (BB counters were -1/-1 most of the night, 22 Oct 2026),
 		; so other y are tried when the read is not "n#n" (same font: totalreq reads BB "0/3" as "0#4")
 		Local $aY[4] = [636, 638, 634, 640], $sFont = $bBB ? "coc-armycap" : "coc-totalreq", $iX = $bBB ? $g_aiBuildMenuCounterXBB[$iTab] - 2 : $g_aiBuildMenuCounterX[$iTab]
-		For $iTry = 0 To 3
-			$sRead = getOcrAndCapture($sFont, $iX, $aY[$iTry], $bBB ? 40 : 36, 16, True)
-			If StringRegExp($sRead, "^\d+#\d+$") Then ExitLoop
-		Next
+		; own glyphs first (Nov 2026, 355 counters of 6 accounts + BB: all right). The template read "1/7" as "1#4" 80 times
+		; (well formed, so the total of 4 builders was taken) and nothing on 34 more
+		$sRead = StringReplace(ReadWhiteNumber(($bBB ? $g_aiBuildMenuCounterXBB[$iTab] : $g_aiBuildMenuCounterX[$iTab]) - ($bBB ? 12 : 10), 632, 56, 22), "/", "#")
+		If Not StringRegExp($sRead, "^\d#\d$") Then
+			For $iTry = 0 To 3
+				$sRead = getOcrAndCapture($sFont, $iX, $aY[$iTry], $bBB ? 40 : 36, 16, True)
+				If StringRegExp($sRead, "^\d+#\d+$") Then ExitLoop
+			Next
+		EndIf
 		If StringRegExp($sRead, "^\d+#\d+$") Then
 			$aSplit = StringSplit($sRead, "#", $STR_NOCOUNT)
 			$g_aiBuildMenuCounter[$iTab][0] = Number($aSplit[0])
@@ -555,6 +574,10 @@ EndFunc   ;==>BuildMenuIsRedCost
 
 Func BuildMenuReadCost($iX, $iY)
 	If BuildMenuIsRedCost($iX, $iY) Then Return -1 ; red digits are also often misread: skip the row
+	; own glyphs first: 668 of 668 cost rows right (6 accounts + Builder Base, Nov 2026). The template font below lost
+	; digits on 258 rows and read 55 wrong but well formed ("93 750" as "33 750", "9 000 000" as "3 000 000")
+	Local $iGlyph = BuildMenuReadCostGlyph($iY)
+	If $iGlyph > 0 Then Return $iGlyph
 	Local $iMinDigits = BuildMenuCostMinDigits($iX, $iY)
 	; template font, keep spaces to check the digit groups ("5 400 000"); a lost digit gives "00 000" or "5 00 000"
 	Local $sCost = getOcrAndCapture("coc-buildermenu-cost", $iX - 120, $iY - 2, 120, 18, False)
@@ -599,7 +622,6 @@ EndFunc   ;==>BuildMenuIsSubsequence
 ; digit count of the white cost text (last _CaptureRegion frame), to catch a lost digit ("12 600 000" read as "2 600 000").
 ; Pixel width can not tell 7 from 8 digits ("1" is narrow), so digits are counted: white column runs are digits,
 ; gaps of 1..3 px are inside a digit group, 5+ px between groups (Build menu screenshots, Oct 2026).
-; Return 1 (no check) when the text does not look like "d dd ddd" groups
 Func BuildMenuCostMinDigits($iX, $iY)
 	Local $iRight = 0
 	For $x = $iX - 5 To $iX - 30 Step -1 ; right end of the text, left of the icon
@@ -770,9 +792,7 @@ EndFunc   ;==>BuildMenuReadPage
 
 ; scroll rule for Build menu lists. Affordable rows come first (most expensive first), red rows (not enough
 ; resource) below them; a few red rows can be above them too (Suggested upgrades, top of Other upgrades).
-; $iFlags = page flags: 1 = red row below an affordable row, 2 = affordable row, 4 = red row
 ; red rows after affordable rows (or a page with only red rows): check one more page, stop if it has no affordable row
-; Return True = stop scrolling
 Func BuildMenuStopScroll($iFlags, ByRef $bAffordSeen, ByRef $bCheckNext)
 	Local $bAfford = (BitAND($iFlags, 2) = 2)
 	If $bCheckNext And Not $bAfford Then Return True
@@ -888,9 +908,111 @@ Func BuildMenuReadTime($iY)
 	Return BuildMenuTimeToMin(StringRegExpReplace($sText, "([dhm])(?=\d)", "$1 "))
 EndFunc   ;==>BuildMenuReadTime
 
+; white cost of the row with resource icon at $iY, read with the glyphs of $g_aiBuildCostGlyph. Digits right to left until
+; a gap > 12 px (name or sub text on the left), groups split at gaps of 5+ px. A letter of the time glyphs (d h m s) or a
+; glyph far from every template = not a clean cost. Return the cost, 0 = not read (the template OCR is tried next)
+Func BuildMenuReadCostGlyph($iY)
+	Local Const $iX0 = 712, $iW = 122, $iH = 20 ; longest cost "10 500 000" starts at x 736
+	If $iY - 4 < 0 Then Return 0
+	_CaptureRegion2($iX0, $iY - 4, $iX0 + $iW, $iY - 4 + $iH)
+	Local $hBmp = _GDIPlus_BitmapCreateFromHBITMAP($g_hHBitmap2)
+	If @error Or $hBmp = 0 Then Return 0
+	Local $tData = _GDIPlus_BitmapLockBits($hBmp, 0, 0, $iW, $iH, $GDIP_ILMREAD, $GDIP_PXF32ARGB)
+	Local $iStridePx = DllStructGetData($tData, "Stride") / 4
+	Local $tPix = DllStructCreate("uint[" & $iStridePx * $iH & "]", DllStructGetData($tData, "Scan0"))
+	Local $aM[$iH][$iW], $abRow[$iH], $iPix, $r, $g, $b
+	For $y = 0 To $iH - 1
+		For $x = 0 To $iW - 1
+			$iPix = DllStructGetData($tPix, 1, $y * $iStridePx + $x + 1)
+			$r = BitAND(BitShift($iPix, 16), 0xFF)
+			$g = BitAND(BitShift($iPix, 8), 0xFF)
+			$b = BitAND($iPix, 0xFF)
+			; white: every channel > 200 and close to each other (inline, _Min / _Max calls doubled the time)
+			If $r > 200 And $g > 200 And $b > 200 And Abs($r - $g) < 60 And Abs($r - $b) < 60 And Abs($g - $b) < 60 Then
+				$aM[$y][$x] = 1
+				$abRow[$y] = True
+			Else
+				$aM[$y][$x] = 0
+			EndIf
+		Next
+	Next
+	_GDIPlus_BitmapUnlockBits($hBmp, $tData)
+	_GDIPlus_BitmapDispose($hBmp)
+	; the text band: rows with white next to each other, 8 to 13 high (cost digits are 10-11)
+	Local $iBandT = -1, $iBandB = -1, $y = 0
+	While $y < $iH
+		If Not $abRow[$y] Then
+			$y += 1
+			ContinueLoop
+		EndIf
+		Local $iT = $y
+		While $y < $iH And $abRow[$y]
+			$y += 1
+		WEnd
+		If $y - $iT >= 8 And $y - $iT <= 13 Then
+			$iBandT = $iT
+			$iBandB = $y - 1
+			ExitLoop
+		EndIf
+	WEnd
+	If $iBandT < 0 Then Return 0
+	Local $abCol[$iW]
+	For $x = 0 To $iW - 1
+		For $y = $iBandT To $iBandB
+			If $aM[$y][$x] Then
+				$abCol[$x] = True
+				ExitLoop
+			EndIf
+		Next
+	Next
+	; glyphs right to left, the first one must end near the icon
+	Local $sText = "", $x = $iW - 1, $iEnd, $iTop, $iBot, $iLastS = -1, $sChar
+	While $x >= 0
+		If Not $abCol[$x] Then
+			$x -= 1
+			ContinueLoop
+		EndIf
+		$iEnd = $x + 1
+		While $x >= 0 And $abCol[$x]
+			$x -= 1
+		WEnd
+		If $iLastS >= 0 And $iLastS - $iEnd > 12 Then ExitLoop
+		$iTop = -1
+		$iBot = -1
+		For $y = $iBandT To $iBandB
+			For $c = $x + 1 To $iEnd - 1
+				If $aM[$y][$c] Then
+					If $iTop < 0 Then $iTop = $y
+					$iBot = $y
+					ExitLoop
+				EndIf
+			Next
+		Next
+		If $iBot - $iTop + 1 < 6 Then ContinueLoop
+		If $iLastS < 0 And $iEnd < $iW - 30 Then Return 0 ; first glyph far from the icon: not a cost line
+		$sChar = BuildMenuGlyphMatch($aM, $x + 1, $iEnd, $iTop, $iBot, $g_aiBuildCostGlyph)
+		Local $iDist = @extended
+		If BuildMenuGlyphMatch($aM, $x + 1, $iEnd, $iTop, $iBot, $g_aiBuildTimeGlyph, True) <> "" And @extended < $iDist Then Return 0 ; time text
+		If $iDist > 24 Then Return 0
+		If $iLastS >= 0 And $iLastS - $iEnd >= 5 Then $sChar &= " "
+		$sText = $sChar & $sText
+		$iLastS = $x + 1
+	WEnd
+	If Not StringRegExp($sText, "^[1-9]\d{0,2}( \d{3})*$") Then
+		If $sText <> "" Then SetDebugLog("Cost glyphs '" & $sText & "' not a cost")
+		Return 0
+	EndIf
+	Return Number(StringReplace($sText, " ", ""))
+EndFunc   ;==>BuildMenuReadCostGlyph
+
 ; nearest glyph of $g_aiBuildTimeGlyph: glyph (columns $iS .. $iE - 1, rows $iT .. $iB of $aM) scaled to 8x12 like the
 ; templates, distance = different bits + 3 x (width + height difference)
 Func BuildMenuTimeGlyph(ByRef $aM, $iS, $iE, $iT, $iB)
+	Return BuildMenuGlyphMatch($aM, $iS, $iE, $iT, $iB, $g_aiBuildTimeGlyph)
+EndFunc   ;==>BuildMenuTimeGlyph
+
+; nearest glyph of $aDB ([char, width, height, 12 rows]), @extended = distance. $bLetters: letters only ("" if none)
+Func BuildMenuGlyphMatch(ByRef $aM, $iS, $iE, $iT, $iB, ByRef $aDB, $bLetters = False)
 	Static $aiPop[256]
 	If $aiPop[255] = 0 Then
 		For $v = 0 To 255
@@ -907,19 +1029,20 @@ Func BuildMenuTimeGlyph(ByRef $aM, $iS, $iE, $iT, $iB)
 		$aiRow[$y] = $v
 	Next
 	Local $iBest = 9999, $sBest = "", $iD
-	For $i = 0 To UBound($g_aiBuildTimeGlyph) - 1
-		$iD = 3 * (Abs($w - $g_aiBuildTimeGlyph[$i][1]) + Abs($h - $g_aiBuildTimeGlyph[$i][2]))
+	For $i = 0 To UBound($aDB) - 1
+		If $bLetters And Not StringIsAlpha($aDB[$i][0]) Then ContinueLoop
+		$iD = 3 * (Abs($w - $aDB[$i][1]) + Abs($h - $aDB[$i][2]))
 		If $iD >= $iBest Then ContinueLoop
 		For $y = 0 To 11
-			$iD += $aiPop[BitXOR($aiRow[$y], $g_aiBuildTimeGlyph[$i][$y + 3])]
+			$iD += $aiPop[BitXOR($aiRow[$y], $aDB[$i][$y + 3])]
 		Next
 		If $iD < $iBest Then
 			$iBest = $iD
-			$sBest = $g_aiBuildTimeGlyph[$i][0]
+			$sBest = $aDB[$i][0]
 		EndIf
 	Next
-	Return $sBest
-EndFunc   ;==>BuildMenuTimeGlyph
+	Return SetExtended($iBest, $sBest)
+EndFunc   ;==>BuildMenuGlyphMatch
 
 ; "Upgrade only when done before" ($g_sUpgradeDeadline "yyyy-mm-dd hh:mm", "" = off): minutes left, -1 = off or passed
 Func UpgradeDeadlineLeft()
@@ -1109,7 +1232,6 @@ EndFunc   ;==>BuildMenuFindOnPage
 ; Builder Base: a click on a Build menu row opens the "Upgrade to level X?" window directly.
 ; Building window: green button with cost at (433,540). Star Laboratory window: green button at (718,577)
 ; (left of it is the blue book/potion button, never click there). Red cost on the button = not enough resource.
-; Return True when upgrade started (or window found in test mode)
 Func BBConfirmUpgradeWindow($sName, $bTest = False)
 	Local $iBtnX = 0, $iBtnY = 0
 	For $i = 1 To 6 ; wait for the window
@@ -1365,7 +1487,6 @@ EndFunc   ;==>BBWallTopButtonPixels
 ; Upgrade More on a selected BB wall (same layout as home village, tested on BB screenshots lv5 / lv6):
 ; top row before: Info | Select Row | Upgrade More (no green), after Upgrade More: Remove Wall | +10 (green) | +1 (green)
 ; bottom row keeps the Gold / Elixir upgrade buttons, their cost becomes the total cost.
-; Return 1 = upgraded, 0 = no Upgrade More button (nothing clicked), -1 = failed after Upgrade More (wall unselected)
 Func BBWallUpgradeMore($sResource, $iCount)
 	Static $iFail = 0 ; resource button not found after Upgrade More 3 times in a row: single wall upgrade until bot restart
 	If $iFail >= 3 Then Return 0
@@ -1482,7 +1603,6 @@ EndFunc   ;==>BBWallButtonIconX
 
 ; after Upgrade More with fewer than 10 walls of the level the Gold button moves to the top row (x ~340, Oct 2026:
 ; Gold icon 366,486, Elixir icon 232,570). Bottom row first: the top row scan finds a wrong icon when +10 is there.
-; $iRowY = cost line top of the row found (566 bottom, 482 top), button click y = $iRowY + 39
 Func BBWallButtonIconXRow($sResource, ByRef $iRowY)
 	$iRowY = 566
 	Local $iX = BBWallButtonIconX($sResource)

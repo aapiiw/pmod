@@ -63,22 +63,6 @@ Func AttackCSVDEBUGIMAGE($bOpenImage = False)
 	_GDIPlus_GraphicsDrawLine($hGraphic, $ExternalArea[5][0], $ExternalArea[5][1], $ExternalArea[6][0], $ExternalArea[6][1], $hPenLtGreen)
 
 	;-- DRAW REDAREA PATH
-	;For $i = 0 To UBound($g_aiPixelTopLeft) - 1
-	;	$pixel = $g_aiPixelTopLeft[$i]
-	;	_GDIPlus_GraphicsDrawEllipse($hGraphic, $pixel[0], $pixel[1], 3, 3, $hPenCyan)
-	;Next
-	;For $i = 0 To UBound($g_aiPixelTopRight) - 1
-	;	$pixel = $g_aiPixelTopRight[$i]
-	;	_GDIPlus_GraphicsDrawEllipse($hGraphic, $pixel[0], $pixel[1], 3, 3, $hPenCyan)
-	;Next
-	;For $i = 0 To UBound($g_aiPixelBottomLeft) - 1
-	;	$pixel = $g_aiPixelBottomLeft[$i]
-	;	_GDIPlus_GraphicsDrawEllipse($hGraphic, $pixel[0], $pixel[1], 3, 3, $hPenCyan)
-	;Next
-	;For $i = 0 To UBound($g_aiPixelBottomRight) - 1
-	;	$pixel = $g_aiPixelBottomRight[$i]
-	;	_GDIPlus_GraphicsDrawEllipse($hGraphic, $pixel[0], $pixel[1], 3, 3, $hPenCyan)
-	;Next
 	
 	; --- 2. GAMBAR TITIK FILTER (CYAN KECIL & SOLID) ---
 	Local $hBrushCyan = _GDIPlus_BrushCreateSolid(0xFF00FFFF) ; Cyan Solid
@@ -161,12 +145,6 @@ Func AttackCSVDEBUGIMAGE($bOpenImage = False)
 	Next
 
 	;;DRAW DROP POINTS EXAMPLES
-	;$testx = MakeDropPoints("TOP-LEFT-DOWN", 10, 2, "EXT-INT")
-	;For $i = 0 To UBound($testx) - 1
-	;	$pixel = $testx[$i]
-	;	_GDIPlus_GraphicsDrawString($hGraphic, $i + 1, $pixel[0], $pixel[1], "Arial", 12)
-	;	_GDIPlus_GraphicsDrawEllipse($hGraphic, $pixel[0], $pixel[1], 6, 6, $hPenRed)
-	;Next
 
 	$testx = MakeDropPoints("TOP-LEFT-DOWN", 10, 4, "EXT-INT") ;
 	For $i = 0 To UBound($testx) - 1
@@ -175,12 +153,6 @@ Func AttackCSVDEBUGIMAGE($bOpenImage = False)
 		_GDIPlus_GraphicsDrawEllipse($hGraphic, $pixel[0], $pixel[1], 6, 6, $hPenMdGreen)
 	Next
 
-	;$testx = MakeDropPoints("BOTTOM-LEFT-UP", 10, 2, "EXT-INT")
-	;For $i = 0 To UBound($testx) - 1
-	;	$pixel = $testx[$i]
-	;	_GDIPlus_GraphicsDrawString($hGraphic, $i + 1, $pixel[0], $pixel[1], "Arial", 12)
-	;	_GDIPlus_GraphicsDrawEllipse($hGraphic, $pixel[0], $pixel[1], 6, 6, $hPenRed)
-	;Next
 
 	$testx = MakeDropPoints("BOTTOM-LEFT-UP", 10, 4, "EXT-INT") ;
 	For $i = 0 To UBound($testx) - 1
@@ -189,12 +161,6 @@ Func AttackCSVDEBUGIMAGE($bOpenImage = False)
 		_GDIPlus_GraphicsDrawEllipse($hGraphic, $pixel[0], $pixel[1], 6, 6, $hPenMdGreen)
 	Next
 
-	;$testx = MakeDropPoints("TOP-RIGHT-DOWN", 10, 2, "EXT-INT")
-	;For $i = 0 To UBound($testx) - 1
-	;	$pixel = $testx[$i]
-	;	_GDIPlus_GraphicsDrawString($hGraphic, $i + 1, $pixel[0], $pixel[1], "Arial", 12)
-	;	_GDIPlus_GraphicsDrawEllipse($hGraphic, $pixel[0], $pixel[1], 6, 6, $hPenRed)
-	;Next
 
 	$testx = MakeDropPoints("TOP-RIGHT-DOWN", 10, 4, "EXT-INT") ;
 	For $i = 0 To UBound($testx) - 1
@@ -203,12 +169,6 @@ Func AttackCSVDEBUGIMAGE($bOpenImage = False)
 		_GDIPlus_GraphicsDrawEllipse($hGraphic, $pixel[0], $pixel[1], 6, 6, $hPenMdGreen)
 	Next
 
-	;$testx = MakeDropPoints("BOTTOM-RIGHT-UP", 10, 2, "EXT-INT")
-	;For $i = 0 To UBound($testx) - 1
-	;	$pixel = $testx[$i]
-	;	_GDIPlus_GraphicsDrawString($hGraphic, $i + 1, $pixel[0], $pixel[1], "Arial", 12)
-	;	_GDIPlus_GraphicsDrawEllipse($hGraphic, $pixel[0], $pixel[1], 6, 6, $hPenRed)
-	;Next
 
 	$testx = MakeDropPoints("BOTTOM-RIGHT-UP", 10, 4, "EXT-INT") ;
 	For $i = 0 To UBound($testx) - 1
@@ -217,12 +177,6 @@ Func AttackCSVDEBUGIMAGE($bOpenImage = False)
 		_GDIPlus_GraphicsDrawEllipse($hGraphic, $pixel[0], $pixel[1], 6, 6, $hPenMdGreen)
 	Next
 
-	;$testx = MakeDropPoints("TOP-LEFT-UP", 10, 2, "INT-EXT")
-	;For $i = 0 To UBound($testx) - 1
-	;	$pixel = $testx[$i]
-	;	_GDIPlus_GraphicsDrawString($hGraphic, $i + 1, $pixel[0], $pixel[1], "Arial", 12)
-	;	_GDIPlus_GraphicsDrawEllipse($hGraphic, $pixel[0], $pixel[1], 6, 6, $hPenRed)
-	;Next
 
 	$testx = MakeDropPoints("TOP-LEFT-UP", 10, 4, "INT-EXT") ;
 	For $i = 0 To UBound($testx) - 1
@@ -231,12 +185,6 @@ Func AttackCSVDEBUGIMAGE($bOpenImage = False)
 		_GDIPlus_GraphicsDrawEllipse($hGraphic, $pixel[0], $pixel[1], 6, 6, $hPenMdGreen)
 	Next
 
-	;$testx = MakeDropPoints("BOTTOM-LEFT-DOWN", 10, 2, "INT-EXT")
-	;For $i = 0 To UBound($testx) - 1
-	;	$pixel = $testx[$i]
-	;	_GDIPlus_GraphicsDrawString($hGraphic, $i + 1, $pixel[0], $pixel[1], "Arial", 12)
-	;	_GDIPlus_GraphicsDrawEllipse($hGraphic, $pixel[0], $pixel[1], 6, 6, $hPenRed)
-	;Next
 
 	$testx = MakeDropPoints("BOTTOM-LEFT-DOWN", 10, 4, "INT-EXT") ;
 	For $i = 0 To UBound($testx) - 1
@@ -245,12 +193,6 @@ Func AttackCSVDEBUGIMAGE($bOpenImage = False)
 		_GDIPlus_GraphicsDrawEllipse($hGraphic, $pixel[0], $pixel[1], 6, 6, $hPenMdGreen)
 	Next
 
-	;$testx = MakeDropPoints("TOP-RIGHT-UP", 10, 2, "INT-EXT")
-	;For $i = 0 To UBound($testx) - 1
-	;	$pixel = $testx[$i]
-	;	_GDIPlus_GraphicsDrawString($hGraphic, $i + 1, $pixel[0], $pixel[1], "Arial", 12)
-	;	_GDIPlus_GraphicsDrawEllipse($hGraphic, $pixel[0], $pixel[1], 6, 6, $hPenRed)
-	;Next
 
 	$testx = MakeDropPoints("TOP-RIGHT-UP", 10, 4, "INT-EXT") ;
 	For $i = 0 To UBound($testx) - 1
@@ -259,12 +201,6 @@ Func AttackCSVDEBUGIMAGE($bOpenImage = False)
 		_GDIPlus_GraphicsDrawEllipse($hGraphic, $pixel[0], $pixel[1], 6, 6, $hPenMdGreen)
 	Next
 
-	;$testx = MakeDropPoints("BOTTOM-RIGHT-DOWN", 10, 2, "INT-EXT")
-	;For $i = 0 To UBound($testx) - 1
-	;	$pixel = $testx[$i]
-	;	_GDIPlus_GraphicsDrawString($hGraphic, $i + 1, $pixel[0], $pixel[1], "Arial", 12)
-	;	_GDIPlus_GraphicsDrawEllipse($hGraphic, $pixel[0], $pixel[1], 6, 6, $hPenRed)
-	;Next
 
 	$testx = MakeDropPoints("BOTTOM-RIGHT-DOWN", 10, 4, "INT-EXT") ;
 	For $i = 0 To UBound($testx) - 1
@@ -386,14 +322,6 @@ Func AttackCSVDEBUGIMAGE($bOpenImage = False)
 	EndIf
 
 	; 99 -  DRAW SLICE NUMBERS
-	;_GDIPlus_GraphicsDrawString($hGraphic, "1", 580, 580, "Arial", 20)
-	;_GDIPlus_GraphicsDrawString($hGraphic, "2", 750, 450, "Arial", 20)
-	;_GDIPlus_GraphicsDrawString($hGraphic, "3", 750, 200, "Arial", 20)
-	;_GDIPlus_GraphicsDrawString($hGraphic, "4", 580, 110, "Arial", 20)
-	;_GDIPlus_GraphicsDrawString($hGraphic, "5", 260, 110, "Arial", 20)
-	;_GDIPlus_GraphicsDrawString($hGraphic, "6", 110, 200, "Arial", 20)
-	;_GDIPlus_GraphicsDrawString($hGraphic, "7", 110, 450, "Arial", 20)
-	;_GDIPlus_GraphicsDrawString($hGraphic, "8", 310, 580, "Arial", 20)
 	
 	
 	; - DRAW GetVillageSize
@@ -405,8 +333,6 @@ Func AttackCSVDEBUGIMAGE($bOpenImage = False)
 	DrawStringA($hGraphic, "Offset: " & $g_aVillageSize[2] & ", " & $g_aVillageSize[3], 610, 550, "Arial", 12)
 	
 	_GDIPlus_GraphicsDrawLine($hGraphic, int($g_aVillageSize[4]), int($g_aVillageSize[5]), int($g_aVillageSize[7]), int($g_aVillageSize[8]), $hPenMagenta)
-	;_GDIPlus_GraphicsDrawLine($hGraphic, int($g_aVillageSize[4]), int($g_aVillageSize[8]), int($g_aVillageSize[7]), int($g_aVillageSize[8]), $hPenMagenta)
-	;_GDIPlus_GraphicsDrawLine($hGraphic, int($g_aVillageSize[4]), int($g_aVillageSize[8]), int($g_aVillageSize[4]), int($g_aVillageSize[5]), $hPenMagenta)
 
 	Local $Date = @YEAR & "-" & @MON & "-" & @MDAY
 	Local $Time = @HOUR & "." & @MIN & "." & @SEC

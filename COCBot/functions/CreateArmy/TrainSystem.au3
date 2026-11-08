@@ -257,7 +257,6 @@ Func TrainUsingWhatToTrain($rWTT, $bQueue = $g_bIsFullArmywithHeroesAndSpells)
 	Return True
 EndFunc   ;==>TrainUsingWhatToTrain
 
-;BrewUsingWhatToTrain(WhatToTrain())
 Func BrewUsingWhatToTrain($rWTT, $bQueue = $g_bIsFullArmywithHeroesAndSpells)
 	If Not $g_bRunState Then Return
 
@@ -317,29 +316,7 @@ Func DragIfNeeded($iTroopIndex)
 		Next
 	EndIf
 
-	;If Not $bDragLeft And Not $bDragRight Then
-	;	For $i = 1 To 2
-	;		If $i < 2 Then
-	;			SetLog("[" & $i & "] DragIfNeeded [" & $iIndex & "] " & $g_asTroopNames[$iIndex] & " : Scroll Left", $COLOR_ACTION)
-	;			ClickDrag(100, 435, 850, 435)
-	;		Else
-	;			SetLog("[" & $i & "] DragIfNeeded [" & $iIndex & "] " & $g_asTroopNames[$iIndex] & " : Scroll Right", $COLOR_ACTION)
-	;			ClickDrag(750, 435, 50, 435)
-	;		EndIf
-	;		If _Sleep(1500) Then Return
-	;		If QuickMIS("BFI", $g_sImgTrainTroops & $Troop & "*", 70, 350, 780, 500) Then Return True
-	;	Next
-	;EndIf
 
-	;SetLog("Failed to Verify Troop " & $g_asTroopNames[TroopIndexLookup($Troop, "DragIfNeeded")] & " Position or Failed to Drag Successfully", $COLOR_ERROR)
-	;If $g_bSuperTroopsEnable Then
-	;	SetLog("Re-Check If SuperTroop Boost needed", $COLOR_INFO)
-	;	ClickAway()
-	;	BoostSuperTroop(False, True)
-	;	OpenArmyOverview()
-	;	OpenTroopsTab()
-	;	TrainUsingWhatToTrain(WhatToTrain())
-	;EndIf
 	Return False
 EndFunc   ;==>DragIfNeeded
 
@@ -373,25 +350,12 @@ Func IsDarkTroop($Troop)
 	Return False
 EndFunc   ;==>IsDarkTroop
 
-Func IsElixirSpell($Spell)
-	Local $iIndex = TroopIndexLookup($Spell, "IsElixirSpell")
-	If $iIndex >= $eLSpell And $iIndex <= $eReSpell Then Return True
-	Return False
-EndFunc   ;==>IsElixirSpell
-
-Func IsDarkSpell($Spell)
-	Local $iIndex = TroopIndexLookup($Spell, "IsDarkSpell")
-	If $iIndex >= $ePSpell And $iIndex <= $eOgSpell Then Return True
-	Return False
-EndFunc   ;==>IsDarkSpell
-
 Func IsSpellToBrew($sName)
 	Local $iIndex = TroopIndexLookup($sName, "IsSpellToBrew")
 	If $iIndex >= $eLSpell And $iIndex <= $eOgSpell Then Return True
 	Return False
 EndFunc   ;==>IsSpellToBrew
 
-;RemoveExtraTroops(WhatToTrain(True))
 Func RemoveExtraTroops($toRemove)
 	Local $CounterToRemove = 0, $iResult = 0, $iIndex, $aRemovePos[2], $bIsSpell = False
 	; Army Window should be open and should be in Tab 'Army tab'
@@ -557,60 +521,6 @@ Func ClickRemoveTroop($pos, $iTimes, $iSpeed)
 	EndIf
 EndFunc   ;==>ClickRemoveTroop
 
-Func GetSlotNumber($bSpells = False)
-	Select
-		Case $bSpells = False
-			Local Const $Orders = [$eBarb, $eSBarb, $eArch, $eSArch, $eGiant, $eSGiant, $eGobl, $eSGobl, $eWall, $eSWall, $eBall, _
-			$eRBall, $eWiza, $eSWiza, $eHeal, $eDrag, $eSDrag, $ePekk, $eBabyD, $eInfernoD, $eMine, $eSMine, _
-			$eEDrag, $eYeti, $eRDrag, $eETitan, $eRootR, $eMini, $eSMini, $eHogs, $eSHogs, $eValk, $eSValk, $eGole, _
-			$eWitc, $eSWitc, $eLava, $eIceH, $eBowl, $eSBowl, $eIceG, $eHunt, $eAppWard, $eGSkel, $eRGhost, _
-			$ePWiza, $eIWiza] ; Set Order of troop display in Army Tab
-
-			Local $allCurTroops[UBound($Orders)]
-
-			; Code for Elixir Troops to Put Current Troops into an array by Order
-			For $i = 0 To $eTroopCount - 1
-				If Not $g_bRunState Then Return
-				If $g_aiCurrentTroops[$i] > 0 Then
-					For $j = 0 To (UBound($Orders) - 1)
-						If TroopIndexLookup($g_asTroopShortNames[$i], "GetSlotNumber#1") = $Orders[$j] Then
-							$allCurTroops[$j] = $g_asTroopShortNames[$i]
-						EndIf
-					Next
-				EndIf
-			Next
-
-			;_ArrayDisplay($allCurTroops, "$allCurTroops")
-
-			_ArryRemoveBlanks($allCurTroops)
-
-			Return $allCurTroops
-		Case $bSpells = True
-
-			; Set Order of Spells display in Army Tab
-			Local Const $SpellsOrders = [$eLSpell, $eHSpell, $eRSpell, _
-			$eJSpell, $eFSpell, $eCSpell, $eISpell, $eReSpell, $ePSpell, $eESpell, $eHaSpell, $eSkSpell, $eBtSpell, $eOgSpell]
-
-			Local $allCurSpells[UBound($SpellsOrders)]
-
-			; Code for Spells to Put Current Spells into an array by Order
-			For $i = 0 To $eSpellCount - 1
-				If Not $g_bRunState Then Return
-				If $g_aiCurrentSpells[$i] > 0 Then
-					For $j = 0 To (UBound($SpellsOrders) - 1)
-						If TroopIndexLookup($g_asSpellShortNames[$i], "GetSlotNumber#2") = $SpellsOrders[$j] Then
-							$allCurSpells[$j] = $g_asSpellShortNames[$i]
-						EndIf
-					Next
-				EndIf
-			Next
-
-			_ArryRemoveBlanks($allCurSpells)
-
-			Return $allCurSpells
-	EndSelect
-EndFunc   ;==>GetSlotNumber
-
 Func WhatToTrain($ReturnExtraTroopsOnly = False, $bFullArmy = $g_bIsFullArmywithHeroesAndSpells)
 	OpenArmyTab(False, "WhatToTrain()")
 	Local $ToReturn[1][2] = [["Arch", 0]] ; 2 element dynamic list [troop, quantity]
@@ -720,7 +630,6 @@ Func CheckQueueTroops($bGetQuantity = True, $bSetLog = True, $x = 777, $bQtyWSlo
 	If $bSetLog Then SetLog("Checking Troops Queue", $COLOR_INFO)
 
 	Local $aSearchResult = SearchArmy($g_sImgArmyOverviewTroopsQueued, 73, 205, $x, 243, $bGetQuantity ? "Queue" : "")
-	;SearchArmy($g_sImgArmyOverviewTroopsQueued, 73, 205, 777, 243, "Queue")
 	ReDim $aResult[UBound($aSearchResult)]
 
 
@@ -758,14 +667,11 @@ Func CheckQueueTroops($bGetQuantity = True, $bSetLog = True, $x = 777, $bQtyWSlo
 	Return $aResult
 EndFunc   ;==>CheckQueueTroops
 
-;CheckQueueSpells(True, True, 777, True)
 Func CheckQueueSpells($bGetQuantity = True, $bSetLog = True, $x = 777, $bQtyWSlot = False)
 	Local $avResult[$eSpellCount]
 
 	If $bSetLog Then SetLog("Checking Spells Queue", $COLOR_INFO)
 	Local $avSearchResult = SearchArmy($g_sImgArmyOverviewSpellsQueued, 73, 205, $x, 243, $bGetQuantity ? "Queue" : "")
-	;SearchArmy($g_sImgArmyOverviewSpellsQueued, 73, 205, 477, 243, "Queue")
-	;QuickMIS("CNX", $g_sImgArmyOverviewSpellsQueued, 73, 205, 477, 243)
 	If $avSearchResult[0][0] = "" Then
 		Setlog("CheckQueueTroops : No Queued Spells detected!", $COLOR_INFO)
 		Return
@@ -886,7 +792,6 @@ Func SearchArmy($sImageDir = "", $x = 0, $y = 0, $x1 = 0, $y1 = 0, $sArmyType = 
 	If $sArmyType = "Spells" Then
 		For $i = 0 To UBound($aResult) - 1
 			$aResult[$i][3] = Number(getBarracksNewTroopQuantity(Slot($aResult[$i][1], "spells"), 312)) ; coc-newarmy
-			;SetLog("$aResult: " & $aResult[$i][0] & "|" & $aResult[$i][1] & "|" & $aResult[$i][2] & "|" & $aResult[$i][3])
 		Next
 	EndIf
 	If $sArmyType = "CCSpells" Then
@@ -965,41 +870,3 @@ Func ResetVariables($sArmyType = "")
 	EndIf
 
 EndFunc   ;==>ResetVariables
-
-Func DeleteQueued($sArmyTypeQueued, $iOffsetQueued = 802)
-
-	If $sArmyTypeQueued = "Troops" Then
-		If Not OpenTroopsTab(True, "DeleteQueued()") Then Return
-	ElseIf $sArmyTypeQueued = "Spells" Then
-		If Not OpenSpellsTab(True, "DeleteQueued()") Then Return
-	ElseIf $sArmyTypeQueued = "SiegeMachines" Then
-		If Not OpenSiegeMachinesTab(True, "DeletQueued()") Then Return
-	Else
-		Return
-	EndIf
-	If _Sleep(500) Then Return
-
-	For $i = 1 To 50
-		If QuickMIS("BC1", $g_sImgDelQueue, 755, 190, 780, 210) Then
-			If Not $g_bRunState Then Return
-			SetLog("Remove All Queued " & $sArmyTypeQueued & " #" & $i, $COLOR_ACTION)
-			Click($g_iQuickMISX, $g_iQuickMISY, 10, 50, "Remove Troops")
-			If Not $g_bRunState Then Return
-			If _Sleep(1000) Then Return
-		Else
-			ExitLoop
-		EndIf
-	Next
-EndFunc   ;==>DeleteQueued
-
-Func _ArryRemoveBlanks(ByRef $aArray)
-	Local $iCounter = 0
-	For $i = 0 To UBound($aArray) - 1
-		If $aArray[$i] <> "" Then
-			$aArray[$iCounter] = $aArray[$i]
-			$iCounter += 1
-		EndIf
-	Next
-	ReDim $aArray[$iCounter]
-EndFunc   ;==>_ArryRemoveBlanks
-

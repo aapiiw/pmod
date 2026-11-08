@@ -13,16 +13,18 @@
 ; Link ..........: https://github.com/MyBotRun/MyBot/wiki
 ; Example .......: No
 ; ===============================================================================================================================
-Func BuildingInfo($iXstart = 242, $iYstart = 477)
+Func BuildingInfo($iXstart = 242, $iYstart = 480)
 
 	Local $sBldgText, $sBldgLevel, $aString
 	Local $aResult[3] = ["", "", ""]
 
-	$sBldgText = getNameBuilding($iXstart, $iYstart) ; Get Unit name and level with OCR
-	If $sBldgText = "" Then ; try a 2nd time after a short delay if slow PC
-		If _Sleep($DELAYBUILDINGINFO1) Then Return $aResult
-		$sBldgText = getNameBuilding($iXstart, $iYstart) ; Get Unit name and level with OCR
-	EndIf
+	; the label pops in with an animation: read again (new capture) when it is empty or has "Level" without a number
+	; ("Town Hall (Level 1( )" saved an empty Town Hall level and skipped Clan Games, Nov 2026)
+	For $iTry = 1 To 3
+		$sBldgText = getNameBuilding($iXstart, $iYstart)
+		If $sBldgText <> "" And (Not StringInStr($sBldgText, "Level") Or StringRegExp($sBldgText, "Level\s*\d+\s*\)")) Then ExitLoop
+		If $iTry < 3 And _Sleep(500) Then Return $aResult
+	Next
 	SetDebugLog("Read building Name String = " & $sBldgText, $COLOR_DEBUG) ;debug
 	If StringInStr($sBldgText, "Cart") Then $sBldgText &= " (FakeLevel 100)"
 	If StringInStr($sBldgText, "Tree") Then $sBldgText &= " (FakeLevel 99)"

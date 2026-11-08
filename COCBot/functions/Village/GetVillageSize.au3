@@ -27,7 +27,6 @@
 ; Link ..........: https://github.com/MyBotRun/MyBot/wiki
 ; Example .......: No
 ; ===============================================================================================================================
-;GetVillageSize(True, "stone", "tree", False)
 Func GetVillageSize($bOnBuilderBase = $g_bStayOnBuilderBase, $sStonePrefix = "stone", $sTreePrefix = "tree", $bOwnVillage = True)
 	FuncEnter(GetVillageSize)
 	Local $stone = [0, 0, 0, 0, 0, ""], $tree = [0, 0, 0, 0, 0, ""]
@@ -36,7 +35,6 @@ Func GetVillageSize($bOnBuilderBase = $g_bStayOnBuilderBase, $sStonePrefix = "st
 
 	; scenery code is shared by both bases: start with the last one found on this base for this account
 	; (a main village code on builder base always failed the first stone search and fell back to all stone files)
-	; $bOwnVillage = False (enemy village search): scenery of the enemy is not stored for this account
 	Local $iAcc = CurAccountIndex(), $iBase = $bOnBuilderBase ? 1 : 0
 	If Not $bOwnVillage Then
 		$iAcc = -1
@@ -96,7 +94,6 @@ Func GetVillageSize($bOnBuilderBase = $g_bStayOnBuilderBase, $sStonePrefix = "st
 		$checkZoomOffset = Round(($c - $iRefSize), 2)
 		If $checkZoomOffset > $ZoomOffset Then 
 			SetDebugLog("Stone2tree:" & Round($c, 2) & " - Reference:" & Round($iRefSize, 2) & " = " & $checkZoomOffset & " > " & $ZoomOffset, $COLOR_DEBUG2)
-			;Return FuncReturn($aResult)
 		Else
 			SetDebugLog("Stone2tree:" & Round($c, 2) & " Reference:" & Round($iRefSize, 2) & " checkZoomOffset: " & $checkZoomOffset, $COLOR_DEBUG2)
 		EndIf
@@ -142,7 +139,6 @@ EndFunc   ;==>GetVillageSize
 
 ; enemy village of a scenery without stone / tree files (26 "Dead Base Found BUT Measure Failed" in 2 days, Oct 2026): the
 ; search screen shows every village at the same zoom and place, so the last measured enemy village size is used
-; Return True when a measured village was available
 Func VillageSizeFallback()
 	If Not IsArray($g_aLastEnemyVillageSize) Then Return False
 	Local $a = $g_aLastEnemyVillageSize

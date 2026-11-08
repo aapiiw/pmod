@@ -32,7 +32,6 @@ Func GoldElixirChangeEBO(ByRef $bSpeedUpBattle)
 	; trophies are no longer shown in CoC, Dark Elixir is read directly (TH7+)
 	$DarkElixir1 = $g_iTownHallLevel >= 7 ? getDarkElixirVillageSearch(45, 126) : ""
 	
-	;SetLog("[G]: " & $Gold1 & " [E]: " & $Elixir1 & " [DE]: " & $DarkElixir1 & " [%]: " & $Damage, $COLOR_INFO)
 	;CALCULATE WHICH TIMER TO USE
 	Local $x = $g_aiStopAtkNoLoot1Time[$g_iMatchMode] * 1000, $y = $g_aiStopAtkNoLoot2Time[$g_iMatchMode] * 1000, $z, $w = $g_aiStopAtkPctNoChangeTime[$g_iMatchMode] * 1000
 	If Number($Gold1) < $g_aiStopAtkNoLoot2MinGold[$g_iMatchMode] And _

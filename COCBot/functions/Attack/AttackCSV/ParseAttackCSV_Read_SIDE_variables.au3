@@ -29,7 +29,6 @@ Func ParseAttackCSV_Read_SIDE_variables()
 	$g_bCSVLocateMortar = False
 	$g_bCSVLocateAirDefense = False
 	$g_bCSVLocateWall = False
-	; $g_bCSVLocateGemBox = False
 
 	If $g_iMatchMode = $DB Then
 		Local $filename = $g_sAttackScrScriptName[$DB]
@@ -79,7 +78,6 @@ Func ParseAttackCSV_Read_SIDE_variables()
 							If Int($value5) > 0 Then $g_bCSVLocateStorageElixir = True
 							If Int($value6) > 0 Then $g_bCSVLocateStorageDarkElixir = True
 							If Int($value7) > 0 Then $g_bCSVLocateStorageTownHall = True
-							; $value8 = Forced Side value
 						EndIf
 					Case "SIDEB"
 						If $bForceSideExist = False Then
@@ -90,7 +88,6 @@ Func ParseAttackCSV_Read_SIDE_variables()
 							If Int($value5) > 0 Then $g_bCSVLocateMortar = True
 							If Int($value6) > 0 Then $g_bCSVLocateAirDefense = True
 							If Int($value7) > 0 Then $g_bCSVLocateScatter = True
-							; If Int($value8) > 0 Then $g_bCSVLocateGemBox = True IE unused
 						EndIf
 					Case "MAKE" ; check if targeted building vectors are used im MAKE commands >> starting in V7.2+
 						If StringLen(StringStripWS($value8, $STR_STRIPALL)) > 0 Then ; check for empty string?

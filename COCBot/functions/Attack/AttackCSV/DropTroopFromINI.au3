@@ -82,7 +82,6 @@ Func DropTroopFromINI($sDropVectors, $iStartIndex, $iEndIndex, $aiIndexArray, $i
 	EndIf
 	Local $bHeroDrop = ($iTroopIndex = $eWarden ? True : False) ;set flag TRUE if Warden was dropped
 
-	;_ArrayDisplay($g_avAttackTroops, "Index: " & $iTroopIndex)
 
 	;search slot where is the troop...
 	Local $troopPosition = -1
@@ -127,7 +126,6 @@ Func DropTroopFromINI($sDropVectors, $iStartIndex, $iEndIndex, $aiIndexArray, $i
 
 	Else
 
-		;Local $SuspendMode = SuspendAndroid()
 
 		If $g_iCSVLastTroopPositionDropTroopFromINI <> $troopSlotConst Then
 			ReleaseClicks()

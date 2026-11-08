@@ -215,7 +215,6 @@ EndFunc   ;==>MakeDropPoints
 ; Example .......: No
 ; ===============================================================================================================================
 Func MakeTargetDropPoints($side, $pointsQty, $addtiles, $building)
-	;MakeTargetDropPoints(Eval($sidex), $value3,   $value4,   $value8))
 
 	debugAttackCSV("make for side " & $side & ", target: " & $building)
 

@@ -377,7 +377,6 @@ Func getRedAreaSideString(ByRef $aSide)
 EndFunc   ;==>getRedAreaSideBuildingString
 
 Func getRedAreaSide($redline = $g_sImglocRedline)
-	;SetDebugLog("getRedAreaSideBuilding: " & $redline)
 	Local $c = 0
 	Local $a[5]
 	Local $aPoints = StringSplit($redline, "|", $STR_NOCOUNT)
@@ -409,7 +408,6 @@ Func getRedAreaSide($redline = $g_sImglocRedline)
 	$a[2] = getRedAreaSideString($a2)
 	$a[3] = getRedAreaSideString($a3)
 	$a[4] = getRedAreaSideString($a4)
-	;SetDebugLog("getRedAreaSideBuilding, Side " & $i & ": " & StringReplace($a[$i], "-", ","))
 	
 	Return $a
 EndFunc   ;==>getRedAreaSideBuilding
@@ -575,8 +573,6 @@ EndFunc   ;==>_GetOffsetTroopFurther
 
 
 Func GetOffestPixelRedArea2($pixel, $eVectorType, $offset = 3)
-	; $nameFunc = "[GetOffestPixelRedArea] "
-	;  debugRedArea($nameFunc&" IN")
 	Local $pixelOffest = $pixel
 
 	If ($eVectorType = $eVectorLeftTop) Then
@@ -596,7 +592,6 @@ Func GetOffestPixelRedArea2($pixel, $eVectorType, $offset = 3)
 	If $pixelOffest[1] > 555 Then
 		$pixelOffest[1] = 555
 	EndIf
-	; debugRedArea($nameFunc&" OUT")
 	Return $pixelOffest
 
 

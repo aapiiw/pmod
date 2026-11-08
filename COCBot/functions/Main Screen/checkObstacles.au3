@@ -688,7 +688,7 @@ Func checkObstacles_Network($bForceCapture = False, $bReloadCoC = True)
 EndFunc   ;==>checkObstacles_Network
 
 Func SearchUnplacedBuilding()
-	Local $atmpInfo = getNameBuilding(460, 477)
+	Local $atmpInfo = getNameBuilding(460, 480)
 	If $atmpInfo = "" Then
 		Return False
 	Else

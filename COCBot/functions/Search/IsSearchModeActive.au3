@@ -164,28 +164,3 @@ Func IsWaitforHeroesActive()
 	If $g_bDebugSetlogTrain Or $g_bDebugSetlog Then SetLog("IsWaitforHeroesActive = False", $COLOR_DEBUG)
 	Return False
 EndFunc   ;==>IsWaitforHeroesActive
-
-; #FUNCTION# ====================================================================================================================
-; Name ..........: IsWaitforSiegeMachine
-; Description ...: Checks if Wait for Siege Machine is enabled for all enabled attack modes
-; Syntax ........: IsWaitforSiegeMachine()
-; Parameters ....: none
-; Return values .: Returns True if Wait for any Siege is enabled for any enabled attack mode, false if not
-; Author ........: ProMac (07-2018)
-; Modified ......:
-; Remarks .......: This file is part of MyBot, previously known as ClashGameBot. Copyright 2015-2019
-;                  MyBot is distributed under the terms of the GNU GPL
-; Related .......:
-; Link ..........: https://github.com/MyBotRun/MyBot/wiki
-; Example .......: No
-; ===============================================================================================================================
-Func IsWaitforSiegeMachine()
-	For $i = $DB To $g_iModeCount - 1
-		If $g_abAttackTypeEnable[$i] And $g_abSearchSiegeWaitEnable[$i] Then
-			If $g_bDebugSetlogTrain Or $g_bDebugSetlog Then SetLog("IsWaitforSiegeMachine = True", $COLOR_DEBUG)
-			Return True
-		EndIf
-	Next
-	If $g_bDebugSetlogTrain Or $g_bDebugSetlog Then SetLog("IsWaitforSiegeMachine = False", $COLOR_DEBUG)
-	Return False
-EndFunc   ;==>IsWaitforSiegeMachine

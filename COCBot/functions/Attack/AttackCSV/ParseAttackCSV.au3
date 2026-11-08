@@ -25,7 +25,6 @@ Func ParseAttackCSV($debug = False)
 		If @error Then SetLog("Failed to erase old vector: " & Chr(65 + $v) & ", ask code monkey to fix!", $COLOR_ERROR)
 	Next
 
-	;Local $filename = "attack1"
 	If $g_iMatchMode = $DB Then
 		Local $filename = $g_sAttackScrScriptName[$DB]
 	Else
@@ -646,7 +645,6 @@ EndFunc   ;==>CheckIfTownHallGotDestroyed
 Func ParseAttackCSV_MainSide($debug = False)
 
 	Local $bForceSideExist = False
-	;Local $filename = "attack1"
 	If $g_iMatchMode = $DB Then
 		Local $filename = $g_sAttackScrScriptName[$DB]
 	Else

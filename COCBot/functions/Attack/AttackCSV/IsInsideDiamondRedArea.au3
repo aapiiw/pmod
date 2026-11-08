@@ -32,7 +32,6 @@ Func isInsideDiamondRedArea($aCoords)
 	If ($DX / $aSize[0] + $DY / $aSize[1] <= 1) And $aCoords[0] > $DeployableLRTB[0] And $aCoords[0] <= $DeployableLRTB[1] And $aCoords[1] >= $DeployableLRTB[2] And $aCoords[1] <= $DeployableLRTB[3] Then
 		Return True ; Inside Village
 	Else
-		;debugAttackCSV("isInsideDiamondRedArea outside: " & $aCoords[0] & "," & $aCoords[1])
 		Return False ; Outside Village
 	EndIf
 EndFunc   ;==>isInsideDiamondRedArea

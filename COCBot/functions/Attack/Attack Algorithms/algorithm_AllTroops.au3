@@ -73,7 +73,6 @@ Func algorithm_AllTroops() ;Attack Algorithm for all existing troops
 			EndSwitch
 	EndSwitch
 
-	; $ListInfoDeploy = [Troop, No. of Sides, $WaveNb, $MaxWaveNb, $slotsPerEdge]
 	If $g_iMatchMode = $LB And $g_aiAttackStdDropSides[$LB] = 4 Then ; Customise DE side wave deployment here
 		Switch $g_aiAttackStdDropOrder[$g_iMatchMode]
 			Case 0

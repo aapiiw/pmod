@@ -32,7 +32,6 @@ Func BoostSuperTroop($bTest = False, $bForced = False)
 		EndIf
 	EndIf
 	
-	;assign("g_bSuperTroopBoosted", False)
 	If $g_bSuperTroopBoosted And Not $bForced Then 
 		SetLog("Troop Already Boosted on last check..., skip boost SuperTroop", $COLOR_SUCCESS)
 		Return ;Troop already checked and boosted

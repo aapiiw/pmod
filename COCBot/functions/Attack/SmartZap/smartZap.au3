@@ -48,7 +48,6 @@ EndFunc   ;==>displayZapLog
 Func getDarkElixir()
 	Local $g_iSearchDark = "", $iCount = 0
 
-	;SetLog("Getting Dark Elixir Values.")
 	If _CheckPixel($aAtkHasDarkElixir, $g_bCapturePixel, Default, "HasDarkElixir") Or _ColorCheck(_GetPixelColor(31, 144, True), Hex(0x0F0617, 6), 5) Then ; check if the village have a Dark Elixir Storage
 		While $g_iSearchDark = ""
 			$g_iSearchDark = getDarkElixirVillageSearch(45, 132) ; Get updated Dark Elixir value
@@ -281,7 +280,6 @@ Func smartZap($minDE = -1)
 				EndIf
 			Next
 			If $tLastZap > 0 Then
-				;If _Sleep(_Max($DELAYSMARTZAP10 - $tLastZap, 0)) Then Return ; 10 seconds since zap to disappear dust and bars
 				If _Sleep(1000) Then Return
 				Local $sToDelete = ""
 				Local $iToDelete = 0
@@ -313,7 +311,6 @@ Func smartZap($minDE = -1)
 			If $aCluster[2] < $aDarkDrills[0][3] Then $aCluster = -1
 		EndIf
 		If $aCluster = -1 And $aDarkDrills[0][4] <> 0 Then
-			;If _Sleep(_Max($DELAYSMARTZAP10 - __TimerDiff($aDarkDrills[0][4]), 0)) Then Return ; 10 seconds since zap to disappear dust and bars
 			If _Sleep(1000) Then Return
 			If ReCheckDrillExist($aDarkDrills[0][0], $aDarkDrills[0][1]) Then
 				$aDarkDrills[0][4] = 0

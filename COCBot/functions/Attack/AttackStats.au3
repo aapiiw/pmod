@@ -140,24 +140,8 @@ Func UpdateVarStats()
 	$g_sDate = _Date_Time_GetLocalTime()
 	$g_sDate = _Date_Time_SystemTimeToDateTimeStr($g_sDate)
 	$g_sProfilename = $g_sProfileCurrentName = "" ? $g_asProfileName[$g_iNextAccount] : $g_sProfileCurrentName
-	; $g_sSearchCount = "120"
-	; $g_sAttacksides = "2"
-	; $g_sResourcesIN = "3"
-	; $g_sResourcesOUT = "12"
-	; $g_sResBySide = "3|7|2|3"
 	$g_sOppThlevel = "TH" & $g_iSearchTH
-	; $g_sOppGold = "500000"
-	; $g_sOppElixir = "500000"
-	; $g_sOppDE = "1580"
-	; $g_sOppTrophies = "28"
 	$g_sTotalDamage = $g_sTotalDamage & "%"
-	; $g_sLootGold = "450000"
-	; $g_sLootElixir = "450000"
-	; $g_sLootDE = "250"
-	; $g_sLeague = "M1"
-	; $g_sBonusGold = "55000"
-	; $g_sBonusElixir = "55000"
-	; $g_sBonusDE = "250"
 	Local $totalresources = Int($g_sOppGold) + Int($g_sOppElixir) + Int($g_sOppDE)
 	Local $totalgrab = Int($g_sLootGold) + Int($g_sLootElixir) + Int($g_sLootDE)
 	$g_sPercentagesResources = StringFormat("%.2f", (($totalgrab / $totalresources) * 100)) & "%"

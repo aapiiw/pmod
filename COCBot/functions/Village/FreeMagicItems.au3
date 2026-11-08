@@ -205,7 +205,6 @@ Func GetFreeMagic()
 		SetDebugLog("Magic Item Capacity: " & $Capa)
 		$bClaimed = _ColorCheck(_GetPixelColor($aOcrPositions[$i][0], 297, True), Hex(0xAD5B0D, 6), 20)
 		$bFullStorage = _ColorCheck(_GetPixelColor($aOcrPositions[$i][0], $aOcrPositions[$i][1], True), Hex(0xA3A3A3, 6), 20)
-		;If $Read = "FREE" And StringLeft($Capa, 1) = "0" Then $Read = "Claimed"
 		If $Read = "FREE" And $bClaimed Then $Read = "Claimed"
 		If $Read = "FREE" And $bFullStorage Then $Read = "FullStorage"
 		If $Read = "" Then $Read = "N/A"
@@ -412,7 +411,6 @@ Func SellMagicItem($bTest = False)
 		EndIf
 	Next
 	ClickAway()
-	;Return $aMagic
 EndFunc
 
 ; Magic Item button of the Build menu first (no Town Hall click / locate needed; the menu stays open: callers close it),

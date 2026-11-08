@@ -29,7 +29,6 @@ Func ResetTHsearch()
 	For $string In $iKeys
 		If StringInStr($string, $eBldgTownHall & "_", $STR_NOCASESENSEBASIC) > 0 Then $g_oBldgAttackInfo.Remove($string)
 	Next
-	; SetDebugLog("TH search data cleared", $COLOR_DEBUG)
 
 EndFunc   ;==>ResetTHsearch
 

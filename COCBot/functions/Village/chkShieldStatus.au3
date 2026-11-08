@@ -94,7 +94,6 @@ Func chkShieldStatus($bChkShield = True, $bForceChkPBT = False)
 		$Result = getPBTime() ; Get time in future that PBT starts
 
 		If @error Then SetLog("chkShieldStatus getPBTime OCR error= " & @error & ", Extended= " & @extended, $COLOR_ERROR)
-		;SetDebugLog("getPBTime() returned: " & $Result, $COLOR_DEBUG)
 		If _Sleep($DELAYRESPOND) Then Return
 
 		If _DateIsValid($Result) Then
@@ -171,7 +170,6 @@ Func getShieldInfo()
 	Local $iShieldSeconds
 	Local $iDay = 0, $iHour = 0, $iMin = 0, $iSec = 0
 	Local $aPBReturnResult[3] = ["", "", ""] ; reset return values
-	; $aPBReturnResult[3] = [0] = string type of shield, [1] = string shield time remaining,  [2] = string Shield expire date/time used by _DateDiff()
 	$aPBReturnResult[1] = StringFormat("%02s", ($iDay * 24) + $iHour) & ":" & StringFormat("%02s", $iMin) & ":" & StringFormat("%02s", $iSec)
 
 	If IsMainPage() = False Then ; check for main page or do not try
